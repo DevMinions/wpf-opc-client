@@ -199,10 +199,12 @@ public class TaskOrchestratorTests
     [Fact]
     public async Task Watchdog_DoesNotRestart_WhenHeartbeatsFresh()
     {
+        // emit 间隔远小于 timeout（10x 余量），避免 CI 共享 runner 调度抖动误判超时；
+        // 同时总时长(1.5s) > timeout(1s)，仍能验证「无心跳会重启、有心跳不重启」的语义。
         var opts = new OrchestratorOptions
         {
-            WatchdogInterval = TimeSpan.FromMilliseconds(50),
-            HeartbeatTimeout = TimeSpan.FromMilliseconds(300)
+            WatchdogInterval = TimeSpan.FromMilliseconds(100),
+            HeartbeatTimeout = TimeSpan.FromMilliseconds(1000)
         };
         var (orch, daFactory, _) = Build(opts);
         await using var _ = orch;
@@ -210,11 +212,11 @@ public class TaskOrchestratorTests
         await orch.StartAsync(Request("t1"));
         var sub = daFactory.Created.First();
 
-        // 持续心跳 500 ms，应不重启
-        for (int i = 0; i < 10; i++)
+        // 持续心跳 1.5 s（> timeout），应不重启
+        for (int i = 0; i < 15; i++)
         {
             sub.EmitHeartbeat(new HeartBeat("t1", DateTimeOffset.UtcNow));
-            await Task.Delay(50);
+            await Task.Delay(100);
         }
 
         Assert.Single(daFactory.Created);
