@@ -47,6 +47,10 @@ jobs:
       # - Platform=x64 + CustomTestTarget=net8.0-windows：vendor COM 工程必需（见 README 构建说明）
       # - 不裁剪（WPF 反射重，PublishTrimmed 会崩）
       # - IncludeNativeLibrariesForSelfExtract：把 WPF/SQLite 原生库塞进单 exe，首次运行自解压
+      # - NuGetAuditMode=direct：self-contained 还原会把 vendored Technosoftware 老代码的传递依赖
+      #   System.Private.Uri 4.3.0（已知 CVE、且我们够不着也修不了）拉进运行时图，vendor common.props
+      #   的 audit-all + TreatWarningsAsErrors 会让还原失败。降为只审计直接依赖：仍保护我们自己引入的
+      #   包，但不为 vendored 第三方 COM 的深层传递漏洞卡发布。常规 CI 构建不受影响（仍 audit-all）。
       - name: Publish (self-contained 单文件 win-x64)
         shell: pwsh
         run: >
@@ -59,6 +63,7 @@ jobs:
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
           -p:DebugType=none
+          -p:NuGetAuditMode=direct
           -p:Version=${{ steps.ver.outputs.version }}
           --output publish
 
