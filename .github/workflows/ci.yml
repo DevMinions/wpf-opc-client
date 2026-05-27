@@ -36,10 +36,21 @@ jobs:
       - name: Build (Dc.App, Release x64)
         run: dotnet build src/Dc.App/Dc.App.csproj --configuration Release -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
 
+      # 无头 Cli（纯 net8.0，跨平台，可 Linux/Docker 部署）——不依赖 vendor COM
+      - name: Build (Dc.Cli, 无头采集器)
+        run: dotnet build src/Dc.Cli/Dc.Cli.csproj --configuration Release
+
       - name: Test (Infrastructure 单元测试)
         run: dotnet test tests/Dc.Infrastructure.Tests/Dc.Infrastructure.Tests.csproj
           --configuration Release -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
           --logger "trx;LogFileName=test-results.trx"
+          --results-directory ./test-results
+
+      # 集成测试（OPC UA 内嵌 server：订阅/浏览/读值/断线重连/无头端到端）——跨平台 net8.0
+      - name: Test (Integration 集成测试)
+        run: dotnet test tests/Dc.Integration.Tests/Dc.Integration.Tests.csproj
+          --configuration Release
+          --logger "trx;LogFileName=integration-results.trx"
           --results-directory ./test-results
 
       - name: Upload test results
