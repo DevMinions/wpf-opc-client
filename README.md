@@ -10,6 +10,22 @@
 
 ---
 
+## 界面截图
+
+> Fluent Design · 亮/暗主题跟随系统 · 以下为 Windows 端实跑截图。
+
+![仪表盘](docs/screenshots/dashboard.png)
+
+| 采集任务（master-detail + 6 tab） | 浏览节点 |
+|---|---|
+| ![采集任务](docs/screenshots/workspace.png) | ![浏览节点](docs/screenshots/browse.png) |
+| **实时数据** | **诊断** |
+| ![实时数据](docs/screenshots/livedata.png) | ![诊断](docs/screenshots/diagnostics.png) |
+| **运行日志** | **设置** |
+| ![日志](docs/screenshots/logs.png) | ![设置](docs/screenshots/settings.png) |
+
+---
+
 ## 已实现
 
 | 模块 | 状态 |
