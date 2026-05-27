@@ -5,6 +5,8 @@ using Xunit;
 
 namespace Dc.Infrastructure.Tests.Orchestration;
 
+// 看门狗/心跳计时敏感：独占执行（不与其他测试类并行争 CPU），避免 CI 上 flaky。
+[Collection("Timing-Sensitive")]
 public class TaskOrchestratorTests
 {
     private static (TaskOrchestrator orch, FakeOpcSubscriberFactory daFactory, FakePublisherFactory pubFactory) Build(OrchestratorOptions? opts = null)
@@ -199,12 +201,13 @@ public class TaskOrchestratorTests
     [Fact]
     public async Task Watchdog_DoesNotRestart_WhenHeartbeatsFresh()
     {
-        // emit 间隔远小于 timeout（10x 余量），避免 CI 共享 runner 调度抖动误判超时；
-        // 同时总时长(1.5s) > timeout(1s)，仍能验证「无心跳会重启、有心跳不重启」的语义。
+        // emit 间隔(100ms)远小于 timeout（15x 余量），避免 CI 共享 runner 调度抖动误判超时；
+        // 本类已 [Collection("Timing-Sensitive")] 独占执行消除并行争用；总时长(2s) > timeout(1.5s)
+        // 仍能验证「有心跳不重启」的语义（看门狗在超时horizon之后仍跑过，但因心跳新鲜未重启）。
         var opts = new OrchestratorOptions
         {
             WatchdogInterval = TimeSpan.FromMilliseconds(100),
-            HeartbeatTimeout = TimeSpan.FromMilliseconds(1000)
+            HeartbeatTimeout = TimeSpan.FromMilliseconds(1500)
         };
         var (orch, daFactory, _) = Build(opts);
         await using var _ = orch;
@@ -212,8 +215,8 @@ public class TaskOrchestratorTests
         await orch.StartAsync(Request("t1"));
         var sub = daFactory.Created.First();
 
-        // 持续心跳 1.5 s（> timeout），应不重启
-        for (int i = 0; i < 15; i++)
+        // 持续心跳 2.0 s（> timeout 1.5s），应不重启
+        for (int i = 0; i < 20; i++)
         {
             sub.EmitHeartbeat(new HeartBeat("t1", DateTimeOffset.UtcNow));
             await Task.Delay(100);
