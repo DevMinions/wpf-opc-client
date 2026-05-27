@@ -71,6 +71,23 @@ public static class ServiceRegistration
             sp.GetRequiredService<OrchestratorOptions>(),
             sp.GetService<Microsoft.Extensions.Logging.ILogger<TaskOrchestrator>>()));
 
+        // 诊断可观测：System.Diagnostics.Metrics 仪表（dotnet-counters/OTel 可抓）+ 周期结构化日志。
+        // 作为 IHostedService 由 Generic Host 自动启停。
+        services.AddSingleton<DiagnosticsReporter>(sp =>
+        {
+            var config = sp.GetService<IConfiguration>();
+            var orchestrator = sp.GetRequiredService<TaskOrchestrator>();
+            var options = new DiagnosticsReporterOptions
+            {
+                ReportInterval = TimeSpan.FromSeconds(config?.GetValue("Diagnostics:ReportIntervalSeconds", 30) ?? 30),
+                EnableLogging = config?.GetValue("Diagnostics:EnableLogging", true) ?? true,
+                EnableMetrics = config?.GetValue("Diagnostics:EnableMetrics", true) ?? true
+            };
+            return new DiagnosticsReporter(orchestrator.GetDiagnostics, options,
+                sp.GetService<Microsoft.Extensions.Logging.ILogger<DiagnosticsReporter>>());
+        });
+        services.AddHostedService(sp => sp.GetRequiredService<DiagnosticsReporter>());
+
         services.AddSingleton<IOpcSubscriberFactory, Dc.Opc.Ua.OpcUaSubscriberFactory>();
         services.AddSingleton<IOpcSubscriberFactory, Dc.Opc.Da.OpcDaSubscriberFactory>();
         services.AddSingleton<IOpcSubscriberFactory, Dc.Opc.Ae.OpcAeSubscriberFactory>();
