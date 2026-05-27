@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using Dc.App.Views;
 using Dc.App.ViewModels.Shell;
@@ -8,6 +9,7 @@ namespace Dc.App.Views.Shell;
 public partial class ShellWindow : FluentWindow
 {
     private readonly ShellViewModel _vm;
+    private bool _reallyExit;   // 仅托盘「退出」时置真，让关闭真正退出而非进托盘
 
     public ShellWindow(ShellViewModel vm)
     {
@@ -16,7 +18,7 @@ public partial class ShellWindow : FluentWindow
         DataContext = vm;
 
         BuildMenuItems();
-        StateChanged += OnStateChanged;
+        Closing += OnClosing;   // 关闭(X) → 隐藏到托盘（最小化保持留任务栏的默认行为）
         Loaded += OnLoaded;
         Closed += OnClosed;
     }
@@ -153,9 +155,12 @@ public partial class ShellWindow : FluentWindow
         }
     }
 
-    private void OnStateChanged(object? sender, EventArgs e)
+    private void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (WindowState == WindowState.Minimized) Hide();
+        // 点 X 不退出，隐藏到托盘；真正退出只走托盘菜单「退出」（_reallyExit）。
+        if (_reallyExit) return;
+        e.Cancel = true;
+        Hide();
     }
 
     private void OnTrayShow(object sender, RoutedEventArgs e)
@@ -178,6 +183,7 @@ public partial class ShellWindow : FluentWindow
 
     private void OnTrayExit(object sender, RoutedEventArgs e)
     {
+        _reallyExit = true;        // 放行 OnClosing，真正退出
         Application.Current.Shutdown();
     }
 

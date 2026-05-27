@@ -6,6 +6,7 @@
     <RootNamespace>Dc.App</RootNamespace>
     <AssemblyName>Dc.App</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\dc.ico</ApplicationIcon>
     <Version>1.0.0</Version>
     <Product>Dc — OPC 数据采集</Product>
     <Company>Dc</Company>
@@ -15,6 +16,8 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- 图标作为 Resource，供 Window.Icon / 托盘 IconSource 用 pack URI 引用 -->
+    <Resource Include="Assets\dc.ico" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />

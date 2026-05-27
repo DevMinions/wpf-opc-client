@@ -4,6 +4,7 @@
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:tb="http://www.hardcodet.net/taskbar"
                  Title="Dc · OPC 数据采集"
+                 Icon="pack://application:,,,/Assets/dc.ico"
                  Width="1280" Height="800"
                  MinWidth="980" MinHeight="640"
                  WindowBackdropType="Mica"
@@ -14,6 +15,7 @@
     <ui:FluentWindow.Resources>
         <!-- Tray: wpfui 3.0.5 没有 NotifyIcon 控件，留用 H.NotifyIcon.Wpf。Lepoco 后续版本 ship 后再迁。-->
         <tb:TaskbarIcon x:Key="TrayIcon"
+                        IconSource="pack://application:,,,/Assets/dc.ico"
                         ToolTipText="Dc · OPC 数据采集"
                         Visibility="Visible"
                         TrayLeftMouseDown="OnTrayShow">
