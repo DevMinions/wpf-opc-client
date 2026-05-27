@@ -1,0 +1,16 @@
+# Dc.Cli 镜像只需 5 个 net8.0 工程 + 两个 props，其余一律排除以精简构建上下文
+**/bin/
+**/obj/
+.git/
+.github/
+.vs/
+vendor/
+docs/
+tests/
+src/Dc.App/
+publish/
+*.md
+*.zip
+*.tar.gz
+*.user
+TestResults/
