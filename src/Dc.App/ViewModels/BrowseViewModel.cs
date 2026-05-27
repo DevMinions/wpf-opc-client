@@ -24,10 +24,8 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     [ObservableProperty] private string _currentPath = "(根)";
     [ObservableProperty] private OpcNode? _selectedNode;
 
-    // 节点详情：节点类来自 Kind（真实）。
+    // 节点详情：节点类来自 Kind；数据类型/当前值在选中变化时异步读取（UA ReadValue）。
     [ObservableProperty] private string _selectedNodeClass = "—";
-    // MOCK: 数据类型 / 当前值 暂无真实数据源（OpcNode 不含、浏览未 read 节点属性）。
-    // 接入真实节点读取（UA ReadValue / DA Read）后撤掉这两处 mock。详见 docs/code-review。
     [ObservableProperty] private string _selectedNodeDataType = "—";
     [ObservableProperty] private string _selectedNodeValue = "—";
 
@@ -275,11 +273,11 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             return;
         }
         SelectedNodeClass = value.Kind == OpcNodeKind.Folder ? "Folder" : "Variable";
-        // MOCK: 待接真实节点读取后用实际 DataType / Value 替换。
         if (value.Kind == OpcNodeKind.Item)
         {
-            SelectedNodeDataType = "Float (mock)";
-            SelectedNodeValue = "842.3 · Good (mock)";
+            SelectedNodeDataType = "…";
+            SelectedNodeValue = "读取中…";
+            _ = LoadSelectedNodeDetailAsync(value);
         }
         else
         {
@@ -287,6 +285,43 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             SelectedNodeValue = "—";
         }
     }
+
+    // 异步读取选中变量节点的真实值。OnSelectedNodeChanged 在 UI 线程触发、await 默认续回 UI 线程，
+    // 故直接设属性安全。读完若选中已变，丢弃旧结果。DA/AE 浏览器默认返回 null（暂未实现）→ 显示「—」。
+    private async Task LoadSelectedNodeDetailAsync(OpcNode node)
+    {
+        var browser = _browser;
+        if (browser is null) return;
+        try
+        {
+            var r = await browser.ReadValueAsync(node.Id);
+            if (!ReferenceEquals(SelectedNode, node)) return;   // 选中已变，别覆盖
+            if (r is null)
+            {
+                SelectedNodeDataType = "—";
+                SelectedNodeValue = "—";
+                return;
+            }
+            var q = (r.Quality & 0xC0) switch { 0xC0 => "Good", 0x40 => "Uncertain", _ => "Bad" };
+            SelectedNodeDataType = r.DataType;
+            SelectedNodeValue = $"{FormatValue(r.Value)} · {q}";
+        }
+        catch (Exception ex)
+        {
+            if (ReferenceEquals(SelectedNode, node))
+            {
+                SelectedNodeDataType = "—";
+                SelectedNodeValue = $"(读取失败: {ex.Message})";
+            }
+        }
+    }
+
+    private static string FormatValue(object? value) => value switch
+    {
+        null => "null",
+        Array a => $"[{a.Length} 项]",
+        _ => value.ToString() ?? "null"
+    };
 
     public ValueTask DisposeAsync() => new(DisposeBrowserAsync());
 }

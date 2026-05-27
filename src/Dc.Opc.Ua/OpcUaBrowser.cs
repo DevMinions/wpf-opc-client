@@ -76,6 +76,56 @@ public sealed class OpcUaBrowser : IOpcBrowser
         return Task.FromResult<IReadOnlyList<OpcNode>>(nodes);
     }
 
+    public Task<OpcNodeValue?> ReadValueAsync(string nodeId, CancellationToken ct = default)
+    {
+        if (_session is null) throw new InvalidOperationException("ConnectAsync must be called first");
+
+        var id = new NodeId(nodeId);
+        var toRead = new ReadValueIdCollection
+        {
+            new ReadValueId { NodeId = id, AttributeId = Attributes.Value },
+            new ReadValueId { NodeId = id, AttributeId = Attributes.DataType }
+        };
+        _session.Read(null, 0, TimestampsToReturn.Source, toRead,
+            out DataValueCollection results, out DiagnosticInfoCollection _);
+
+        var valueDv = results[0];
+        var dataTypeDv = results.Count > 1 ? results[1] : null;
+
+        // 质量码同 TagValue 的位运算约定
+        ushort quality;
+        if (StatusCode.IsBad(valueDv.StatusCode)) quality = 0x00;
+        else if (StatusCode.IsUncertain(valueDv.StatusCode)) quality = 0x40;
+        else quality = 0xC0;
+
+        DateTimeOffset? ts = valueDv.SourceTimestamp == DateTime.MinValue
+            ? null
+            : new DateTimeOffset(DateTime.SpecifyKind(valueDv.SourceTimestamp, DateTimeKind.Utc));
+
+        var result = new OpcNodeValue(ResolveDataType(valueDv, dataTypeDv), valueDv.Value, quality, ts);
+        return Task.FromResult<OpcNodeValue?>(result);
+    }
+
+    // 优先用值自带的类型信息（含标量/数组）；值空或坏时退而解析 DataType 属性（一个数据类型 NodeId）。
+    private string ResolveDataType(DataValue valueDv, DataValue? dataTypeDv)
+    {
+        var ti = valueDv.WrappedValue.TypeInfo;
+        if (ti is not null && ti.BuiltInType != BuiltInType.Null)
+        {
+            var suffix = ti.ValueRank >= ValueRanks.OneDimension ? "[]" : "";
+            return ti.BuiltInType.ToString() + suffix;
+        }
+        if (dataTypeDv?.Value is NodeId dtId && _session is not null)
+        {
+            var builtIn = TypeInfo.GetBuiltInType(dtId, _session.TypeTree);
+            if (builtIn != BuiltInType.Null) return builtIn.ToString();
+            var node = _session.NodeCache.Find(dtId);
+            if (node?.DisplayName?.Text is { Length: > 0 } name) return name;
+            return dtId.ToString();
+        }
+        return "Unknown";
+    }
+
     public Task<IReadOnlyList<string>> EnumerateServersAsync(string? host = null, CancellationToken ct = default)
     {
         // UA server discovery requires LDS or known discovery endpoint per host.
