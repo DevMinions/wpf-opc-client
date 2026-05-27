@@ -1,0 +1,41 @@
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageVersion Include="MessagePack" Version="2.5.187" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+    <PackageVersion Include="Serilog" Version="4.0.2" />
+    <PackageVersion Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageVersion Include="H.NotifyIcon.Wpf" Version="2.2.0" />
+    <PackageVersion Include="WPF-UI" Version="3.0.5" />
+    <PackageVersion Include="ClosedXML" Version="0.104.2" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.5.374.158" />
+    <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.5.374.158" />
+    <PackageVersion Include="EFCore.NamingConventions" Version="8.0.3" />
+    <PackageVersion Include="Ulid" Version="1.3.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <!--
+      OPC DA / AE 客户端 SDK：已选定 Technosoftware DaAeHdaClient (社区/GPL 版本)
+      决策依据 (2026-05-15)：
+        - 许可：本项目以 GPL-3.0 开源，与 Technosoftware GPL 版本兼容（分发的组合作品整体遵循 GPL-3.0）
+        - DA 场景：需跨主机 DCOM → Technosoftware 用 URL 风格连接（底层走 TCP），
+          相比 TitaniumAS / 自撸 OPCAutomation Interop 不需要 gbda_aut.dll、
+          不需要 DCOM 动态端口范围 (49152~65535) 全部开放，部署简单很多
+        - 文章 (opcda/article.md) 全程引用该 SDK，所有踩坑清单都基于它
+      Windows 端确认包版本后改为 <PackageVersion> 直接固化。
+    -->
+    <!-- <PackageVersion Include="Technosoftware.DaAeHdaClient" Version="3.x" /> -->
+  </ItemGroup>
+</Project>

@@ -1,0 +1,79 @@
+using Dc.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace Dc.Infrastructure.Persistence;
+
+public class DcDbContext : DbContext
+{
+    public DcDbContext(DbContextOptions<DcDbContext> options) : base(options) { }
+
+    public DbSet<Tag> Tags => Set<Tag>();
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<CollectorTask> Tasks => Set<CollectorTask>();
+    public DbSet<ConfigEntry> Configs => Set<ConfigEntry>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Tag>(e =>
+        {
+            e.ToTable("dc_tags");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.Item, x.TaskId, x.GroupId }).IsUnique().HasDatabaseName("udx_name");
+        });
+
+        modelBuilder.Entity<Group>(e =>
+        {
+            e.ToTable("dc_groups");
+            e.HasKey(x => x.Id);
+            e.HasMany(x => x.Tags).WithOne().HasForeignKey(t => t.GroupId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<CollectorTask>(e =>
+        {
+            e.ToTable("dc_tasks");
+            e.HasKey(x => x.Id);
+            e.HasMany(x => x.Groups).WithOne().HasForeignKey(g => g.TaskId).OnDelete(DeleteBehavior.NoAction);
+            e.HasMany(x => x.Tags).WithOne().HasForeignKey(t => t.TaskId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ConfigEntry>(e =>
+        {
+            e.ToTable("dc_configs");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Key).IsUnique();
+            e.Property(x => x.Description).HasColumnName("dc_description").HasDefaultValue("");
+        });
+    }
+
+    public override int SaveChanges()
+    {
+        ApplyAutoFields();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyAutoFields();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void ApplyAutoFields()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var entry in ChangeTracker.Entries<EntityBase>())
+        {
+            if (entry.State == EntityState.Added)
+            {
+                if (entry.Entity.CreatedAt == default)
+                    entry.Entity.CreatedAt = now;
+                entry.Entity.UpdatedAt = now;
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedAt = now;
+            }
+        }
+    }
+}

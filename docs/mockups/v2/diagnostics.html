@@ -1,0 +1,33 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>诊断 — Dc</title><link rel="stylesheet" href="app.css">
+</head>
+<body><div class="win">
+<div class="titlebar"><div class="logo"></div><div class="app">Dc · OPC 数据采集</div><span class="txt-3">› 全局监控 › 诊断</span>
+<div class="caps"><button class="theme"></button><div class="cap">─</div><div class="cap">▢</div><div class="cap x">✕</div></div></div>
+<div class="body"><nav class="nav"></nav>
+<main class="main">
+  <div class="page-title">诊断</div>
+  <div class="page-sub">每任务运行时诊断 · 1 秒刷新</div>
+
+  <div class="toolbar">
+    <div class="seg"><button class="on">自动刷新</button><button>暂停</button></div>
+    <span class="txt-3">间隔 1s</span>
+    <div class="sp"></div>
+    <button class="btn ghost sm">⟳ 立即刷新</button>
+  </div>
+
+  <div class="card pad0">
+    <table class="t">
+      <thead><tr><th></th><th>任务</th><th>启动</th><th>累计值</th><th>速率/s</th><th>发送错误</th><th>重启</th><th>最后心跳</th><th>Tag</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dot good"></span></td><td>1号炉温度</td><td class="txt-3">14:28:40</td><td>1,420,331</td><td class="txt-good">180</td><td class="txt-3">0</td><td class="txt-3">0</td><td class="txt-3">1s 前</td><td class="txt-3">320</td></tr>
+        <tr><td><span class="dot good"></span></td><td>能源采集器</td><td class="txt-3">11:02:18</td><td>9,884,200</td><td class="txt-good">1,240</td><td class="txt-3">0</td><td class="txt-3">0</td><td class="txt-3">1s 前</td><td class="txt-3">1,240</td></tr>
+        <tr><td><span class="dot warn"></span></td><td>压力监测站</td><td class="txt-3">14:25:02</td><td>402,118</td><td class="txt-warn">42</td><td class="txt-warn">3</td><td class="txt-warn">1</td><td class="txt-warn">5s 前</td><td class="txt-3">156</td></tr>
+        <tr><td><span class="dot bad"></span></td><td>报警源-AE</td><td class="txt-3">—</td><td class="txt-3">—</td><td class="txt-3">0</td><td class="txt-bad">12</td><td class="txt-bad">4</td><td class="txt-bad">2m 前</td><td class="txt-3">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<div class="statusbar"><span>Dc · v1.0.0</span><span>主题 · 跟随系统</span><span class="sp">4 任务在监控</span></div>
+</div></div>
+<script src="shell.js"></script><script>renderShell('diagnostics')</script>
+</body></html>

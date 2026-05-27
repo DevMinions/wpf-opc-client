@@ -1,0 +1,37 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>任务编辑对话框 — Dc</title><link rel="stylesheet" href="app.css">
+<style>
+body{display:grid;place-items:center;background:var(--mica),var(--bg-app)}
+.dlg{width:520px;background:var(--bg-card);backdrop-filter:blur(20px);border:1px solid var(--stroke-strong);
+  border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,0.18);overflow:hidden}
+.dlg .h{padding:16px 20px;border-bottom:1px solid var(--stroke);display:flex;align-items:center}
+.dlg .h .t{font-size:15px;font-weight:600}
+.dlg .h .x{margin-left:auto;cursor:pointer;color:var(--text-3)}
+.dlg .b{padding:18px 20px;display:flex;flex-direction:column;gap:13px}
+.f{display:grid;grid-template-columns:96px 1fr;align-items:center;gap:12px}
+.f label{font-size:13px;color:var(--text-2)}
+.f .err{grid-column:2;font-size:11px;color:var(--bad);margin-top:-8px}
+.dlg .ft{padding:14px 20px;border-top:1px solid var(--stroke);display:flex;justify-content:flex-end;gap:8px}
+.theme{position:fixed;top:14px;right:14px}
+</style></head>
+<body>
+<button class="theme btn ghost sm">🌙 暗色</button>
+<div class="dlg">
+  <div class="h"><span class="t">编辑任务 · 1号炉温度</span><span class="x">✕</span></div>
+  <div class="b">
+    <div class="f"><label>服务器</label><input class="input" value="炉温采集服务器" /></div>
+    <div class="f"><label>协议</label><select class="select"><option>OPC UA</option><option>OPC DA</option><option>OPC AE</option></select></div>
+    <div class="f"><label>节点地址</label><input class="input" value="opc.tcp://10.0.0.45:4840" /></div>
+    <div class="f"><label>采样间隔</label><input class="input" value="1000" /><span class="txt-3" style="grid-column:2;font-size:11px;margin-top:-8px">毫秒 · 必须 &gt; 0</span></div>
+    <div class="f"><label>死区</label><input class="input" value="1" /><span class="txt-3" style="grid-column:2;font-size:11px;margin-top:-8px">百分比 0–100</span></div>
+    <div class="f"><label>TCP 地址</label><input class="input" value="10.0.0.42:9000" /></div>
+  </div>
+  <div class="ft"><button class="btn ghost">取消</button><button class="btn">保存</button></div>
+</div>
+<script src="shell.js"></script>
+<script>
+const tb=document.querySelector('.theme');
+if(localStorage.getItem('dc-theme')==='dark')document.body.classList.add('dark');
+tb.textContent=document.body.classList.contains('dark')?'☀ 亮色':'🌙 暗色';
+tb.onclick=()=>{document.body.classList.toggle('dark');localStorage.setItem('dc-theme',document.body.classList.contains('dark')?'dark':'light');tb.textContent=document.body.classList.contains('dark')?'☀ 亮色':'🌙 暗色';};
+</script>
+</body></html>

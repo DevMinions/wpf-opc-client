@@ -1,0 +1,164 @@
+/* ============================================================
+   Dc — Win11 Fluent 设计系统（亮 + 暗，全部 token 化）
+   .dark 加在 body 上即切换主题（模拟 wpfui DynamicResource）
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* —— 亮色 token —— */
+  --bg-app: #f3f3f3;
+  --bg-layer: rgba(255,255,255,0.70);
+  --bg-card: rgba(255,255,255,0.80);
+  --bg-card-hover: rgba(255,255,255,0.95);
+  --bg-input: rgba(255,255,255,0.85);
+  --bg-subtle: rgba(0,0,0,0.03);
+  --bg-subtle-hover: rgba(0,0,0,0.05);
+  --stroke: rgba(0,0,0,0.08);
+  --stroke-strong: rgba(0,0,0,0.14);
+  --text-1: #1a1a1a;
+  --text-2: #5c5c5c;
+  --text-3: #8a8a8a;
+  --accent: #0067c0;
+  --accent-soft: rgba(0,103,192,0.10);
+  --accent-text: #0067c0;
+  --good: #16a34a;
+  --warn: #d97706;
+  --bad: #dc2626;
+  --good-soft: rgba(22,163,74,0.12);
+  --warn-soft: rgba(217,119,6,0.12);
+  --bad-soft: rgba(220,38,38,0.12);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 4px 14px rgba(0,0,0,0.05);
+  --titlebar-bg: rgba(255,255,255,0.55);
+  --sidebar-bg: rgba(255,255,255,0.45);
+  --mica: radial-gradient(1100px 520px at 0% 0%, rgba(0,103,192,0.05), transparent),
+          radial-gradient(900px 600px at 100% 100%, rgba(140,82,255,0.045), transparent);
+}
+body.dark {
+  --bg-app: #202020;
+  --bg-layer: rgba(255,255,255,0.04);
+  --bg-card: rgba(255,255,255,0.045);
+  --bg-card-hover: rgba(255,255,255,0.075);
+  --bg-input: rgba(255,255,255,0.06);
+  --bg-subtle: rgba(255,255,255,0.04);
+  --bg-subtle-hover: rgba(255,255,255,0.07);
+  --stroke: rgba(255,255,255,0.08);
+  --stroke-strong: rgba(255,255,255,0.14);
+  --text-1: #f3f3f3;
+  --text-2: #c8c8c8;
+  --text-3: #909090;
+  --accent: #4cc2ff;
+  --accent-soft: rgba(76,194,255,0.12);
+  --accent-text: #69c8ff;
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --good-soft: rgba(74,222,128,0.14);
+  --warn-soft: rgba(251,191,36,0.14);
+  --bad-soft: rgba(248,113,113,0.16);
+  --shadow-card: none;
+  --titlebar-bg: rgba(255,255,255,0.03);
+  --sidebar-bg: rgba(255,255,255,0.02);
+  --mica: radial-gradient(1100px 520px at 0% 0%, rgba(76,194,255,0.06), transparent),
+          radial-gradient(900px 600px at 100% 100%, rgba(140,82,255,0.06), transparent);
+}
+
+body {
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--text-1);
+  background: var(--mica), var(--bg-app);
+  background-attachment: fixed;
+  height: 100vh;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+/* —— 窗口外壳 —— */
+.win { display: grid; grid-template-rows: 40px 1fr 26px; height: 100vh; }
+.titlebar {
+  display: flex; align-items: center; gap: 10px; padding: 0 14px;
+  background: var(--titlebar-bg); border-bottom: 1px solid var(--stroke);
+  -webkit-app-region: drag; font-size: 12px; color: var(--text-2);
+}
+.titlebar .logo { width: 16px; height: 16px; border-radius: 4px;
+  background: linear-gradient(135deg, var(--accent), #8c52ff); }
+.titlebar .app { font-weight: 600; color: var(--text-1); }
+.titlebar .caps { margin-left: auto; display: flex; gap: 2px; }
+.titlebar .cap { width: 44px; height: 40px; display: grid; place-items: center; color: var(--text-2); font-size: 11px; }
+.titlebar .cap:hover { background: var(--bg-subtle-hover); }
+.titlebar .cap.x:hover { background: #e81123; color: #fff; }
+.titlebar .theme { -webkit-app-region: no-drag; cursor: pointer; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--stroke); background: var(--bg-subtle); font-size: 11px; color: var(--text-2); }
+.titlebar .theme:hover { background: var(--bg-subtle-hover); }
+
+.body { display: grid; grid-template-columns: 240px 1fr; min-height: 0; overflow: hidden; }
+
+/* —— 侧栏 —— */
+.nav { background: var(--sidebar-bg); border-right: 1px solid var(--stroke);
+  padding: 8px; display: flex; flex-direction: column; gap: 1px; overflow: auto; }
+.nav .grp { font-size: 11px; color: var(--text-3); padding: 12px 12px 4px; letter-spacing: .03em; }
+.nav .item { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 6px;
+  color: var(--text-1); cursor: pointer; position: relative; font-size: 13px; }
+.nav .item .ic { width: 18px; text-align: center; opacity: .75; }
+.nav .item:hover { background: var(--bg-subtle-hover); }
+.nav .item.on { background: var(--accent-soft); font-weight: 600; }
+.nav .item.on::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
+  border-radius: 2px; background: var(--accent); }
+.nav .foot { margin-top: auto; }
+
+/* —— 内容区 —— */
+.main { padding: 18px 22px; overflow: auto; min-height: 0; }
+.page-title { font-size: 20px; font-weight: 600; }
+.page-sub { font-size: 12px; color: var(--text-2); margin-top: 2px; margin-bottom: 16px; }
+
+/* —— 卡片 —— */
+.card { background: var(--bg-card); border: 1px solid var(--stroke); border-radius: 10px;
+  box-shadow: var(--shadow-card); backdrop-filter: blur(16px); padding: 14px 16px; }
+.card.pad0 { padding: 0; overflow: hidden; }
+.card-h { font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.card-h .count { color: var(--text-3); font-weight: 400; }
+.card-h .sp { margin-left: auto; }
+
+/* —— 工具栏 —— */
+.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.toolbar .sp { flex: 1; }
+.input { background: var(--bg-input); border: 1px solid var(--stroke); border-radius: 6px;
+  padding: 7px 11px; font-size: 13px; color: var(--text-1); min-width: 180px; }
+.input::placeholder { color: var(--text-3); }
+.select { background: var(--bg-input); border: 1px solid var(--stroke); border-radius: 6px;
+  padding: 7px 11px; font-size: 13px; color: var(--text-1); }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px;
+  font-size: 13px; cursor: pointer; border: 1px solid transparent; background: var(--accent); color: #fff; }
+.btn:hover { filter: brightness(1.06); }
+.btn.ghost { background: var(--bg-subtle); color: var(--text-1); border-color: var(--stroke); }
+.btn.ghost:hover { background: var(--bg-subtle-hover); }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--stroke); border-radius: 6px; overflow: hidden; }
+.seg button { padding: 6px 12px; font-size: 12px; background: transparent; color: var(--text-2); cursor: pointer; border: 0; }
+.seg button.on { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+
+/* —— 表格 —— */
+table.t { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.t thead th { text-align: left; padding: 9px 12px; color: var(--text-3); font-weight: 500;
+  border-bottom: 1px solid var(--stroke); position: sticky; top: 0; background: var(--bg-card); }
+table.t td { padding: 9px 12px; border-bottom: 1px solid var(--stroke); color: var(--text-1); }
+table.t tbody tr:hover { background: var(--bg-subtle); }
+table.t tr:last-child td { border-bottom: 0; }
+.mono { font-family: "Cascadia Mono", "Consolas", monospace; }
+
+/* —— 状态 —— */
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: middle; margin-right: 7px; }
+.dot.good { background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
+.dot.warn { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft); }
+.dot.bad  { background: var(--bad);  box-shadow: 0 0 0 3px var(--bad-soft); }
+.pill { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad  { background: var(--bad-soft);  color: var(--bad); }
+.txt-2 { color: var(--text-2); } .txt-3 { color: var(--text-3); }
+.txt-good { color: var(--good); } .txt-warn { color: var(--warn); } .txt-bad { color: var(--bad); }
+
+/* —— 状态栏（.win 直接子元素，第三行）—— */
+.statusbar { display: flex; align-items: center; gap: 22px;
+  padding: 0 14px; font-size: 11px; color: var(--text-3); border-top: 1px solid var(--stroke);
+  background: var(--titlebar-bg); }
+.statusbar .sp { margin-left: auto; }

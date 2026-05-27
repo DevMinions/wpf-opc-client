@@ -1,0 +1,12 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.sqlite.db
+*.db
+build/
+# 运行时产物
+logs/
+queue/
+pki/

@@ -1,0 +1,316 @@
+<UserControl x:Class="Dc.App.Views.Workspace.TaskWorkspaceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Dc.App.Controls"
+             xmlns:ws="clr-namespace:Dc.App.ViewModels.Workspace"
+             xmlns:wsv="clr-namespace:Dc.App.Views.Workspace"
+             xmlns:conv="clr-namespace:Dc.App.Views.Converters">
+    <UserControl.Resources>
+        <conv:EnumMatchConverter x:Key="EnumMatch" />
+    </UserControl.Resources>
+    <Grid Margin="22,18">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="14" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ═══ Master panel ═══ -->
+        <DockPanel Grid.Column="0">
+            <!-- Pills -->
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                <Border Background="{DynamicResource SystemFillColorSuccessBackgroundBrush}" CornerRadius="999" Padding="9,2" Margin="0,0,6,0">
+                    <TextBlock FontSize="11" Foreground="{DynamicResource SystemFillColorSuccessBrush}"><Run Text="运行 " /><Run Text="{Binding RunningCount, Mode=OneWay}" /></TextBlock>
+                </Border>
+                <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}" CornerRadius="999" Padding="9,2" Margin="0,0,6,0">
+                    <TextBlock FontSize="11" Foreground="{DynamicResource SystemFillColorCriticalBrush}"><Run Text="停 " /><Run Text="{Binding StoppedCount, Mode=OneWay}" /></TextBlock>
+                </Border>
+                <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" CornerRadius="999" Padding="9,2">
+                    <TextBlock FontSize="11" Foreground="{DynamicResource SystemFillColorCautionBrush}"><Run Text="告警 " /><Run Text="{Binding AlertCount, Mode=OneWay}" /></TextBlock>
+                </Border>
+            </StackPanel>
+
+            <!-- Search -->
+            <TextBox DockPanel.Dock="Top"
+                     controls:Placeholder.Text="搜索任务…"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     Margin="0,0,0,6"
+                     Background="{DynamicResource ControlFillColorDefaultBrush}"
+                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                     Padding="9,6" />
+
+            <!-- Segmented filter -->
+            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="6" Margin="0,0,0,8"
+                    HorizontalAlignment="Stretch">
+                <!-- 三段平分宽度；IsChecked TwoWay 绑 StatusFilter，视图永远反映 VM（重建/重导航不失同步）-->
+                <UniformGrid Columns="3">
+                    <RadioButton Content="全部" Style="{StaticResource DcSegRadio}"
+                                 IsChecked="{Binding StatusFilter, Converter={StaticResource EnumMatch}, ConverterParameter=All, Mode=TwoWay}" />
+                    <RadioButton Content="运行中" Style="{StaticResource DcSegRadio}"
+                                 IsChecked="{Binding StatusFilter, Converter={StaticResource EnumMatch}, ConverterParameter=Running, Mode=TwoWay}" />
+                    <RadioButton Content="已停止" Style="{StaticResource DcSegRadio}"
+                                 IsChecked="{Binding StatusFilter, Converter={StaticResource EnumMatch}, ConverterParameter=Stopped, Mode=TwoWay}" />
+                </UniformGrid>
+            </Border>
+
+            <!-- Action buttons -->
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+                <Button Content="+ 新建" Margin="0,0,6,0" Style="{StaticResource DcBtnPrimarySm}" Click="OnNewTask" />
+                <Button Content="导入" Style="{StaticResource DcBtnGhostSm}" Click="OnImport" />
+            </StackPanel>
+
+            <!-- Task list with accent indicator -->
+            <ListBox x:Name="TaskList" ItemsSource="{Binding FilteredTasks}" SelectedItem="{Binding SelectedTask, Mode=TwoWay}"
+                     BorderThickness="0" Background="Transparent">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="9,11" />
+                        <Setter Property="Cursor" Value="Hand" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="Bd" Padding="{TemplateBinding Padding}"
+                                            Background="Transparent"
+                                            CornerRadius="7" Margin="0,1"
+                                            BorderThickness="3,0,0,0"
+                                            BorderBrush="Transparent">
+                                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                          VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="Background"
+                                                    Value="{DynamicResource AccentSoftBrush}" />
+                                            <Setter TargetName="Bd" Property="BorderBrush"
+                                                    Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background"
+                                                    Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type ws:TaskMasterRow}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsRunning}" Value="False">
+                                                    <Setter Property="Fill" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding HasAlert}" Value="True">
+                                                    <Setter Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Text="{Binding Name}" FontSize="13"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </StackPanel>
+                             <TextBlock FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="16,2,0,0">
+                                 <Run Text="{Binding Protocol, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TagCount, Mode=OneWay}" /><Run Text=" tag" /><Run Text=" · " /><Run Text="{Binding RatePerSecond, Mode=OneWay, StringFormat={}{0:F0}}" /><Run Text="/s" />
+                             </TextBlock>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- ═══ Detail panel ═══ -->
+        <DockPanel Grid.Column="2">
+            <!-- Header: name + status + actions -->
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Margin="0,0,10,0" VerticalAlignment="Center">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedTask.IsRunning}" Value="False">
+                                        <Setter Property="Fill" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                    </DataTrigger>
+                                    <!-- 未选中任务 → 不显示状态点 -->
+                                    <DataTrigger Binding="{Binding SelectedTask}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="{Binding SelectedTask.Name, FallbackValue='选择一个任务'}"
+                               FontSize="17" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                     <Border Margin="10,0,0,0" CornerRadius="999" Padding="9,2">
+                         <Border.Style>
+                             <Style TargetType="Border">
+                                 <!-- 语义软底，与文字色一致：运行中→good-soft、告警→warn-soft、已停止→bad-soft -->
+                                 <Setter Property="Background" Value="{DynamicResource SystemFillColorSuccessBackgroundBrush}" />
+                                 <Style.Triggers>
+                                     <DataTrigger Binding="{Binding SelectedTask.HasAlert}" Value="True">
+                                         <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBackgroundBrush}" />
+                                     </DataTrigger>
+                                     <DataTrigger Binding="{Binding SelectedTask.IsRunning}" Value="False">
+                                         <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBackgroundBrush}" />
+                                     </DataTrigger>
+                                     <!-- 未选中任务 → 不显示状态 pill -->
+                                     <DataTrigger Binding="{Binding SelectedTask}" Value="{x:Null}">
+                                         <Setter Property="Visibility" Value="Collapsed" />
+                                     </DataTrigger>
+                                 </Style.Triggers>
+                             </Style>
+                         </Border.Style>
+                         <TextBlock FontSize="11">
+                             <TextBlock.Style>
+                                 <Style TargetType="TextBlock">
+                                     <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                     <Setter Property="Text" Value="运行中" />
+                                     <Style.Triggers>
+                                         <DataTrigger Binding="{Binding SelectedTask.HasAlert}" Value="True">
+                                             <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                             <Setter Property="Text" Value="告警" />
+                                         </DataTrigger>
+                                         <DataTrigger Binding="{Binding SelectedTask.IsRunning}" Value="False">
+                                             <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                             <Setter Property="Text" Value="已停止" />
+                                         </DataTrigger>
+                                     </Style.Triggers>
+                                 </Style>
+                             </TextBlock.Style>
+                         </TextBlock>
+                     </Border>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedTask}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <!-- ▶ 启动：仅 IsRunning=False 时可见 -->
+                    <Button Content="▶ 启动" Margin="0,0,6,0" Click="OnStart">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource DcBtnStart}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedTask.IsRunning}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <!-- ■ 停止：仅 IsRunning=True 时可见 -->
+                    <Button Content="■ 停止" Margin="0,0,6,0" Click="OnStop">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource DcBtnGhostSm}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedTask.IsRunning}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <!-- ⟳ 重启：仅 IsRunning=True 时可见 -->
+                    <Button Content="⟳ 重启" Click="OnRestart">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource DcBtnGhostSm}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedTask.IsRunning}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Tabs with accent underline -->
+            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,0,0,1" Margin="0,0,0,14">
+                <!-- IsChecked TwoWay 绑 SelectedTab，重建/重导航不失同步 -->
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Content="概览" Style="{StaticResource DcTabRadio}"
+                                 IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=overview, Mode=TwoWay}" />
+                    <RadioButton Style="{StaticResource DcTabRadio}"
+                                 IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=groups, Mode=TwoWay}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="分组" VerticalAlignment="Center" />
+                            <Border Margin="6,0,0,0" CornerRadius="999" Padding="6,0" VerticalAlignment="Center"
+                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedGroupCount}" Value="0">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding SelectedGroupCount}" FontSize="10"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Border>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource DcTabRadio}"
+                                 IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=tags, Mode=TwoWay}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Tag" VerticalAlignment="Center" />
+                            <Border Margin="6,0,0,0" CornerRadius="999" Padding="6,0" VerticalAlignment="Center"
+                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedTagCount}" Value="0">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding SelectedTagCount}" FontSize="10"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Border>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Content="实时数据" Style="{StaticResource DcTabRadio}"
+                                 IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=livedata, Mode=TwoWay}" />
+                    <RadioButton Content="诊断" Style="{StaticResource DcTabRadio}"
+                                 IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=diagnostics, Mode=TwoWay}" />
+                    <RadioButton Content="配置" Style="{StaticResource DcTabRadio}"
+                                 IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=config, Mode=TwoWay}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Tab content -->
+            <ContentControl Content="{Binding CurrentTabContent}">
+                <ContentControl.Resources>
+                    <DataTemplate DataType="{x:Type ws:WorkspaceOverviewViewModel}">
+                        <wsv:OverviewTabPanel />
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
+        </DockPanel>
+    </Grid>
+</UserControl>

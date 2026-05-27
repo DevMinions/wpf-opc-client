@@ -1,0 +1,39 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>Dc — 视觉风格对比</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:#f5f5f7;color:#1a1a1a;padding:40px;line-height:1.6}
+.wrap{max-width:880px;margin:0 auto}
+h1{font-size:26px;margin-bottom:6px}.lead{color:#5f6368;margin-bottom:26px}
+.grid{display:grid;gap:14px}
+a.card{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+a.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+a.card h2{font-size:18px;margin-bottom:6px}
+a.card .d{color:#5f6368;font-size:14px}
+a.card .ref{margin-top:8px;font-size:12.5px;color:#8a8a8a}
+.tag{display:inline-block;font-size:12px;padding:2px 10px;border-radius:999px;margin-top:10px}
+.t-antd{background:#e6f4ff;color:#1677ff}.t-mat{background:#eaddff;color:#6750a4}.t-flu{background:#e5f1fb;color:#0067c0}
+</style></head>
+<body><div class="wrap">
+<h1>Dc — 视觉风格对比</h1>
+<p class="lead">同一个仪表盘,3 种设计语言。每张点进去右上角能切亮/暗。挑一个你喜欢的调子,我就照它把 13 个界面统一落地到 WPF。</p>
+<div class="grid">
+ <a class="card" href="antd.html">
+  <h2>A · 中后台 / Antd · Element 风</h2>
+  <div class="d">深色侧栏 + 白底主区 + 蓝色主色,信息密集、表格为王。国产工业/管理软件最常见的调子。</div>
+  <div class="ref">参考类似软件:EMQX Dashboard、ThingsBoard、各类组态/网关后台</div>
+  <span class="tag t-antd">对应 HandyControl</span>
+ </a>
+ <a class="card" href="material.html">
+  <h2>B · Material Design</h2>
+  <div class="d">顶部彩色 App Bar + 圆角卡片 + 明显阴影 + 鲜艳强调色,谷歌风。圆润、年轻。</div>
+  <div class="ref">参考类似软件:Grafana(部分)、Node-RED、各类 IoT 平台仪表盘</div>
+  <span class="tag t-mat">对应 MaterialDesignInXAML</span>
+ </a>
+ <a class="card" href="fluent.html">
+  <h2>C · Fluent（现状 · 参照）</h2>
+  <div class="d">Win11 原生风:Mica 半透明、轻边框、克制配色。就是现在做好的这套。</div>
+  <div class="ref">参考类似软件:Win11 自带工具、PC Manager、新版记事本</div>
+  <span class="tag t-flu">对应 wpfui（现用）</span>
+ </a>
+</div>
+</div></body></html>

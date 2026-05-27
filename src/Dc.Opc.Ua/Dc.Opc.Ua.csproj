@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Dc.Opc.Abstractions\Dc.Opc.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

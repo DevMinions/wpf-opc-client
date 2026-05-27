@@ -1,0 +1,37 @@
+<UserControl x:Class="Dc.App.Views.Workspace.OverviewTabPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wsv="clr-namespace:Dc.App.Views.Workspace">
+    <UserControl.Resources>
+        <wsv:SparklineConverter x:Key="Spark" />
+    </UserControl.Resources>
+    <StackPanel>
+        <UniformGrid Columns="3" Rows="2" Margin="0,0,0,12">
+            <Border Style="{StaticResource DcCard}" Margin="0,0,6,6"><StackPanel>
+                <TextBlock Text="{Binding TotalMessages}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="累计消息" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>
+            <Border Style="{StaticResource DcCard}" Margin="3,0,3,6"><StackPanel>
+                <TextBlock Text="{Binding SubscribedTags}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="订阅 Tag" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>
+            <Border Style="{StaticResource DcCard}" Margin="6,0,0,6"><StackPanel>
+                <TextBlock Text="{Binding ErrorCount}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="发送错误" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>
+            <Border Style="{StaticResource DcCard}" Margin="0,6,6,0"><StackPanel>
+                <TextBlock Text="{Binding RestartCount}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="重启次数" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>
+            <Border Style="{StaticResource DcCard}" Margin="3,6,3,0"><StackPanel>
+                <TextBlock Text="{Binding UptimeDisplay}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="运行时长" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>
+            <Border Style="{StaticResource DcCard}" Margin="6,6,0,0"><StackPanel>
+                <TextBlock Text="{Binding LastHeartbeatDisplay}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="最后心跳" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>
+        </UniformGrid>
+        <Border Style="{StaticResource DcCard}">
+            <StackPanel>
+                <TextBlock Text="消息速率 (最近 60s)" FontSize="12" Style="{StaticResource DcMuted}" Margin="0,0,0,8" />
+                <Polyline Stroke="{DynamicResource AccentTextFillColorPrimaryBrush}" StrokeThickness="1.5" Height="40" Stretch="None"
+                          Points="{Binding SparklineRates, Converter={StaticResource Spark}}" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

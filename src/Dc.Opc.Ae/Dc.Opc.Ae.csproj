@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 同 Dc.Opc.Da：vendor 必须 Platform=x64 + CustomTestTarget=net8.0-windows -->
+    <ProjectReference Include="..\..\vendor\ClassicClient\src\Technosoftware\DaAeHdaClient\Technosoftware.DaAeHdaClient.csproj"
+                      AdditionalProperties="CustomTestTarget=net8.0-windows;Platform=x64" />
+    <ProjectReference Include="..\..\vendor\ClassicClient\src\Technosoftware\DaAeHdaClient.Com\Technosoftware.DaAeHdaClient.Com.csproj"
+                      AdditionalProperties="CustomTestTarget=net8.0-windows;Platform=x64" />
+    <ProjectReference Include="..\..\vendor\ClassicClient\src\Technosoftware\OpcRcw\Technosoftware.OpcRcw.csproj"
+                      AdditionalProperties="CustomTestTarget=net8.0-windows;Platform=x64" />
+    <ProjectReference Include="..\Dc.Opc.Abstractions\Dc.Opc.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

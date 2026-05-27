@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Dc.App</RootNamespace>
+    <AssemblyName>Dc.App</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.0</Version>
+    <Product>Dc — OPC 数据采集</Product>
+    <Company>Dc</Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="H.NotifyIcon.Wpf" />
+    <PackageReference Include="WPF-UI" />
+    <PackageReference Include="Microsoft.Win32.Registry" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Dc.Domain\Dc.Domain.csproj" />
+    <ProjectReference Include="..\Dc.Infrastructure\Dc.Infrastructure.csproj" />
+    <ProjectReference Include="..\Dc.Opc.Abstractions\Dc.Opc.Abstractions.csproj" />
+    <ProjectReference Include="..\Dc.Opc.Da\Dc.Opc.Da.csproj" />
+    <ProjectReference Include="..\Dc.Opc.Ua\Dc.Opc.Ua.csproj" />
+    <ProjectReference Include="..\Dc.Opc.Ae\Dc.Opc.Ae.csproj" />
+  </ItemGroup>
+</Project>

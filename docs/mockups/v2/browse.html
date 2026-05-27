@@ -1,0 +1,58 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>浏览节点 — Dc</title><link rel="stylesheet" href="app.css">
+<style>
+.crumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);margin-bottom:10px}
+.crumb b{color:var(--text-1)}
+.split{display:grid;grid-template-columns:1fr 320px;gap:14px;height:calc(100vh - 40px - 26px - 36px - 130px)}
+.detail dt{font-size:11px;color:var(--text-3);margin-top:10px}
+.detail dd{font-size:13px;margin-top:2px;word-break:break-all}
+</style></head>
+<body><div class="win">
+<div class="titlebar"><div class="logo"></div><div class="app">Dc · OPC 数据采集</div><span class="txt-3">› 浏览节点</span>
+<div class="caps"><button class="theme"></button><div class="cap">─</div><div class="cap">▢</div><div class="cap x">✕</div></div></div>
+<div class="body"><nav class="nav"></nav>
+<main class="main">
+  <div class="page-title">浏览节点</div>
+  <div class="page-sub">连接 OPC 服务器，浏览地址空间并复制 NodeId</div>
+
+  <div class="toolbar">
+    <select class="select"><option>OPC UA</option><option>OPC DA</option><option>OPC AE</option></select>
+    <input class="input" style="flex:1" value="opc.tcp://10.0.0.45:4840" />
+    <button class="btn">连接</button>
+    <button class="btn ghost">断开</button>
+  </div>
+  <div class="crumb"><span>Root</span>›<span>Objects</span>›<b>Boiler</b></div>
+
+  <div class="split">
+    <div class="card pad0">
+      <table class="t">
+        <thead><tr><th></th><th>名称</th><th>类型</th><th>NodeId</th></tr></thead>
+        <tbody>
+          <tr><td>📁</td><td>炉膛温度</td><td class="txt-3">Folder</td><td class="mono txt-3">ns=2;s=Boiler.Furnace</td></tr>
+          <tr><td>📁</td><td>烟气分析</td><td class="txt-3">Folder</td><td class="mono txt-3">ns=2;s=Boiler.Flue</td></tr>
+          <tr style="background:var(--accent-soft)"><td>🔢</td><td>Temp.Furnace</td><td class="txt-3">Variable · Float</td><td class="mono">ns=2;s=Boiler.Temp.Furnace</td></tr>
+          <tr><td>🔢</td><td>Temp.Exit</td><td class="txt-3">Variable · Float</td><td class="mono txt-3">ns=2;s=Boiler.Temp.Exit</td></tr>
+          <tr><td>🔢</td><td>O2.Inlet</td><td class="txt-3">Variable · Float</td><td class="mono txt-3">ns=2;s=Boiler.O2.Inlet</td></tr>
+          <tr><td>📁</td><td>给水系统</td><td class="txt-3">Folder</td><td class="mono txt-3">ns=2;s=Boiler.Water</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card detail">
+      <div class="card-h">节点详情</div>
+      <dl>
+        <dt>显示名</dt><dd>Temp.Furnace</dd>
+        <dt>NodeId</dt><dd class="mono">ns=2;s=Boiler.Temp.Furnace</dd>
+        <dt>节点类</dt><dd>Variable</dd>
+        <dt>数据类型</dt><dd>Float</dd>
+        <dt>当前值</dt><dd class="txt-good">842.3 °C · Good</dd>
+      </dl>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn sm">复制 NodeId</button>
+        <button class="btn ghost sm">加入 Tag</button>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="statusbar"><span>Dc · v1.0.0</span><span>主题 · 跟随系统</span><span class="sp txt-good">● 已连接</span></div>
+</div></div>
+<script src="shell.js"></script><script>renderShell('browse')</script>
+</body></html>

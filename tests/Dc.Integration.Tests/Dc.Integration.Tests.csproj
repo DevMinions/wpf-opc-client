@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="MessagePack" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Dc.Domain\Dc.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Dc.Infrastructure\Dc.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Dc.Opc.Abstractions\Dc.Opc.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Dc.Opc.Ua\Dc.Opc.Ua.csproj" />
+  </ItemGroup>
+</Project>

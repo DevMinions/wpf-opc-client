@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- vendor 必须 Platform=x64（NETCORE 宏只在 x64/x86 平台定义，AnyCPU 编不过 FILETIME）
+         和 CustomTestTarget=net8.0-windows（不然编 5 个 TFM 含 net9/net10）。
+         AdditionalProperties 强制传给 vendor 构建，不依赖 sln/CLI -p 传递
+         （sln 配置映射会切断全局属性向 sln-外项目的传递）。-->
+    <ProjectReference Include="..\..\vendor\ClassicClient\src\Technosoftware\DaAeHdaClient\Technosoftware.DaAeHdaClient.csproj"
+                      AdditionalProperties="CustomTestTarget=net8.0-windows;Platform=x64" />
+    <ProjectReference Include="..\..\vendor\ClassicClient\src\Technosoftware\DaAeHdaClient.Com\Technosoftware.DaAeHdaClient.Com.csproj"
+                      AdditionalProperties="CustomTestTarget=net8.0-windows;Platform=x64" />
+    <ProjectReference Include="..\..\vendor\ClassicClient\src\Technosoftware\OpcRcw\Technosoftware.OpcRcw.csproj"
+                      AdditionalProperties="CustomTestTarget=net8.0-windows;Platform=x64" />
+    <ProjectReference Include="..\Dc.Opc.Abstractions\Dc.Opc.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

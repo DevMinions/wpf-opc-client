@@ -1,0 +1,275 @@
+<UserControl x:Class="Dc.App.Views.BrowseView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:controls="clr-namespace:Dc.App.Controls">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <!-- page header -->
+            <RowDefinition Height="Auto" />
+            <!-- connection toolbar -->
+            <RowDefinition Height="Auto" />
+            <!-- classic OPC scan row -->
+            <RowDefinition Height="Auto" />
+            <!-- classic OPC CLSID expander -->
+            <RowDefinition Height="Auto" />
+            <!-- breadcrumb -->
+            <RowDefinition Height="Auto" />
+            <!-- split: node list + detail -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- ═══ Row 0: Page header ═══ -->
+        <StackPanel Grid.Row="0" Margin="20,16,20,4">
+            <TextBlock Text="浏览节点" Style="{StaticResource DcPageTitle}" />
+            <TextBlock Text="连接 OPC 服务器，浏览地址空间并复制 NodeId"
+                       Style="{StaticResource DcPageSub}" />
+        </StackPanel>
+
+        <!-- ═══ Row 1: Connection toolbar ═══ -->
+        <Border Grid.Row="1" Margin="20,0,20,10">
+            <Border Style="{StaticResource DcCard}">
+                <DockPanel LastChildFill="True">
+                    <!-- Protocol selector -->
+                    <ComboBox DockPanel.Dock="Left" Width="90" Margin="0,0,8,0"
+                              ItemsSource="{Binding AvailableProtocols}"
+                              SelectedItem="{Binding Protocol}"
+                              VerticalAlignment="Center" />
+
+                    <!-- Connect -->
+                    <ui:Button DockPanel.Dock="Right"
+                               Content="连接"
+                               Command="{Binding ConnectCommand}"
+                               Appearance="Primary"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center" />
+
+                    <!-- Disconnect -->
+                    <Button DockPanel.Dock="Right"
+                            Content="断开"
+                            Command="{Binding DisconnectCommand}"
+                            Style="{StaticResource DcBtnGhostSm}"
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Center" />
+
+                    <!-- ProgID (DA/AE only) -->
+                    <TextBox DockPanel.Dock="Right" Width="200" Margin="0,0,8,0"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}"
+                                Text="{Binding ServerProgId, UpdateSourceTrigger=PropertyChanged}"
+                                controls:Placeholder.Text="ProgID (DA/AE)"
+                                ToolTip="OPC ProgID — DA 例: SampleCompany.DaSample；AE 例: SampleCompany.AeSample" />
+
+                    <!-- Server URI -->
+                    <TextBox Text="{Binding ServerUri, UpdateSourceTrigger=PropertyChanged}"
+                                VerticalAlignment="Center"
+                                controls:Placeholder.Text="opc.tcp://host:port"
+                                ToolTip="UA: opc.tcp://host:port    DA/AE: 主机名/IP" />
+                </DockPanel>
+            </Border>
+        </Border>
+
+        <!-- ═══ Row 2: Classic OPC scan bar (DA/AE only) ═══ -->
+        <Border Grid.Row="2" Margin="20,0,20,8"
+                Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource DcCard}">
+                <DockPanel LastChildFill="True">
+                    <TextBlock Text="按 IP 扫描："
+                               Style="{StaticResource DcMuted}"
+                               VerticalAlignment="Center"
+                               DockPanel.Dock="Left" Margin="0,0,8,0" />
+                    <TextBox Width="160" Margin="0,0,8,0"
+                                VerticalAlignment="Center"
+                                DockPanel.Dock="Left"
+                                Text="{Binding DiscoveryHost, UpdateSourceTrigger=PropertyChanged}"
+                                controls:Placeholder.Text="192.168.1.10"
+                                ToolTip="目标主机名或 IP（如 192.168.1.10），跨机需 OPCEnum + DCOM" />
+                    <Button Content="扫描 OPC 服务器"
+                                Command="{Binding ScanServersCommand}"
+                                Style="{StaticResource DcBtnGhostSm}"
+                                DockPanel.Dock="Left" Margin="0,0,12,0" />
+                    <TextBlock Text="发现："
+                               Style="{StaticResource DcMuted}"
+                               VerticalAlignment="Center"
+                               DockPanel.Dock="Left" Margin="0,0,4,0" />
+                    <ComboBox ItemsSource="{Binding DiscoveredServers}"
+                              SelectedItem="{Binding SelectedDiscoveredServer}"
+                              VerticalAlignment="Center"
+                              ToolTip="选中后自动填充 Host 与 ProgID" />
+                </DockPanel>
+            </Border>
+        </Border>
+
+        <!-- ═══ Row 3: Classic OPC advanced — CLSID fallback ═══ -->
+        <Expander Grid.Row="3" Margin="20,0,20,8"
+                  Header="高级（OPCEnum 不可用时使用 CLSID 直连）"
+                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                  Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}"
+                  IsExpanded="False">
+            <Border Style="{StaticResource DcCard}" Margin="0,4,0,0">
+                <DockPanel LastChildFill="True">
+                    <TextBlock Text="CLSID："
+                               Style="{StaticResource DcMuted}"
+                               VerticalAlignment="Center"
+                               DockPanel.Dock="Left" Margin="0,0,8,0" />
+                    <TextBox VerticalAlignment="Center"
+                                FontFamily="Consolas"
+                                Text="{Binding ServerClsid, UpdateSourceTrigger=PropertyChanged}"
+                                controls:Placeholder.Text="{}{5CEE2576-...}"
+                                ToolTip="形如 {5CEE2576-AA37-4D54-B02D-ECABE09A1C1E}。给值时跳过 OPCEnum，直接 CoCreateInstance。" />
+                </DockPanel>
+            </Border>
+        </Expander>
+
+        <!-- ═══ Row 4: Breadcrumb + 状态提示 ═══ -->
+        <DockPanel Grid.Row="4" Margin="20,0,20,10" LastChildFill="True">
+            <Button Content="← 返回"
+                    DockPanel.Dock="Left"
+                    Command="{Binding GoBackCommand}"
+                    Style="{StaticResource DcBtnGhostSm}"
+                    Margin="0,0,8,0" />
+            <TextBlock Text="{Binding CurrentPath}"
+                       DockPanel.Dock="Left"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                       FontSize="12" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
+            <!-- 扫描/连接反馈（StatusMessage：正在扫描…/发现 N 个服务器/未发现/失败） -->
+            <TextBlock Text="{Binding StatusMessage}"
+                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                       FontSize="12" Margin="12,0,0,0"
+                       TextTrimming="CharacterEllipsis" />
+        </DockPanel>
+
+        <!-- ═══ Row 5: Split layout — node list + detail panel ═══ -->
+        <Grid Grid.Row="5" Margin="20,0,20,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="14" />
+                <ColumnDefinition Width="320" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Node list card -->
+            <Border Grid.Column="0" Style="{StaticResource DcCard}" Padding="0">
+                <DataGrid ItemsSource="{Binding Children}"
+                          SelectedItem="{Binding SelectedNode}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          BorderThickness="0"
+                          Background="Transparent"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                          HeadersVisibility="Column">
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+                    <DataGrid.InputBindings>
+                        <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding DrillDownCommand}" />
+                    </DataGrid.InputBindings>
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <Setter Property="Padding" Value="10,7" />
+                            <Setter Property="FontSize" Value="12" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                            <Setter Property="BorderThickness" Value="0,0,0,1" />
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
+                    <DataGrid.Columns>
+                        <!-- 图标列：📁 Folder / 🔢 Variable（对齐原型 emoji 首列） -->
+                        <DataGridTemplateColumn Header="" Width="40" CanUserSort="False">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="🔢" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Kind}" Value="Folder">
+                                                        <Setter Property="Text" Value="📁" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="名称" Binding="{Binding DisplayName}" Width="*" />
+                        <DataGridTextColumn Header="NodeId" Binding="{Binding Id}" Width="280">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontFamily" Value="Consolas, Cascadia Code, monospace" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- Right: Detail card -->
+            <Border Grid.Column="2" Style="{StaticResource DcCard}">
+                <StackPanel>
+                    <TextBlock Text="节点详情" Style="{StaticResource DcCardHeader}" />
+
+                    <!-- NodeId -->
+                    <TextBlock Text="NodeId"
+                               Style="{StaticResource DcMuted}" FontSize="11" Margin="0,8,0,2" />
+                    <TextBlock Text="{Binding SelectedNode.Id, FallbackValue='—'}"
+                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                               FontFamily="Consolas, Cascadia Code, monospace"
+                               FontSize="12" TextWrapping="Wrap" />
+
+                    <!-- Display Name -->
+                    <TextBlock Text="显示名"
+                               Style="{StaticResource DcMuted}" FontSize="11" Margin="0,10,0,2" />
+                    <TextBlock Text="{Binding SelectedNode.DisplayName, FallbackValue='—'}"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
+
+                    <!-- 节点类 -->
+                    <TextBlock Text="节点类"
+                               Style="{StaticResource DcMuted}" FontSize="11" Margin="0,10,0,2" />
+                    <TextBlock Text="{Binding SelectedNodeClass}"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
+
+                    <!-- 数据类型（mock，待接真实节点读取后替换） -->
+                    <TextBlock Text="数据类型"
+                               Style="{StaticResource DcMuted}" FontSize="11" Margin="0,10,0,2" />
+                    <TextBlock Text="{Binding SelectedNodeDataType}"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
+
+                    <!-- 当前值（mock，待接真实节点读取后替换） -->
+                    <TextBlock Text="当前值"
+                               Style="{StaticResource DcMuted}" FontSize="11" Margin="0,10,0,2" />
+                    <TextBlock Text="{Binding SelectedNodeValue}"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
+
+                    <!-- Action buttons -->
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button Content="复制 NodeId"
+                                Command="{Binding CopyNodeIdCommand}"
+                                Style="{StaticResource DcBtnPrimarySm}"
+                                Margin="0,0,8,0" />
+                        <Button Content="加入 Tag"
+                                Command="{Binding AddTagCommand}"
+                                Style="{StaticResource DcBtnGhostSm}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+    </Grid>
+</UserControl>

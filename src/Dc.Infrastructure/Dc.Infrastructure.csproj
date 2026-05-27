@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Ulid" />
+    <PackageReference Include="MessagePack" />
+    <PackageReference Include="ClosedXML" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Dc.Domain\Dc.Domain.csproj" />
+    <ProjectReference Include="..\Dc.Opc.Abstractions\Dc.Opc.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

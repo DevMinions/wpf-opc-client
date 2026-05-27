@@ -1,0 +1,45 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>日志 — Dc</title><link rel="stylesheet" href="app.css">
+<style>
+.logwrap{height:calc(100vh - 40px - 26px - 36px - 96px)}
+.logview{height:100%;overflow:auto;font-family:"Cascadia Mono","Consolas",monospace;font-size:12px;line-height:1.7;
+  background:var(--bg-subtle);border:1px solid var(--stroke);border-radius:8px;padding:12px 14px}
+.logview .ln{white-space:pre;color:var(--text-2)}
+.logview .t{color:var(--text-3)}
+.logview .inf{color:var(--accent-text)}
+.logview .warn{color:var(--warn)}
+.logview .err{color:var(--bad)}
+.logview .ok{color:var(--good)}
+</style></head>
+<body><div class="win">
+<div class="titlebar"><div class="logo"></div><div class="app">Dc · OPC 数据采集</div><span class="txt-3">› 系统 › 日志</span>
+<div class="caps"><button class="theme"></button><div class="cap">─</div><div class="cap">▢</div><div class="cap x">✕</div></div></div>
+<div class="body"><nav class="nav"></nav>
+<main class="main">
+  <div class="page-title">日志</div>
+  <div class="page-sub">dc-2026-05-20.log · 末尾 500 行</div>
+
+  <div class="toolbar">
+    <div class="seg"><button class="on">自动刷新</button><button>暂停</button></div>
+    <select class="select"><option>全部级别</option><option>Information+</option><option>Warning+</option></select>
+    <div class="sp"></div>
+    <button class="btn ghost sm">📂 打开目录</button>
+    <button class="btn ghost sm">复制</button>
+  </div>
+
+  <div class="logwrap"><div class="logview">
+<div class="ln"><span class="t">14:28:40.112</span> <span class="inf">INF</span> Starting Dc.App</div>
+<div class="ln"><span class="t">14:28:40.880</span> <span class="inf">INF</span> Host started · DbContext ready</div>
+<div class="ln"><span class="t">14:28:41.002</span> <span class="ok">INF</span> Task 1号炉温度 started · 320 tags · UA opc.tcp://10.0.0.45:4840</div>
+<div class="ln"><span class="t">14:28:41.330</span> <span class="inf">INF</span> Subscription publishing interval = 1000ms</div>
+<div class="ln"><span class="t">14:30:01.002</span> <span class="warn">WRN</span> Water.Flow.Inlet quality=Bad (0x00) — sensor offline</div>
+<div class="ln"><span class="t">14:30:12.440</span> <span class="err">ERR</span> Task 报警源-AE connection dropped: socket closed by peer</div>
+<div class="ln"><span class="t">14:30:12.441</span> <span class="warn">WRN</span> Watchdog: 报警源-AE heartbeat stale, scheduling restart (#4)</div>
+<div class="ln"><span class="t">14:31:55.210</span> <span class="ok">INF</span> 能源采集器 reconnected after cooldown</div>
+<div class="ln"><span class="t">14:32:08.770</span> <span class="warn">WRN</span> 压力监测站 heartbeat delayed 5.2s</div>
+<div class="ln"><span class="t">14:32:09.214</span> <span class="inf">INF</span> Flushed 2,400 frames to broker tcp://10.0.0.42:9000</div>
+  </div></div>
+</main>
+<div class="statusbar"><span>Dc · v1.0.0</span><span>主题 · 跟随系统</span><span class="sp">自动刷新 · 2s</span></div>
+</div></div>
+<script src="shell.js"></script><script>renderShell('logs')</script>
+</body></html>

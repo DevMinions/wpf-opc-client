@@ -1,0 +1,247 @@
+<UserControl x:Class="Dc.App.Views.Dashboard.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:conv="clr-namespace:Dc.App.Views.Dashboard"
+             xmlns:wsv="clr-namespace:Dc.App.Views.Workspace"
+             xmlns:dashboard="clr-namespace:Dc.App.Dashboard"
+             Background="{DynamicResource ApplicationBackgroundBrush}">
+    <UserControl.Resources>
+        <conv:HealthScoreToColorConverter x:Key="HealthColor" />
+        <conv:AlertSeverityToBrushConverter x:Key="AlertBg" />
+        <conv:AlertSeverityToAccentConverter x:Key="AlertAccent" />
+        <conv:AlertSeverityToIconConverter x:Key="AlertIcon" />
+         <conv:TaskRowSeverityToBrushConverter x:Key="TaskRowColor" />
+         <conv:TaskRowDotBrushConverter x:Key="TaskRowDot" />
+         <wsv:SparklineConverter x:Key="Spark" />
+
+        <Style x:Key="KpiValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="26" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="LineHeight" Value="30" />
+        </Style>
+        <Style x:Key="KpiLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+        <Style x:Key="RingValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="RingLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,1,0,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="22,18">
+            <TextBlock Text="仪表盘" Style="{StaticResource DcPageTitle}" />
+            <TextBlock Style="{StaticResource DcPageSub}">
+                <Run Text="{Binding RunningTasksDisplay, Mode=OneWay}" /><Run Text=" 个任务运行 · " /><Run Text="{Binding TotalTasksDisplay, Mode=OneWay}" /><Run Text=" 总计 · 每秒刷新" />
+            </TextBlock>
+
+            <!-- ═══ 4-column KPI row ═══ -->
+            <UniformGrid Columns="4" Margin="0,0,0,14">
+                <Border Style="{StaticResource DcCard}" Margin="0,0,7,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource KpiValue}" Foreground="{DynamicResource SystemFillColorSuccessBrush}"
+                                   Text="{Binding RunningTasksDisplay}" />
+                        <TextBlock Style="{StaticResource KpiLabel}" Text="运行中任务" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource DcCard}" Margin="0,0,7,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource KpiValue}" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                   Text="{Binding ActiveTags}" />
+                        <TextBlock Style="{StaticResource KpiLabel}" Text="活跃 Tag" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource DcCard}" Margin="0,0,7,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource KpiValue}" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                            <Run Text="{Binding MessagesPerSecondDisplay, Mode=OneWay}" /><Run Text="/s" FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource KpiLabel}" Text="消息速率" />
+                        <!-- Sparkline -->
+                        <Polyline Stroke="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                  StrokeThickness="1.5" Height="30"
+                                  Stretch="Fill"
+                                  Points="{Binding SparklineRates, Converter={StaticResource Spark}}"
+                                  Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource DcCard}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource KpiValue}" Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                   Text="{Binding ErrorsTotalDisplay}" />
+                        <TextBlock Style="{StaticResource KpiLabel}" Text="错误 / 小时 · 阈值 10" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- ═══ Left/Right split ═══ -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.4*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Health score + 6-ring + Task table -->
+                <StackPanel Grid.Column="0" Margin="0,0,7,0">
+                    <!-- Health + ring + 6 ring -->
+                    <Border Style="{StaticResource DcCard}" Margin="0,0,0,14">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,12">
+                                <!-- Health score with arc ring -->
+                                <Grid Width="110" Height="110" Margin="0,0,18,0"
+                                      DockPanel.Dock="Left" VerticalAlignment="Center">
+                                    <!-- Background track -->
+                                    <Ellipse Stroke="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                             StrokeThickness="8" Fill="Transparent"
+                                             Width="90" Height="90" />
+                                    <!-- Progress arc (rendered in code-behind) -->
+                                    <Path x:Name="HealthArc"
+                                          Stroke="{Binding HealthScore, Converter={StaticResource HealthColor}}"
+                                          StrokeThickness="8" Fill="Transparent"
+                                          Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <!-- Score text -->
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding HealthScore}"
+                                                   FontSize="32" FontWeight="SemiBold" LineHeight="36"
+                                                   Foreground="{Binding HealthScore, Converter={StaticResource HealthColor}}"
+                                                   HorizontalAlignment="Center" />
+                                        <TextBlock Text="健康评分"
+                                                   FontSize="9"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                   HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                                <UniformGrid Columns="3" Rows="2">
+                                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="0,0,4,4">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Style="{StaticResource RingValue}" Text="{Binding RunningTasksDisplay}" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="运行" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="2,0,2,4">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Style="{StaticResource RingValue}" Text="{Binding ActiveTags}" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="Tag" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="4,0,0,4">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Style="{StaticResource RingValue}" Text="{Binding MessagesPerSecondDisplay, StringFormat={}{0}/s}" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="速率" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="0,4,4,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Style="{StaticResource RingValue}" Foreground="{DynamicResource SystemFillColorCautionBrush}" Text="{Binding ErrorsTotalDisplay}" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="错误/h" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="2,4,2,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Style="{StaticResource RingValue}" Text="0" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="队列" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="4,4,0,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Style="{StaticResource RingValue}" Text="{Binding UptimeDisplay}" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="运行" />
+                                        </StackPanel>
+                                    </Border>
+                                </UniformGrid>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Task table -->
+                    <Border Style="{StaticResource DcCard}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource DcCardHeader}">
+                                任务状态
+                                <Run Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontWeight="Normal"
+                                     Text="{Binding RunningTasksDisplay, Mode=OneWay, StringFormat=' · {0}'}" />
+                            </TextBlock>
+                            <ItemsControl ItemsSource="{Binding Tasks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type dashboard:TaskRowSummary}">
+                                        <Grid Margin="0,3,0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="10" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Ellipse Grid.Column="0" Width="8" Height="8" Margin="0,4,8,0"
+                                                     Fill="{Binding Severity, Converter={StaticResource TaskRowDot}}" />
+                                            <TextBlock Grid.Column="1" FontSize="12"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                       Text="{Binding TaskId}" />
+                                            <TextBlock Grid.Column="2" FontSize="11" HorizontalAlignment="Right"
+                                                       Foreground="{Binding Severity, Converter={StaticResource TaskRowColor}}"
+                                                       Text="{Binding RatePerSecond, StringFormat={}{0:F0}/s}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Alerts -->
+                <Border Grid.Column="1" Style="{StaticResource DcCard}" Margin="7,0,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource DcCardHeader}">
+                            当前告警
+                            <Run Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontWeight="Normal"
+                                 Text="{Binding Alerts.Count, Mode=OneWay, StringFormat=' · {0}'}" />
+                        </TextBlock>
+                        <TextBlock DockPanel.Dock="Top"
+                                   Visibility="{Binding Alerts.Count, Converter={x:Static conv:ZeroToVisibleConverter.Default}}"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                   FontSize="12">无告警 · 全部正常</TextBlock>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Alerts}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type dashboard:AlertItem}">
+                                        <Border Background="{Binding Severity, Converter={StaticResource AlertBg}}"
+                                                BorderBrush="{Binding Severity, Converter={StaticResource AlertAccent}}"
+                                                BorderThickness="3,0,0,0"
+                                                CornerRadius="8"
+                                                Padding="11,13"
+                                                Margin="0,0,0,8">
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Left"
+                                                           Text="{Binding Severity, Converter={StaticResource AlertIcon}}"
+                                                           FontSize="15" Margin="0,0,11,0" VerticalAlignment="Top" />
+                                                <StackPanel>
+                                                    <TextBlock FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                               Text="{Binding TaskId}" />
+                                                    <TextBlock FontSize="12"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                               Text="{Binding Message}" />
+                                                    <TextBlock FontSize="11"
+                                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                               Text="{Binding OccurredAt, StringFormat='HH:mm:ss'}" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

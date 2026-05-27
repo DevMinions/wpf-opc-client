@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>Dc — 全界面重设计稿</title><link rel="stylesheet" href="app.css">
+<style>
+body{overflow:auto;padding:36px}
+.wrap{max-width:1000px;margin:0 auto}
+h1{font-size:26px;margin-bottom:6px}
+.lead{color:var(--text-2);margin-bottom:24px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+a.card{display:block;text-decoration:none;color:inherit;padding:18px 20px}
+a.card:hover{background:var(--bg-card-hover)}
+a.card .t{font-size:16px;font-weight:600}
+a.card .d{font-size:12.5px;color:var(--text-2);margin-top:5px;line-height:1.6}
+a.card .tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-text);margin-top:8px}
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="bar"><h1 style="margin:0">Dc — 全界面重设计稿 v2</h1><button class="theme btn ghost" style="margin-left:auto">🌙 暗色</button></div>
+  <div class="lead">统一 Win11 Fluent 设计系统 · 全部跟随主题（点右上角切亮/暗，每页也有切换按钮）· 一套 token 驱动所有页。看准方向后我逐页落地到 WPF。</div>
+  <div class="grid">
+    <a class="card" href="dashboard.html"><div class="t">仪表盘</div><div class="d">KPI + 健康度 + 告警 + 任务速率。改为跟随主题（不再硬编码暗色）。</div><span class="tag">改造：去暗色硬编码</span></a>
+    <a class="card" href="workspace.html"><div class="t">采集任务</div><div class="d">master-detail + 6 tab。沿用已上线结构，套统一令牌 + 主题。</div><span class="tag">已设计 · 统一令牌</span></a>
+    <a class="card" href="browse.html"><div class="t">浏览节点</div><div class="d">连接栏 + 面包屑 + 节点表 + 详情面板。全新 Fluent。</div><span class="tag">全新设计</span></a>
+    <a class="card" href="livedata.html"><div class="t">实时数据</div><div class="d">筛选工具栏 + 值流表 + 质量码 pill。全新 Fluent。</div><span class="tag">全新设计</span></a>
+    <a class="card" href="diagnostics.html"><div class="t">诊断</div><div class="d">每任务诊断表 + 自动刷新。全新 Fluent。</div><span class="tag">全新设计</span></a>
+    <a class="card" href="settings.html"><div class="t">设置</div><div class="d">外观（主题三档）+ 系统配置项 + 备份恢复，卡片分区。</div><span class="tag">全新设计</span></a>
+    <a class="card" href="logs.html"><div class="t">日志</div><div class="d">等宽日志查看器，级别着色跟随主题（不再黑底硬编码）。</div><span class="tag">改造：去黑底硬编码</span></a>
+    <a class="card" href="dialog-task.html"><div class="t">编辑对话框</div><div class="d">任务/分组/Tag/配置 编辑器统一样式（此为任务编辑代表）。</div><span class="tag">全新设计</span></a>
+  </div>
+  <p class="txt-3" style="margin-top:24px;font-size:12px">说明：稿子是 HTML 仿真，最终用 WPF + wpfui 实现。颜色/间距/字号/卡片/语义色全部 token 化，亮暗两套自动切换 —— 对应 WPF 的 DynamicResource。</p>
+</div>
+<script src="shell.js"></script>
+<script>
+const tb=document.querySelector('.theme');
+if(localStorage.getItem('dc-theme')==='dark')document.body.classList.add('dark');
+tb.textContent=document.body.classList.contains('dark')?'☀ 亮色':'🌙 暗色';
+tb.onclick=()=>{document.body.classList.toggle('dark');localStorage.setItem('dc-theme',document.body.classList.contains('dark')?'dark':'light');tb.textContent=document.body.classList.contains('dark')?'☀ 亮色':'🌙 暗色';};
+</script>
+</body></html>

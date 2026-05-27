@@ -1,0 +1,88 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>采集任务 — Dc</title><link rel="stylesheet" href="app.css">
+<style>
+.ws{display:grid;grid-template-columns:250px 1fr;gap:14px;height:calc(100vh - 40px - 26px - 36px - 64px)}
+.master{display:flex;flex-direction:column;gap:8px;min-height:0}
+.pills{display:flex;gap:6px}
+.tasklist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.trow{padding:9px 11px;border-radius:7px;cursor:pointer;border-left:3px solid transparent}
+.trow:hover{background:var(--bg-subtle-hover)}
+.trow.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.trow .n{font-size:13px}
+.trow .m{font-size:10px;color:var(--text-3);margin-top:2px}
+.detail{display:flex;flex-direction:column;min-height:0}
+.dhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dhead .title{font-size:17px;font-weight:600}
+.dhead .sp{margin-left:auto;display:flex;gap:6px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--stroke);margin-bottom:14px}
+.tab{padding:9px 15px;font-size:13px;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--text-1)}
+.tab.on{color:var(--text-1);border-bottom-color:var(--accent);font-weight:600}
+.tab .b{font-size:10px;background:var(--bg-subtle);padding:1px 7px;border-radius:999px;margin-left:5px}
+.ov{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.ov .c{background:var(--bg-subtle);border-radius:8px;padding:11px 13px}
+.ov .c .v{font-size:19px;font-weight:600}
+.ov .c .l{font-size:11px;color:var(--text-3);margin-top:1px}
+.tbody{overflow:auto;min-height:0;flex:1}
+</style></head>
+<body><div class="win">
+<div class="titlebar"><div class="logo"></div><div class="app">Dc · OPC 数据采集</div><span class="txt-3">› 采集任务 › 1号炉温度 › Tag</span>
+<div class="caps"><button class="theme"></button><div class="cap">─</div><div class="cap">▢</div><div class="cap x">✕</div></div></div>
+<div class="body"><nav class="nav"></nav>
+<main class="main">
+  <div class="page-title">采集任务</div>
+  <div class="page-sub">选择任务，在右侧标签页内管理其分组、Tag、实时数据与诊断</div>
+
+  <div class="ws">
+    <div class="master">
+      <div class="pills"><span class="pill good">运行 12</span><span class="pill bad">停 1</span><span class="pill warn">告警 1</span></div>
+      <input class="input" style="min-width:0" placeholder="搜索任务…" />
+      <div class="seg" style="width:100%"><button class="on" style="flex:1">全部</button><button style="flex:1">运行中</button><button style="flex:1">已停止</button></div>
+      <div class="tasklist">
+        <div class="trow on"><div class="n"><span class="dot good"></span>1号炉温度</div><div class="m">UA · 320 tag · 180/s</div></div>
+        <div class="trow"><div class="n"><span class="dot good"></span>2号炉温度</div><div class="m">UA · 318 tag · 175/s</div></div>
+        <div class="trow"><div class="n"><span class="dot warn"></span>压力监测站</div><div class="m">DA · 156 tag · 42/s</div></div>
+        <div class="trow"><div class="n"><span class="dot good"></span>能源采集器</div><div class="m">UA · 1240 tag · 1.2k/s</div></div>
+        <div class="trow"><div class="n"><span class="dot bad"></span>报警源-AE</div><div class="m">AE · 停止</div></div>
+      </div>
+      <div style="display:flex;gap:6px"><button class="btn sm" style="flex:1">+ 新建</button><button class="btn ghost sm" style="flex:1">导入</button></div>
+    </div>
+
+    <div class="detail">
+      <div class="dhead">
+        <span class="dot good"></span><span class="title">1号炉温度</span><span class="pill good">运行中</span>
+        <div class="sp"><button class="btn ghost sm">■ 停止</button><button class="btn ghost sm">⟳ 重启</button></div>
+      </div>
+      <div class="tabs">
+        <div class="tab">概览</div><div class="tab">分组 <span class="b">3</span></div>
+        <div class="tab on">Tag <span class="b">320</span></div><div class="tab">实时数据</div>
+        <div class="tab">诊断</div><div class="tab">配置</div>
+      </div>
+      <div class="ov">
+        <div class="c"><div class="v">320</div><div class="l">总 Tag</div></div>
+        <div class="c"><div class="v txt-good">317</div><div class="l">采集中</div></div>
+        <div class="c"><div class="v txt-warn">2</div><div class="l">错误</div></div>
+      </div>
+      <div class="toolbar">
+        <input class="input" placeholder="搜索 Item…" />
+        <select class="select"><option>全部分组</option><option>炉膛温度</option></select>
+        <div class="sp"></div>
+        <button class="btn sm">+ 新建</button><button class="btn ghost sm">⌕ 浏览</button><button class="btn ghost sm">⥯ Excel</button>
+      </div>
+      <div class="card pad0 tbody">
+        <table class="t">
+          <thead><tr><th></th><th>Item</th><th>分组</th><th>类型</th><th>最新值</th><th>质量</th></tr></thead>
+          <tbody>
+            <tr><td><span class="dot good"></span></td><td class="mono">Boiler.Temp.Furnace</td><td>炉膛温度</td><td>Float32</td><td><b>842.3</b> °C</td><td><span class="pill good">Good</span></td></tr>
+            <tr><td><span class="dot good"></span></td><td class="mono">Boiler.Temp.Exit</td><td>炉膛温度</td><td>Float32</td><td><b>318.7</b> °C</td><td><span class="pill good">Good</span></td></tr>
+            <tr><td><span class="dot warn"></span></td><td class="mono">Boiler.O2.Inlet</td><td>烟气分析</td><td>Float32</td><td><b>6.2</b> %</td><td><span class="pill warn">Uncertain</span></td></tr>
+            <tr><td><span class="dot bad"></span></td><td class="mono">Water.Flow.Inlet</td><td>给水系统</td><td>Float32</td><td class="txt-3">—</td><td><span class="pill bad">Bad</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="statusbar"><span>Dc · v1.0.0</span><span>主题 · 跟随系统</span><span class="sp">14 任务</span></div>
+</div></div>
+<script src="shell.js"></script><script>renderShell('workspace')</script>
+</body></html>

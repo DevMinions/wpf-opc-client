@@ -1,0 +1,58 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>设置 — Dc</title><link rel="stylesheet" href="app.css">
+<style>
+.sec{max-width:760px}
+.row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--stroke)}
+.row:last-child{border-bottom:0}
+.row .lbl{width:160px}
+.row .lbl .t{font-size:13px}
+.row .lbl .d{font-size:11px;color:var(--text-3);margin-top:1px}
+.row .ctl{flex:1}
+.radio{display:inline-flex;gap:8px;align-items:center;margin-right:16px;cursor:pointer;font-size:13px}
+.radio input{accent-color:var(--accent)}
+</style></head>
+<body><div class="win">
+<div class="titlebar"><div class="logo"></div><div class="app">Dc · OPC 数据采集</div><span class="txt-3">› 系统 › 设置</span>
+<div class="caps"><button class="theme"></button><div class="cap">─</div><div class="cap">▢</div><div class="cap x">✕</div></div></div>
+<div class="body"><nav class="nav"></nav>
+<main class="main">
+  <div class="page-title">设置</div>
+  <div class="page-sub">外观、系统配置项、备份与恢复</div>
+
+  <div class="sec" style="display:flex;flex-direction:column;gap:14px">
+    <div class="card">
+      <div class="card-h">外观</div>
+      <div class="row"><div class="lbl"><div class="t">主题</div><div class="d">跟随系统时随 Windows 亮/暗切换</div></div>
+        <div class="ctl">
+          <label class="radio"><input type="radio" name="th"> 亮色</label>
+          <label class="radio"><input type="radio" name="th"> 暗色</label>
+          <label class="radio"><input type="radio" name="th" checked> 跟随系统</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">系统配置项 <span class="sp"></span><button class="btn sm">+ 新建</button></div>
+      <div class="card pad0" style="box-shadow:none;background:transparent">
+        <table class="t">
+          <thead><tr><th>Key</th><th>Value</th><th>说明</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="mono">broker.tcp</td><td class="mono">10.0.0.42:9000</td><td class="txt-3">默认 broker</td><td><a class="txt-2" style="cursor:pointer">编辑</a></td></tr>
+            <tr><td class="mono">msg.format</td><td class="mono">msgpack</td><td class="txt-3">序列化格式</td><td><a class="txt-2" style="cursor:pointer">编辑</a></td></tr>
+            <tr><td class="mono">queue.enabled</td><td class="mono">false</td><td class="txt-3">离线队列</td><td><a class="txt-2" style="cursor:pointer">编辑</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">备份与恢复</div>
+      <div class="row"><div class="lbl"><div class="t">配置备份</div><div class="d">导出/导入全部任务·分组·Tag·配置</div></div>
+        <div class="ctl" style="display:flex;gap:8px"><button class="btn ghost sm">导出全部</button><button class="btn ghost sm">导入备份…</button></div>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="statusbar"><span>Dc · v1.0.0</span><span>主题 · 跟随系统</span><span class="sp">DB · ./sqlite.db</span></div>
+</div></div>
+<script src="shell.js"></script><script>renderShell('settings')</script>
+</body></html>

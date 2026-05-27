@@ -1,0 +1,3 @@
+[submodule "vendor/ClassicClient"]
+	path = vendor/ClassicClient
+	url = https://github.com/technosoftware-gmbh/ClassicClientSolutions.git

@@ -1,0 +1,93 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>风格 C · Fluent（现状）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#f3f3f3; --card:rgba(255,255,255,.8); --stroke:rgba(0,0,0,.08); --t1:#1a1a1a; --t2:#5c5c5c; --t3:#8a8a8a;
+ --side:rgba(255,255,255,.45); --accent:#0067c0; --accent-soft:rgba(0,103,192,.1);
+ --good:#16a34a; --warn:#d97706; --bad:#dc2626; --subtle:rgba(0,0,0,.04);
+ --mica:radial-gradient(1100px 520px at 0 0,rgba(0,103,192,.05),transparent),radial-gradient(900px 600px at 100% 100%,rgba(140,82,255,.045),transparent);
+}
+body.dark{
+ --bg:#202020; --card:rgba(255,255,255,.045); --stroke:rgba(255,255,255,.08); --t1:#f3f3f3; --t2:#c8c8c8; --t3:#909090;
+ --side:rgba(255,255,255,.02); --accent:#4cc2ff; --accent-soft:rgba(76,194,255,.12);
+ --good:#4ade80; --warn:#fbbf24; --bad:#f87171; --subtle:rgba(255,255,255,.04);
+ --mica:radial-gradient(1100px 520px at 0 0,rgba(76,194,255,.06),transparent),radial-gradient(900px 600px at 100% 100%,rgba(140,82,255,.06),transparent);
+}
+body{font-family:"Segoe UI Variable","Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--mica),var(--bg);color:var(--t1);height:100vh;overflow:hidden;font-size:13px}
+.win{display:grid;grid-template-rows:40px 1fr;height:100vh}
+.top{display:flex;align-items:center;gap:10px;padding:0 14px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--stroke)}
+.top .logo{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,var(--accent),#8c52ff)}.top .ttl{font-weight:600;font-size:12px}
+.top .sp{margin-left:auto}.top .theme{cursor:pointer;border:1px solid var(--stroke);background:var(--subtle);color:var(--t2);padding:4px 10px;border-radius:6px;font-size:11px}
+.body{display:grid;grid-template-columns:240px 1fr;min-height:0}
+.side{background:var(--side);border-right:1px solid var(--stroke);padding:8px;overflow:auto}
+.side .grp{color:var(--t3);font-size:11px;padding:12px 12px 4px}
+.side .it{display:flex;gap:12px;padding:9px 12px;border-radius:6px;color:var(--t1);cursor:pointer;font-size:13px}
+.side .it:hover{background:var(--subtle)}.side .it.on{background:var(--accent-soft);font-weight:600}
+.main{padding:18px 22px;overflow:auto}
+.h{font-size:20px;font-weight:600}.sub{color:var(--t2);font-size:12px;margin:2px 0 16px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--stroke);border-radius:10px;backdrop-filter:blur(16px);padding:14px 16px}
+.kpi .l{color:var(--t3);font-size:11px;margin-top:2px}.kpi .v{font-size:26px;font-weight:600}
+.cols{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
+.ch{font-size:13px;font-weight:600;margin-bottom:10px}
+.health{display:flex;align-items:center;gap:18px;margin-bottom:14px}.score{font-size:56px;font-weight:600;color:var(--good);line-height:1}
+.rings{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:1}
+.rings .c{background:var(--subtle);border-radius:8px;padding:10px;text-align:center}.rings .c .v{font-size:17px;font-weight:600}.rings .c .l{font-size:10px;color:var(--t3);margin-top:1px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}td{padding:9px 8px;border-bottom:1px solid var(--stroke)}tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;background:var(--subtle)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px}
+.dot.g{background:var(--good)}.dot.w{background:var(--warn)}.dot.b{background:var(--bad)}
+.alert{display:flex;gap:11px;padding:11px 13px;border-radius:8px;margin-bottom:8px;border-left:3px solid}
+.alert.b{background:rgba(220,38,38,.1);border-left-color:var(--bad)}.alert.w{background:rgba(217,119,6,.1);border-left-color:var(--warn)}
+.txt2{color:var(--t2)}.txt3{color:var(--t3)}
+</style></head>
+<body><div class="win">
+<div class="top"><div class="logo"></div><div class="ttl">Dc · OPC 数据采集</div><div class="sp"></div><button class="theme" onclick="document.body.classList.toggle('dark')">🌙 / ☀</button></div>
+<div class="body">
+<nav class="side">
+ <div class="it on"><span>⌂</span>仪表盘</div>
+ <div class="grp">采集</div><div class="it"><span>▤</span>采集任务</div><div class="it"><span>⌕</span>浏览节点</div>
+ <div class="grp">全局监控</div><div class="it"><span>∿</span>实时数据</div><div class="it"><span>♥</span>诊断</div>
+ <div class="grp">系统</div><div class="it"><span>⚙</span>设置</div><div class="it"><span>≣</span>日志</div>
+</nav>
+<main class="main">
+ <div class="h">仪表盘</div><div class="sub">12 个任务运行 · 14 总计 · 每秒刷新</div>
+ <div class="kpis">
+  <div class="card kpi"><div class="v" style="color:var(--good)">12</div><div class="l">运行中任务</div></div>
+  <div class="card kpi"><div class="v">3,841</div><div class="l">活跃 Tag</div></div>
+  <div class="card kpi"><div class="v">2.4k</div><div class="l">消息速率/s</div></div>
+  <div class="card kpi"><div class="v" style="color:var(--warn)">3</div><div class="l">错误/小时</div></div>
+ </div>
+ <div class="cols">
+  <div style="display:flex;flex-direction:column;gap:14px">
+   <div class="card">
+    <div class="health"><div class="score">92</div>
+     <div class="rings">
+      <div class="c"><div class="v">12</div><div class="l">运行</div></div>
+      <div class="c"><div class="v">3841</div><div class="l">Tag</div></div>
+      <div class="c"><div class="v">2.4k/s</div><div class="l">速率</div></div>
+      <div class="c"><div class="v" style="color:var(--warn)">3</div><div class="l">错误/h</div></div>
+      <div class="c"><div class="v">0</div><div class="l">队列</div></div>
+      <div class="c"><div class="v">3d14h</div><div class="l">运行</div></div>
+     </div>
+    </div>
+   </div>
+   <div class="card">
+    <div class="ch">任务状态</div>
+    <table>
+     <tr><td><span class="dot g"></span>1号炉温度</td><td class="txt3" style="text-align:right">180/s</td><td style="text-align:right"><span class="pill" style="color:var(--good)">运行中</span></td></tr>
+     <tr><td><span class="dot g"></span>2号炉温度</td><td class="txt3" style="text-align:right">175/s</td><td style="text-align:right"><span class="pill" style="color:var(--good)">运行中</span></td></tr>
+     <tr><td><span class="dot w"></span>压力监测站</td><td style="text-align:right;color:var(--warn)">42/s</td><td style="text-align:right"><span class="pill" style="color:var(--warn)">心跳延迟</span></td></tr>
+     <tr><td><span class="dot b"></span>报警源-AE</td><td class="txt3" style="text-align:right">—</td><td style="text-align:right"><span class="pill" style="color:var(--bad)">已停止</span></td></tr>
+    </table>
+   </div>
+  </div>
+  <div class="card">
+   <div class="ch">当前告警 · 3</div>
+   <div class="alert b"><span>🛑</span><div><b>报警源 - AE</b><div class="txt2">连接断开</div><div class="txt3" style="font-size:11px">14:30:12</div></div></div>
+   <div class="alert w"><span>⚠</span><div><b>压力监测站</b><div class="txt2">心跳延迟 5.2s</div><div class="txt3" style="font-size:11px">14:32:08</div></div></div>
+   <div class="alert w"><span>⚠</span><div><b>仪表盘 #7</b><div class="txt2">发送错误 8</div><div class="txt3" style="font-size:11px">14:29:50</div></div></div>
+  </div>
+ </div>
+</main>
+</div></div></body></html>

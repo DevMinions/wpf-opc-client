@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, wpf-opc-collector]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    name: Build & Test (Windows)
+    # WPF + net8.0-windows 必须 Windows runner
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive  # vendor/ClassicClient (Technosoftware DA/AE/HDA 客户端)
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore Dc.sln -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
+
+      - name: Verify formatting (.editorconfig)
+        run: dotnet format Dc.sln --verify-no-changes --severity warn
+        continue-on-error: true
+
+      - name: Build (Release, x64 — vendor 需要 Platform=x64 才定义 NETCORE)
+        run: dotnet build Dc.sln --no-restore --configuration Release -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
+
+      - name: Test
+        run: dotnet test tests/Dc.Infrastructure.Tests/Dc.Infrastructure.Tests.csproj
+          --no-build --configuration Release -p:Platform=x64
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory ./test-results
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./test-results
+          retention-days: 7

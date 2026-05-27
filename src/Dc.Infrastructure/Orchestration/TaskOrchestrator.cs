@@ -1,0 +1,314 @@
+using System.Collections.Concurrent;
+using Dc.Infrastructure.Messaging;
+using Dc.Opc.Abstractions;
+using Microsoft.Extensions.Logging;
+
+namespace Dc.Infrastructure.Orchestration;
+
+public sealed class TaskOrchestrator : IAsyncDisposable
+{
+    private sealed class TaskRuntime
+    {
+        public required string TaskId { get; init; }
+        public required TaskStartRequest Request { get; set; }
+        public required IOpcSubscriber Subscriber { get; set; }
+        public required IPublisher Publisher { get; init; }
+        public required CancellationTokenSource Cts { get; set; }
+        public required Task PipelineTask { get; set; }
+        public required Dictionary<string, TagDescriptor> Tags { get; init; }
+        public DateTimeOffset LastHeartbeat { get; set; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset StartedAt { get; init; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset? LastValueAt { get; set; }
+        public long ValueCount;
+        public long PublishErrorCount;
+        public int RestartCount { get; set; }
+    }
+
+    private readonly IReadOnlyDictionary<OpcProtocol, IOpcSubscriberFactory> _factories;
+    private readonly IPublisherFactory _publisherFactory;
+    private readonly OrchestratorOptions _options;
+    private readonly ILogger<TaskOrchestrator>? _logger;
+    private readonly ConcurrentDictionary<string, TaskRuntime> _running = new();
+    private readonly SemaphoreSlim _mutationLock = new(1, 1);
+    private readonly CancellationTokenSource _hostCts = new();
+    private readonly Task _watchdogTask;
+    private bool _disposed;
+
+    public TaskOrchestrator(
+        IEnumerable<IOpcSubscriberFactory> factories,
+        IPublisherFactory publisherFactory,
+        OrchestratorOptions? options = null,
+        ILogger<TaskOrchestrator>? logger = null)
+    {
+        _factories = factories.ToDictionary(f => f.Protocol);
+        _publisherFactory = publisherFactory;
+        _options = options ?? new OrchestratorOptions();
+        _logger = logger;
+        _watchdogTask = Task.Run(WatchdogLoopAsync);
+    }
+
+    public IReadOnlyCollection<string> RunningTaskIds => _running.Keys.ToArray();
+
+    public event Action<string, TagValue>? TagValueReceived;
+
+    public IReadOnlyList<TaskDiagnostics> GetDiagnostics()
+    {
+        return _running.Values.Select(rt =>
+        {
+            // 批量/异步 Publisher 的发送失败发生在后台，PublishAsync 不抛 → 折入这里，
+            // 否则 broker 宕机时 PublishErrorCount 恒 0、Dashboard 假健康。
+            var bgErrors = rt.Publisher is IPublisherHealth h ? h.SendErrorCount : 0;
+            return new TaskDiagnostics(
+                rt.TaskId,
+                rt.StartedAt,
+                rt.LastValueAt,
+                rt.LastHeartbeat,
+                Interlocked.Read(ref rt.ValueCount),
+                Interlocked.Read(ref rt.PublishErrorCount) + bgErrors,
+                rt.RestartCount,
+                rt.Tags.Count);
+        }).ToArray();
+    }
+
+    public async Task StartAsync(TaskStartRequest request, CancellationToken ct = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!_factories.TryGetValue(request.Protocol, out var factory))
+        {
+            var hint = request.Protocol switch
+            {
+                OpcProtocol.Da => "DA 需 Windows + COM SDK（TitaniumAS 或 Technosoftware），当前构建未启用。",
+                OpcProtocol.Ae => "AE 需 Windows + COM SDK，当前构建未启用。",
+                _ => "请确认协议工厂已在 DI 中注册。"
+            };
+            throw new InvalidOperationException($"协议 {request.Protocol} 的订阅器未注册。{hint}");
+        }
+
+        await _mutationLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await StopUnlockedAsync(request.TaskId).ConfigureAwait(false);
+            await StartUnlockedAsync(request, factory, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _mutationLock.Release();
+        }
+    }
+
+    public async Task StopAsync(string taskId, CancellationToken ct = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await _mutationLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await StopUnlockedAsync(taskId).ConfigureAwait(false);
+        }
+        finally
+        {
+            _mutationLock.Release();
+        }
+    }
+
+    public async Task<bool> AddTagsAsync(string taskId, IReadOnlyCollection<TagDescriptor> tags, CancellationToken ct = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await _mutationLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (!_running.TryGetValue(taskId, out var rt)) return false;
+            var added = tags.Where(t => !rt.Tags.ContainsKey(t.Item)).ToArray();
+            if (added.Length == 0) return true;
+            await rt.Subscriber.SubscribeAsync(added, ct).ConfigureAwait(false);
+            foreach (var t in added) rt.Tags[t.Item] = t;
+            return true;
+        }
+        finally
+        {
+            _mutationLock.Release();
+        }
+    }
+
+    public async Task<bool> RemoveTagsAsync(string taskId, IReadOnlyCollection<string> tagItems, CancellationToken ct = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await _mutationLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (!_running.TryGetValue(taskId, out var rt)) return false;
+            var present = tagItems.Where(rt.Tags.ContainsKey).ToArray();
+            if (present.Length == 0) return true;
+            await rt.Subscriber.UnsubscribeAsync(present, ct).ConfigureAwait(false);
+            foreach (var item in present) rt.Tags.Remove(item);
+            return true;
+        }
+        finally
+        {
+            _mutationLock.Release();
+        }
+    }
+
+    private async Task StartUnlockedAsync(TaskStartRequest request, IOpcSubscriberFactory factory, CancellationToken ct)
+    {
+        var subscriber = factory.Create(request.TaskId, request.OpcOptions);
+        var publisher = _publisherFactory.Create(request.PublisherAddress);
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostCts.Token);
+
+        try
+        {
+            await subscriber.ConnectAsync(ct).ConfigureAwait(false);
+            await subscriber.SubscribeAsync(request.Tags, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "任务 {TaskId} ({Protocol}) 连接/订阅失败：{Message}",
+                request.TaskId, request.Protocol, ex.Message);
+            await SafeDisposeAsync(subscriber).ConfigureAwait(false);
+            await SafeDisposeAsync(publisher).ConfigureAwait(false);
+            cts.Dispose();
+            throw;
+        }
+
+        var runtime = new TaskRuntime
+        {
+            TaskId = request.TaskId,
+            Request = request,
+            Subscriber = subscriber,
+            Publisher = publisher,
+            Cts = cts,
+            PipelineTask = Task.CompletedTask,
+            Tags = request.Tags.ToDictionary(t => t.Item)
+        };
+        runtime.PipelineTask = Task.Run(() => RunPipelineAsync(runtime, cts.Token));
+        _running[request.TaskId] = runtime;
+        _logger?.LogInformation("任务 {TaskId} ({Protocol}) 已启动，订阅 {TagCount} 个 tag → {Publisher}",
+            request.TaskId, request.Protocol, request.Tags.Count, request.PublisherAddress);
+    }
+
+    private async Task StopUnlockedAsync(string taskId)
+    {
+        if (!_running.TryRemove(taskId, out var rt)) return;
+        _logger?.LogInformation("任务 {TaskId} ({Protocol}) 停止中", taskId, rt.Request.Protocol);
+
+        // 优雅停止：先 Dispose 订阅器（其 DisposeAsync 会 TryComplete TagValues/Heartbeats writer），
+        // 让 RunPipelineAsync 的 ReadAllAsync 把通道里残余值 drain 完并发出后自然结束，避免丢数据。
+        await SafeDisposeAsync(rt.Subscriber).ConfigureAwait(false);
+
+        // 给 pipeline 一个上限把残余值发完；超时（publisher 卡死等）则强制取消兜底。
+        try
+        {
+            await rt.PipelineTask.WaitAsync(_options.StopDrainTimeout).ConfigureAwait(false);
+        }
+        catch
+        {
+            rt.Cts.Cancel();
+            try { await rt.PipelineTask.ConfigureAwait(false); } catch { }
+        }
+
+        await SafeDisposeAsync(rt.Publisher).ConfigureAwait(false);
+        rt.Cts.Dispose();
+    }
+
+    private async Task RunPipelineAsync(TaskRuntime rt, CancellationToken ct)
+    {
+        var valuesTask = ConsumeAsync(rt.Subscriber.TagValues, async v =>
+        {
+            Interlocked.Increment(ref rt.ValueCount);
+            rt.LastValueAt = DateTimeOffset.UtcNow;
+            TagValueReceived?.Invoke(rt.TaskId, v);
+            try { await rt.Publisher.PublishAsync(v, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { throw; } // 正常停止/重启，不计为发布错误
+            catch { Interlocked.Increment(ref rt.PublishErrorCount); }
+        }, ct);
+
+        var heartTask = ConsumeAsync(rt.Subscriber.Heartbeats, h =>
+        {
+            rt.LastHeartbeat = h.Time;
+            return ValueTask.CompletedTask;
+        }, ct);
+
+        try { await Task.WhenAll(valuesTask, heartTask).ConfigureAwait(false); }
+        catch (OperationCanceledException) { }
+    }
+
+    private static async Task ConsumeAsync<T>(System.Threading.Channels.ChannelReader<T> reader, Func<T, ValueTask> handler, CancellationToken ct)
+    {
+        try
+        {
+            await foreach (var item in reader.ReadAllAsync(ct).ConfigureAwait(false))
+                await handler(item).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private async Task WatchdogLoopAsync()
+    {
+        while (!_hostCts.IsCancellationRequested)
+        {
+            try { await Task.Delay(_options.WatchdogInterval, _hostCts.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return; }
+
+            var now = DateTimeOffset.UtcNow;
+            // 仅取候选 id（无锁）；真正的 staleness 判定与重启在锁内重新校验，避免按陈旧快照
+            // 复活用户已 StopAsync 的任务，并让 RestartCount 与重启动作原子。
+            var candidates = _running
+                .Where(kv => now - kv.Value.LastHeartbeat > _options.HeartbeatTimeout)
+                .Select(kv => kv.Key)
+                .ToArray();
+
+            foreach (var taskId in candidates)
+            {
+                try { await RestartIfStaleAsync(taskId).ConfigureAwait(false); }
+                catch { /* swallow — next watchdog tick retries */ }
+            }
+        }
+    }
+
+    private async Task RestartIfStaleAsync(string taskId)
+    {
+        await _mutationLock.WaitAsync(_hostCts.Token).ConfigureAwait(false);
+        try
+        {
+            // 锁内重新校验：任务可能已被用户 StopAsync 移除，或心跳已恢复 → 不重启（不复活）。
+            if (!_running.TryGetValue(taskId, out var rt)) return;
+            if (DateTimeOffset.UtcNow - rt.LastHeartbeat <= _options.HeartbeatTimeout) return;
+            if (!_factories.TryGetValue(rt.Request.Protocol, out var factory)) return;
+
+            var req = rt.Request;
+            var prevCount = rt.RestartCount;
+
+            _logger?.LogWarning("任务 {TaskId} ({Protocol}) 心跳超时（>{Timeout}），看门狗重启（第 {Count} 次）",
+                taskId, req.Protocol, _options.HeartbeatTimeout, prevCount + 1);
+
+            await StopUnlockedAsync(taskId).ConfigureAwait(false);
+            await StartUnlockedAsync(req, factory, _hostCts.Token).ConfigureAwait(false);
+
+            // 锁内回写，与重启原子
+            if (_running.TryGetValue(taskId, out var fresh))
+                fresh.RestartCount = prevCount + 1;
+        }
+        finally
+        {
+            _mutationLock.Release();
+        }
+    }
+
+    private static async ValueTask SafeDisposeAsync(IAsyncDisposable d)
+    {
+        try { await d.DisposeAsync().ConfigureAwait(false); } catch { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _hostCts.Cancel();
+        try { await _watchdogTask.ConfigureAwait(false); } catch { }
+
+        foreach (var taskId in _running.Keys.ToArray())
+            await StopUnlockedAsync(taskId).ConfigureAwait(false);
+
+        _mutationLock.Dispose();
+        _hostCts.Dispose();
+    }
+}

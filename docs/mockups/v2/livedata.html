@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>实时数据 — Dc</title><link rel="stylesheet" href="app.css">
+</head>
+<body><div class="win">
+<div class="titlebar"><div class="logo"></div><div class="app">Dc · OPC 数据采集</div><span class="txt-3">› 全局监控 › 实时数据</span>
+<div class="caps"><button class="theme"></button><div class="cap">─</div><div class="cap">▢</div><div class="cap x">✕</div></div></div>
+<div class="body"><nav class="nav"></nav>
+<main class="main">
+  <div class="page-title">实时数据</div>
+  <div class="page-sub">跨任务实时值流 · 质量码着色</div>
+
+  <div class="toolbar">
+    <input class="input" placeholder="搜索 Item…" />
+    <select class="select"><option>全部任务</option><option>1号炉温度</option><option>能源采集器</option></select>
+    <div class="seg"><button class="on">运行中</button><button>已暂停</button></div>
+    <div class="sp"></div>
+    <span class="txt-3">2,438 行 · 2.4k/s</span>
+    <button class="btn ghost sm">⏸ 暂停</button>
+    <button class="btn ghost sm">清空</button>
+  </div>
+
+  <div class="card pad0">
+    <table class="t">
+      <thead><tr><th></th><th>Item</th><th>任务</th><th>值</th><th>质量</th><th>时间戳</th><th>更新数</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dot good"></span></td><td class="mono">Boiler.Temp.Furnace</td><td>1号炉温度</td><td><b>842.3</b> °C</td><td><span class="pill good">Good</span></td><td class="txt-3 mono">14:32:09.214</td><td class="txt-3">18,402</td></tr>
+        <tr><td><span class="dot good"></span></td><td class="mono">Boiler.Temp.Exit</td><td>1号炉温度</td><td><b>318.7</b> °C</td><td><span class="pill good">Good</span></td><td class="txt-3 mono">14:32:09.211</td><td class="txt-3">18,390</td></tr>
+        <tr><td><span class="dot warn"></span></td><td class="mono">Boiler.O2.Inlet</td><td>1号炉温度</td><td><b>6.2</b> %</td><td><span class="pill warn">Uncertain</span></td><td class="txt-3 mono">14:32:06.880</td><td class="txt-3">9,120</td></tr>
+        <tr><td><span class="dot good"></span></td><td class="mono">Energy.Power.Total</td><td>能源采集器</td><td><b>1,284</b> kW</td><td><span class="pill good">Good</span></td><td class="txt-3 mono">14:32:09.220</td><td class="txt-3">204,113</td></tr>
+        <tr><td><span class="dot bad"></span></td><td class="mono">Water.Flow.Inlet</td><td>1号炉温度</td><td class="txt-3">—</td><td><span class="pill bad">Bad</span></td><td class="txt-3 mono">14:30:01.002</td><td class="txt-3">7,008</td></tr>
+        <tr><td><span class="dot good"></span></td><td class="mono">Water.Pressure.P1</td><td>1号炉温度</td><td><b>1.82</b> MPa</td><td><span class="pill good">Good</span></td><td class="txt-3 mono">14:32:09.198</td><td class="txt-3">18,221</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<div class="statusbar"><span>Dc · v1.0.0</span><span>主题 · 跟随系统</span><span class="sp">采集中 · 2.4k msg/s</span></div>
+</div></div>
+<script src="shell.js"></script><script>renderShell('livedata')</script>
+</body></html>
