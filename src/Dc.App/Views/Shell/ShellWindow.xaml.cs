@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Windows;
 using Dc.App.Views;
 using Dc.App.ViewModels.Shell;
+using H.NotifyIcon;
+using H.NotifyIcon.Core;
 using Wpf.Ui.Controls;
 
 namespace Dc.App.Views.Shell;
@@ -9,7 +11,8 @@ namespace Dc.App.Views.Shell;
 public partial class ShellWindow : FluentWindow
 {
     private readonly ShellViewModel _vm;
-    private bool _reallyExit;   // 仅托盘「退出」时置真，让关闭真正退出而非进托盘
+    private bool _reallyExit;     // 仅托盘「退出」时置真，让关闭真正退出而非进托盘
+    private bool _trayHintShown;  // 关闭进托盘的气泡提示一进程只弹一次
 
     public ShellWindow(ShellViewModel vm)
     {
@@ -161,6 +164,16 @@ public partial class ShellWindow : FluentWindow
         if (_reallyExit) return;
         e.Cancel = true;
         Hide();
+
+        // 首次进托盘提示用户程序仍在运行、如何唤回/退出，避免误以为已关闭。
+        if (!_trayHintShown && TryFindResource("TrayIcon") is TaskbarIcon tray)
+        {
+            _trayHintShown = true;
+            tray.ShowNotification(
+                title: "洞见数采仍在后台运行",
+                message: "已最小化到系统托盘 · 双击图标唤回 · 右键「退出」可彻底关闭",
+                icon: NotificationIcon.Info);
+        }
     }
 
     private void OnTrayShow(object sender, RoutedEventArgs e)
