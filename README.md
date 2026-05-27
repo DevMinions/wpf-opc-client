@@ -2,11 +2,36 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4.svg)](https://dotnet.microsoft.com/)
-[![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D6.svg)](#)
+[![GUI: Windows](https://img.shields.io/badge/GUI-Windows-0078D6.svg)](#)
+[![Headless: Linux · Docker](https://img.shields.io/badge/headless-Linux%20%C2%B7%20Docker-1D63ED.svg)](#)
 
-.NET 8 + WPF 实现的 OPC 数据采集客户端：浏览 OPC 地址空间、配置采集任务、实时订阅 OPC UA / DA / AE 数据，并通过 TCP 发布到下游 broker。
+.NET 8 实现的 OPC 数据采集客户端：浏览 OPC 地址空间、配置采集任务、实时订阅 OPC UA / DA / AE 数据，并通过 TCP 发布到下游 broker。
 
 **核心原则**：通用、解耦、可扩展 —— 不假定特定 broker 协议、不绑定特定 OPC SDK。
+
+两种形态共用同一套采集引擎：**Windows 桌面端**（`Dc.App`，WPF GUI，全协议 UA/DA/AE）与 **无头服务端**（`Dc.Cli`，纯 .NET，**可 Linux/Docker 部署**，UA 采集 + 发布）。
+
+---
+
+## 下载
+
+最新版见 **[Releases](https://github.com/DevMinions/wpf-opc-client/releases/latest)**：
+
+| 形态 | 产物 | 用法 | 协议 |
+|---|---|---|---|
+| Windows 桌面 GUI | `Dc-v<ver>-win-x64.zip` | 解压双击 `Dc.App.exe` | UA / DA / AE |
+| Linux 无头采集器 | `Dc.Cli-v<ver>-linux-x64.tar.gz`（另有 `-arm64`） | 解压后 `./Dc.Cli` | 仅 UA |
+| Docker 镜像 | `ghcr.io/devminions/dc-cli:<ver>`（多架构 amd64/arm64） | 见下 | 仅 UA |
+
+均为 self-contained，**目标机无需预装 .NET 运行时**。无头端从 `sqlite.db` 读取已配置任务（可由 GUI 端配置好后共享，表结构一致）。
+
+```bash
+# Docker 跑无头采集器：把含任务的 sqlite.db 放在宿主 ./data
+docker run -d --name dc-collector -v "$PWD/data:/data" ghcr.io/devminions/dc-cli:latest
+docker logs -f dc-collector
+```
+
+> Windows zip/安装包未代码签名，首次运行 SmartScreen 会提示「未知发布者」→ 点「更多信息 → 仍要运行」。
 
 ---
 
@@ -31,13 +56,14 @@
 | 模块 | 说明 |
 |---|---|
 | 配置管理 | 任务 / 分组 / Tag / 系统配置 4 张表，EF Core + SQLite |
-| OPC UA 订阅 + 浏览 | OPC Foundation .NET Standard SDK，证书信任链 |
+| OPC UA 订阅 + 浏览 + 读值 | OPC Foundation .NET Standard SDK，证书信任链，**KeepAlive 断线自动重连** |
 | OPC DA 订阅 + 浏览 + IP 扫描 | Technosoftware DaAeHdaClient（COM/DCOM，需 Windows） |
 | OPC AE 订阅 + Area/Source 浏览 | 同上 |
 | 实时数据视图 | 事件驱动 + 三态质量码着色（Good/Uncertain/Bad） |
 | 任务编排 | `TaskOrchestrator`：启停 / 热增删 Tag / 心跳监控 / 超时自动重启 |
 | TCP 发布 | MessagePack / JSON 可切换，wire v1.1（magic + format-id），冷却重连 + 可选离线队列 |
-| 诊断面板 | 每任务速率 / 错误 / 重启 / 心跳，sparkline 趋势 |
+| 诊断 + 可观测 | WPF 面板（每任务速率/错误/重启/心跳 sparkline）；并经 `System.Diagnostics.Metrics` 暴露指标（dotnet-counters / OpenTelemetry 可抓）+ 周期结构化诊断日志 |
+| **无头 / 服务模式** | `Dc.Cli` 控制台：从 DB 加载任务跑 UA 采集 + 发布，**Linux/Docker 可部署**，复用同一采集引擎 |
 | Excel 导入/导出 Tag | ClosedXML，按 GroupName 解析 |
 | 系统托盘 + 单实例锁 · 滚动日志（Serilog） | |
 
@@ -56,9 +82,10 @@ src/
 ├── Dc.Opc.Ua/             # UA 订阅器 + 浏览器（OPC Foundation）
 ├── Dc.Opc.Da/             # DA 订阅器 + 浏览器（Technosoftware）
 ├── Dc.Opc.Ae/             # AE 订阅器 + 浏览器（Technosoftware）
-├── Dc.Infrastructure/     # EF Core + 序列化 + TCP 发布 + 编排
-└── Dc.App/                # WPF 主程序（MVVM + DI）
-tests/                     # xUnit 单元 + 集成测试
+├── Dc.Infrastructure/     # EF Core + 序列化 + TCP 发布 + 编排 + 诊断可观测
+├── Dc.App/                # WPF 主程序（MVVM + DI，Windows）
+└── Dc.Cli/                # 无头采集器（控制台，Linux/Docker，仅 UA）
+tests/                     # xUnit 单元 + 集成测试（含 UA 内嵌 server 端到端）
 tools/Dc.WireDump/         # 接收端调试工具（解析 wire 帧）
 ```
 
@@ -102,7 +129,9 @@ Windows 上可用脚本：
 
 ---
 
-## 运行（Windows）
+## 运行
+
+### 桌面 GUI（Windows，全协议）
 
 ```powershell
 dotnet run --project src/Dc.App
@@ -128,6 +157,20 @@ dotnet run --project src/Dc.App
 
 > 跨机 DA 依赖 OPCEnum + DCOM 权限，配置较繁琐，建议先用本机 demo server 走通流程。
 
+### 无头运行（Linux / Docker，仅 UA）
+
+`Dc.Cli` 不依赖 WPF，从同一套 `sqlite.db` 加载已配置任务，跑 UA 采集 + TCP 发布——适合服务器/边缘常驻。DA/AE 走 COM 需 Windows，无头端不含。
+
+```bash
+# tarball（自带运行时，无需装 .NET）
+tar xzf Dc.Cli-v<ver>-linux-x64.tar.gz && ./Dc.Cli
+
+# 或 Docker（含任务的 sqlite.db 放宿主 ./data 卷，Database__Path 已指向 /data）
+docker run -d --name dc-collector -v "$PWD/data:/data" ghcr.io/devminions/dc-cli:latest
+```
+
+任务库 `sqlite.db` 可由 Windows GUI 端配置好后拷贝/共享给无头端（表结构一致）。日志走 stdout（`docker logs` 可见），`Ctrl+C` / `docker stop` 优雅关停。源码运行：`dotnet run --project src/Dc.Cli`。
+
 ### 配置
 
 同目录 `appsettings.json` 可外部化（无需重编译）：
@@ -137,6 +180,7 @@ dotnet run --project src/Dc.App
   "Database": { "Path": "sqlite.db" },
   "Messaging": { "Format": "msgpack" },
   "Orchestrator": { "WatchdogIntervalSeconds": 30, "HeartbeatTimeoutSeconds": 120 },
+  "Diagnostics": { "ReportIntervalSeconds": 30, "EnableLogging": true, "EnableMetrics": true },
   "OpcUa": { "AutoAcceptUntrustedCertificates": false, "MinimumCertificateKeySize": 2048 }
 }
 ```
@@ -155,6 +199,20 @@ dotnet run --project src/Dc.App
 产出 self-contained 安装包（用户机不需预装 .NET 运行时），含发布产物 + 脚本 + 文档 + LICENSE。安装时自动检测 OPCEnum，缺失会提示安装 OPC Foundation Core Components。
 
 > 未带：代码签名（产线建议 EV 证书避免 SmartScreen）、MSI 格式、自动更新。
+
+### 发布产物（CI 自动）
+
+推送 `v*` tag 触发 [`release.yml`](.github/workflows/release.yml)，自动构建并挂到同一个 GitHub Release：
+
+- **Windows** — `Dc.App` self-contained zip
+- **Linux** — `Dc.Cli` self-contained 单文件 tarball（x64 / arm64）
+- **Docker** — 多架构镜像（amd64 / arm64）推送到 GHCR `ghcr.io/<owner>/dc-cli`（`<ver>` + `latest`）
+
+```bash
+git tag v1.2.3 && git push origin v1.2.3
+```
+
+> GHCR 镜像首次推送默认**私有**，需在 GitHub Packages 设置里将 `dc-cli` 包设为 public 才能匿名 `docker pull`。
 
 ---
 
