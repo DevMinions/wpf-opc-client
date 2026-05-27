@@ -75,14 +75,12 @@ tools/Dc.WireDump/         # 接收端调试工具（解析 wire 帧）
 
 ## 构建
 
-需要 .NET 8 SDK。首次拉取需初始化子模块（Technosoftware DA/AE/HDA 客户端）：
+需要 .NET 8 SDK。OPC DA/AE 依赖的 Technosoftware DA/AE/HDA 客户端源码已内置于
+[`vendor/ClassicClient/`](vendor/ClassicClient)（GPL-3.0），无需额外拉取：
 
 ```bash
-git clone --recursive https://github.com/DevMinions/wpf-opc-client.git
+git clone https://github.com/DevMinions/wpf-opc-client.git
 cd wpf-opc-client
-# 已 clone 未带 --recursive：
-git submodule update --init --recursive
-
 dotnet build Dc.sln -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
 dotnet test tests/Dc.Infrastructure.Tests
 ```
@@ -118,20 +116,15 @@ dotnet run --project src/Dc.App
 3. 在该任务下新建分组 → 新建 Tag（Item 填 NodeId）
 4. 选中任务 → 启动 → 实时数据看值流入
 
-### 采集 OPC DA（本地 demo server）
+### 采集 OPC DA / AE
 
-vendor 子模块自带 Technosoftware Demo Server，可直接当 DA/AE 测试源：
+需要一个 OPC DA/AE 服务器作数据源（任选其一）：
+- **KEPServerEX Demo**（自带 Simulator 通道，ProgID `Kepware.KEPServerEX.V6`，2 小时重启限制）
+- **Matrikon OPC Simulation Server**（免费）
+- **Technosoftware Demo Server**（随其 DA/AE/HDA 客户端套件分发；本仓为精简体积未内置演示二进制）
 
-```powershell
-# 管理员 PowerShell
-cd vendor\ClassicClient\x86\DemoServer
-.\OpcDaAeServer.exe /regserver   # 首次注册 COM
-.\OpcDaAeServer.exe              # 启动（保持窗口开着）
-```
+流程：采集任务 → 协议 **DA**，节点填主机/IP（本机 `localhost`），ProgID 填 server 的 ProgID；浏览节点页协议选 DA 会出现「扫描 OPC 服务器」栏，扫到后自动回填。
 
-然后：采集任务 → 协议 **DA**，节点 `localhost`，ProgID `SampleCompany.DaSample`；浏览节点页协议选 DA 会出现「扫描 OPC 服务器」栏，扫到后自动回填。
-
-> 备选 demo server：KEPServerEX Demo、Matrikon OPC Simulation Server。
 > 跨机 DA 依赖 OPCEnum + DCOM 权限，配置较繁琐，建议先用本机 demo server 走通流程。
 
 ### 配置

@@ -1,0 +1,122 @@
+<Project>
+  <!-- 
+    Supported frameworks (included in NuGet packages):
+       .NET Core 10 until 14-NOV-2028 (coming with version 5.0.0)
+       .NET Core 9 until 10-NOV-2026
+       .NET Core 8 until 10-NOV-2026
+       .NET 4.8
+       .NET 4.7.2
+
+    No longer supported frameworks because of dependencies:
+       .NET 4.6.2 until 12-JAN-2027. No support possible anymore because of missing dependencies.
+	   
+    No longer supported frameworks because of end of life:
+       .NET Core 2.0 is end of life since 1-OCT-2018. No support possible anymore.
+       .NET Core 2.1 is end of life since 21-AUG-2021. No support possible anymore.
+       .NET Core 2.2 is end of life since 31-DEC-2019. No support possible anymore.
+       .NET Core 3.0 is end of life since 03-MAR-2020. No support possible anymore.
+       .NET Core 3.1 is end of life since 13-DEC-2021. No support possible anymore.
+       .NET 6.0 is end of life since until 12-NOV-2024. No support possible anymore.
+       .NET 5.0 is end of life since 10-MAY-2022. No support possible anymore.
+       .NET 4.6 is end of life since 26-APR-2022. No support possible anymore.
+       .NET 4.6.1 is end of life since 26-APR-2022. No support possible anymore.
+       .NET Core 7 until 14-MAY-2024. No support possible anymore.
+  -->
+  <!-- Suppress warnings for testing only. Rather use supported libraries only. -->
+  <!--
+  <PropertyGroup>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+  </PropertyGroup>
+  -->
+  <!--
+  A custom target can be used to test a future or legacy target.
+  A build with all custom targets which are not part of a regular build
+  is scheduled once a week in the DevOps build pipeline.
+  Uncomment the following lines to test a custom test target
+  supported values: net472, net48, net8.0-windows, net9.0-windows, net10.0-windows
+   -->
+  <!--
+  <PropertyGroup>
+    <CustomTestTarget>netstandard2.1</CustomTestTarget>
+  </PropertyGroup>
+  -->
+  <Choose>
+    <!-- Note: to test targets which support deprecated platforms,
+         set the CustomTestTarget environment variable accordingly -->
+    <When Condition="'$(CustomTestTarget)' == 'net472'">
+      <PropertyGroup>
+        <AnalysisLevel>preview</AnalysisLevel>
+        <AnalysisMode>all</AnalysisMode>
+        <AnalysisModeStyle>default</AnalysisModeStyle>
+        <AppTargetFrameworks>net472</AppTargetFrameworks>
+        <AppTargetFramework>net472</AppTargetFramework>
+        <TestsTargetFrameworks>net472</TestsTargetFrameworks>
+        <LibTargetFrameworks>net472</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net472</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net472</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net472</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net472</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(CustomTestTarget)' == 'net48'">
+      <PropertyGroup>
+        <AppTargetFrameworks>net48</AppTargetFrameworks>
+        <AppTargetFramework>net48</AppTargetFramework>
+        <TestsTargetFrameworks>net48</TestsTargetFrameworks>
+        <LibTargetFrameworks>net48</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net48</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net48</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net48</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net48</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(CustomTestTarget)' == 'net8.0-windows'">
+      <PropertyGroup>
+        <AppTargetFrameworks>net8.0-windows</AppTargetFrameworks>
+        <AppTargetFramework>net8.0-windows</AppTargetFramework>
+        <TestsTargetFrameworks>net8.0-windows</TestsTargetFrameworks>
+        <LibTargetFrameworks>net8.0-windows</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net8.0-windows</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net8.0-windows</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net8.0-windows</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net8.0-windows</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(CustomTestTarget)' == 'net9.0-windows'">
+      <PropertyGroup>
+        <AppTargetFrameworks>net9.0-windows</AppTargetFrameworks>
+        <AppTargetFramework>net9.0-windows</AppTargetFramework>
+        <TestsTargetFrameworks>net9.0-windows</TestsTargetFrameworks>
+        <LibTargetFrameworks>net9.0-windows</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net9.0-windows</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net9.0-windows</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net9.0-windows</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net9.0-windows</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(CustomTestTarget)' == 'net10.0-windows'">
+      <PropertyGroup>
+        <AppTargetFrameworks>net10.0-windows</AppTargetFrameworks>
+        <AppTargetFramework>net10.0-windows</AppTargetFramework>
+        <TestsTargetFrameworks>net10.0-windows</TestsTargetFrameworks>
+        <LibTargetFrameworks>net10.0-windows</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net10.0-windows</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net10.0-windows</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net10.0-windows</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net10.0-windows</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <AppTargetFrameworks>net10.0-windows;net9.0-windows;net8.0-windows</AppTargetFrameworks>
+        <AppTargetFramework>net48</AppTargetFramework>
+        <TestsTargetFrameworks>net8.0-windows;net9.0-windows;net10.0-windows</TestsTargetFrameworks>
+        <LibTargetFrameworks>net472;net48;net8.0-windows;net9.0-windows;net10.0-windows</LibTargetFrameworks>
+        <LibCoreTargetFrameworks>net472;net48;net8.0-windows;net9.0-windows;net10.0-windows</LibCoreTargetFrameworks>
+        <LibTypesTargetFrameworks>net472;net48;net8.0-windows;net9.0-windows;net10.0-windows</LibTypesTargetFrameworks>
+        <LibxTargetFrameworks>net472;net48;net8.0-windows;net9.0-windows;net10.0-windows</LibxTargetFrameworks>
+        <HttpsTargetFrameworks>net472;net48;net8.0-windows;net9.0-windows;net10.0-windows</HttpsTargetFrameworks>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+</Project>

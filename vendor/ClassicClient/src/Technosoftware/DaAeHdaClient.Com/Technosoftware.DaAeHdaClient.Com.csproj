@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <AssemblyName>Technosoftware.DaAeHdaClient.Com</AssemblyName>
+    <TargetFrameworks>$(LibCoreTargetFrameworks)</TargetFrameworks>
+    <LangVersion>9.0</LangVersion>
+    <PackageId>Technosoftware.DaAeHdaSolution.DaAeHdaClient.Com</PackageId>
+    <Description>OPC DA/AE/HDA Client Solution .NET</Description>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Platforms>x64;x86</Platforms>
+    <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <DefineConstants>TRACE;NETCORE</DefineConstants>
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DefineConstants>TRACE;NETCORE</DefineConstants>
+    <PackageId>$(PackageId).Debug</PackageId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <DefineConstants>NETCORE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DefineConstants>NETCORE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Runtime" Version="4.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DaAeHdaClient\Technosoftware.DaAeHdaClient.csproj" />
+    <ProjectReference Include="..\OpcRcw\Technosoftware.OpcRcw.csproj" />
+  </ItemGroup>
+
+  <Target Name="GetPackagingOutputs" />
+
+</Project>

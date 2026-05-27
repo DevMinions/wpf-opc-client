@@ -6,7 +6,7 @@
 
 - .NET 8 SDK
 - Windows 10/11（运行 WPF / OPC DA·AE 需要；非 GUI 项目与跨平台测试可在 Linux/macOS 构建）
-- 首次拉取：`git submodule update --init --recursive`
+- OPC DA/AE 的 Technosoftware 客户端源码已内置于 `vendor/ClassicClient/`（GPL-3.0），无需额外拉取
 
 ## 提交前
 
