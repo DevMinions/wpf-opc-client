@@ -81,8 +81,9 @@ tools/Dc.WireDump/         # 接收端调试工具（解析 wire 帧）
 ```bash
 git clone https://github.com/DevMinions/wpf-opc-client.git
 cd wpf-opc-client
-dotnet build Dc.sln -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
-dotnet test tests/Dc.Infrastructure.Tests
+# 按工程构建（全局 Platform=x64 直传所有 P2P，含 vendor COM）
+dotnet build src/Dc.App/Dc.App.csproj -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
+dotnet test tests/Dc.Infrastructure.Tests -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
 ```
 
 Windows 上可用脚本：

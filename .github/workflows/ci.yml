@@ -31,12 +31,14 @@ jobs:
         run: dotnet format Dc.sln --verify-no-changes --severity warn
         continue-on-error: true
 
-      - name: Build (Release, x64 — vendor 需要 Platform=x64 才定义 NETCORE)
-        run: dotnet build Dc.sln --no-restore --configuration Release -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
+      # 按工程构建 Dc.App：全局 Platform=x64 直传所有 P2P（含 vendor COM），
+      # 解决 sln 构建时平台映射切断 vendor 的 x64 传播导致 FILETIME 的问题。
+      - name: Build (Dc.App, Release x64)
+        run: dotnet build src/Dc.App/Dc.App.csproj --configuration Release -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
 
-      - name: Test
+      - name: Test (Infrastructure 单元测试)
         run: dotnet test tests/Dc.Infrastructure.Tests/Dc.Infrastructure.Tests.csproj
-          --no-build --configuration Release -p:Platform=x64
+          --configuration Release -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
           --logger "trx;LogFileName=test-results.trx"
           --results-directory ./test-results
 
