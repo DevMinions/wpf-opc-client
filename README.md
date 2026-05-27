@@ -78,7 +78,7 @@ tools/Dc.WireDump/         # 接收端调试工具（解析 wire 帧）
 需要 .NET 8 SDK。首次拉取需初始化子模块（Technosoftware DA/AE/HDA 客户端）：
 
 ```bash
-git clone --recursive https://github.com/<owner>/wpf-opc-client.git
+git clone --recursive https://github.com/DevMinions/wpf-opc-client.git
 cd wpf-opc-client
 # 已 clone 未带 --recursive：
 git submodule update --init --recursive
