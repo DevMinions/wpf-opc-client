@@ -43,15 +43,16 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "解析版本号：$V"
 
-      # 自带运行时单文件发布：用户无需安装 .NET 8 桌面运行时，下载解压即用。
+      # 自带运行时发布（文件夹形态）：用户无需安装 .NET 8 桌面运行时，解压双击 Dc.App.exe 即用。
       # - Platform=x64 + CustomTestTarget=net8.0-windows：vendor COM 工程必需（见 README 构建说明）
       # - 不裁剪（WPF 反射重，PublishTrimmed 会崩）
-      # - IncludeNativeLibrariesForSelfExtract：把 WPF/SQLite 原生库塞进单 exe，首次运行自解压
-      # - NuGetAuditMode=direct：self-contained 还原会把 vendored Technosoftware 老代码的传递依赖
-      #   System.Private.Uri 4.3.0（已知 CVE、且我们够不着也修不了）拉进运行时图，vendor common.props
-      #   的 audit-all + TreatWarningsAsErrors 会让还原失败。降为只审计直接依赖：仍保护我们自己引入的
-      #   包，但不为 vendored 第三方 COM 的深层传递漏洞卡发布。常规 CI 构建不受影响（仍 audit-all）。
-      - name: Publish (self-contained 单文件 win-x64)
+      # - 不用 PublishSingleFile：vendored Technosoftware LicenseHandler 用 Assembly.Location，
+      #   单文件下它返回空串（IL3000），既过不了 vendor 的 TreatWarningsAsErrors、运行时也会让
+      #   License/DA/AE 逻辑出错。故发布成文件夹（exe + dll），再整体打 zip。
+      # - NuGetAuditMode=direct：self-contained 还原会把 vendored 老代码的传递依赖 System.Private.Uri
+      #   4.3.0（已知 CVE、够不着也修不了）拉进运行时图，叠加 vendor 的 audit-all + 警告即错误会让还原
+      #   失败。降为只审计直接依赖：仍保护自引包，但不为 vendored 深层传递漏洞卡发布。CI 构建不受影响。
+      - name: Publish (self-contained win-x64)
         shell: pwsh
         run: >
           dotnet publish src/Dc.App/Dc.App.csproj
@@ -60,8 +61,6 @@ jobs:
           --self-contained true
           -p:Platform=x64
           -p:CustomTestTarget=net8.0-windows
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
           -p:DebugType=none
           -p:NuGetAuditMode=direct
           -p:Version=${{ steps.ver.outputs.version }}
@@ -73,7 +72,9 @@ jobs:
         run: |
           $ver = "${{ steps.ver.outputs.version }}"
           $name = "Dc-v$ver-win-x64.zip"
-          # 不带 pdb（DebugType=none 已不产 pdb）；publish/* 顶层入 zip，避免多套一层目录
+          # 清掉第三方包可能带的 pdb（自己的已 DebugType=none），让 zip 更干净
+          Get-ChildItem publish -Recurse -Filter *.pdb | Remove-Item -Force -ErrorAction SilentlyContinue
+          # publish/* 顶层入 zip，避免多套一层目录
           Compress-Archive -Path publish/* -DestinationPath $name -Force
           "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Get-Item $name | Select-Object Name, @{n='大小MB';e={[math]::Round($_.Length/1MB,1)}} | Format-Table
