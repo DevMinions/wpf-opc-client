@@ -166,11 +166,11 @@ public partial class ShellWindow : FluentWindow
         Hide();
 
         // 首次进托盘提示用户程序仍在运行、如何唤回/退出，避免误以为已关闭。
-        if (!_trayHintShown && TryFindResource("TrayIcon") is TaskbarIcon tray)
+        if (!_trayHintShown && TrayIcon is not null)
         {
             _trayHintShown = true;
-            tray.ShowNotification(
-                title: "洞见数采仍在后台运行",
+            TrayIcon.ShowNotification(
+                title: "Dc · OPC 数据采集仍在后台运行",
                 message: "已最小化到系统托盘 · 双击图标唤回 · 右键「退出」可彻底关闭",
                 icon: NotificationIcon.Info);
         }
@@ -224,5 +224,8 @@ public partial class ShellWindow : FluentWindow
     private void OnClosed(object? sender, EventArgs e)
     {
         _dashboardVm?.Stop();
+        // 必须显式 Dispose，否则进程退出后系统托盘里会残留幽灵图标，
+        // 直到用户鼠标划过托盘区域才被 Shell 清理。
+        TrayIcon?.Dispose();
     }
 }

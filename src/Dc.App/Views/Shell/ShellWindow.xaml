@@ -12,13 +12,23 @@
                  WindowCornerPreference="Round"
                  WindowStartupLocation="CenterScreen">
 
-    <ui:FluentWindow.Resources>
-        <!-- Tray: wpfui 3.0.5 没有 NotifyIcon 控件，留用 H.NotifyIcon.Wpf。Lepoco 后续版本 ship 后再迁。-->
-        <tb:TaskbarIcon x:Key="TrayIcon"
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="28" />
+        </Grid.RowDefinitions>
+
+        <!-- Tray icon 必须在可视化树内才会被 WPF 实例化并 attach 到 Shell。
+             之前放 Resources 里是惰性资源，从未被引用，导致图标根本没注册到系统托盘。
+             wpfui 3.0.5 没有 NotifyIcon 控件，留用 H.NotifyIcon.Wpf。Lepoco 后续版本 ship 后再迁。-->
+        <tb:TaskbarIcon x:Name="TrayIcon"
                         IconSource="pack://application:,,,/Assets/dc.ico"
                         ToolTipText="Dc · OPC 数据采集"
                         Visibility="Visible"
-                        TrayLeftMouseDown="OnTrayShow">
+                        NoLeftClickDelay="True"
+                        TrayLeftMouseUp="OnTrayShow"
+                        TrayMouseDoubleClick="OnTrayShow">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="显示主窗口" Click="OnTrayShow" />
@@ -29,14 +39,6 @@
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
-    </ui:FluentWindow.Resources>
-
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="28" />
-        </Grid.RowDefinitions>
 
         <ui:TitleBar Grid.Row="0" ShowMaximize="True"
                      Title="{Binding CurrentTitle, Mode=OneWay, StringFormat='Dc · OPC 数采  ›  {0}'}" />
