@@ -176,7 +176,7 @@ docker run -d --name dc-collector -v "$PWD/data:/data" -p 9090:9090 ghcr.io/devm
 | 路径 | 用途 |
 |---|---|
 | `GET /healthz`、`/readyz` | 存活/就绪探针（Docker `HEALTHCHECK` 与 k8s 直接可用） |
-| `GET /metrics` | Prometheus 文本，导出 `dc_collector_*`（运行任务数、每任务值数/发布错误/重启/订阅 Tag 数/心跳龄） |
+| `GET /metrics` | Prometheus 文本，导出 `dc_collector_*`（运行任务数、每任务值数/发布错误/重启/订阅 Tag 数/心跳龄/队列积压字节/累计丢弃帧数） |
 
 镜像内置 `HEALTHCHECK`（调用 `Dc.Cli --healthcheck` 探 `/healthz`，无需镜像装 curl）。
 

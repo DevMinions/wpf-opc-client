@@ -43,6 +43,12 @@ public sealed class BatchingTcpPublisher : IPublisher, IPublisherHealth
     /// <inheritdoc />
     public long SendErrorCount => Interlocked.Read(ref _sendErrorCount);
 
+    /// <inheritdoc />
+    public long PendingBytes => _queue?.PendingBytes ?? 0;
+
+    /// <inheritdoc />
+    public long DroppedFrameCount => _queue?.DroppedFrameCount ?? 0;
+
     // 失败冷却：与 TcpPublisher 一致
     private static readonly TimeSpan ReconnectCooldown = TimeSpan.FromSeconds(2);
     private const int SendTimeoutMs = 5000;

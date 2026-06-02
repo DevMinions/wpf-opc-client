@@ -32,6 +32,8 @@ public sealed class OutboundQueue : IOutboundQueue
     // peek 时缓存"队首记录总大小"（含 12B 头），commit 时推进 cursor 用
     private int? _pendingRecordSize;
 
+    private long _droppedFrameCount;
+
     public OutboundQueue(string dataPath, long maxBytes)
     {
         if (maxBytes <= 0) throw new ArgumentOutOfRangeException(nameof(maxBytes));
@@ -60,6 +62,11 @@ public sealed class OutboundQueue : IOutboundQueue
                 return Math.Max(0, size - cursor);
             }
         }
+    }
+
+    public long DroppedFrameCount
+    {
+        get { lock (_lock) return _droppedFrameCount; }
     }
 
     public void Enqueue(ReadOnlySpan<byte> frame)
@@ -289,6 +296,7 @@ public sealed class OutboundQueue : IOutboundQueue
                 if (TryReadRecordHeader(fs, droppedToOffset, fi.Length, out var len))
                 {
                     droppedToOffset += RecHeaderSize + len;
+                    _droppedFrameCount++;
                 }
                 else
                 {

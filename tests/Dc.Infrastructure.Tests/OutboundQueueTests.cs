@@ -175,4 +175,51 @@ public class OutboundQueueTests : IDisposable
         q.Enqueue(MakeFrame(new byte[] { 1 }));
         Assert.Throws<InvalidOperationException>(() => q.CommitFront());
     }
+
+    // 按大小生成内容帧（用于溢出/计数类测试）
+    private static byte[] MakeFrameOfSize(int payloadSize)
+    {
+        var payload = new byte[payloadSize];
+        for (int i = 0; i < payloadSize; i++) payload[i] = (byte)(i & 0xFF);
+        return MakeFrame(payload);
+    }
+
+    [Fact]
+    public void DropOldest_OnOverflow_CountsDroppedFramesAndCapsPending()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"oq-test-{Guid.NewGuid():N}.bin");
+        try
+        {
+            // maxBytes 容不下 10 帧（每帧 100B + 12B 头）→ 必触发 drop-oldest
+            using var q = new OutboundQueue(path, maxBytes: 512);
+            for (int i = 0; i < 10; i++) q.Enqueue(MakeFrameOfSize(100));
+
+            Assert.True(q.PendingBytes <= 512, $"PendingBytes={q.PendingBytes} 应 <= maxBytes");
+            Assert.True(q.DroppedFrameCount > 0, "溢出应记录丢弃帧数");
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+            var cursor = path + ".cursor";
+            if (File.Exists(cursor)) File.Delete(cursor);
+        }
+    }
+
+    [Fact]
+    public void NoOverflow_DroppedFrameCountStaysZero()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"oq-test-{Guid.NewGuid():N}.bin");
+        try
+        {
+            using var q = new OutboundQueue(path, maxBytes: 1024 * 1024);
+            q.Enqueue(MakeFrameOfSize(100));
+            Assert.Equal(0, q.DroppedFrameCount);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+            var cursor = path + ".cursor";
+            if (File.Exists(cursor)) File.Delete(cursor);
+        }
+    }
 }

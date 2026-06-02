@@ -15,6 +15,9 @@ public interface IOutboundQueue : IDisposable
 {
     long PendingBytes { get; }
 
+    // 累计因超 MaxBytes 被 drop-oldest 丢弃的帧数。供监控/告警感知数据丢失。
+    long DroppedFrameCount { get; }
+
     void Enqueue(ReadOnlySpan<byte> frame);
 
     bool TryPeekFront(out byte[]? frame);

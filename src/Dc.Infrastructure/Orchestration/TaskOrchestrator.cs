@@ -57,7 +57,8 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         {
             // 批量/异步 Publisher 的发送失败发生在后台，PublishAsync 不抛 → 折入这里，
             // 否则 broker 宕机时 PublishErrorCount 恒 0、Dashboard 假健康。
-            var bgErrors = rt.Publisher is IPublisherHealth h ? h.SendErrorCount : 0;
+            var health = rt.Publisher as IPublisherHealth;
+            var bgErrors = health?.SendErrorCount ?? 0;
             return new TaskDiagnostics(
                 rt.TaskId,
                 rt.StartedAt,
@@ -66,7 +67,9 @@ public sealed class TaskOrchestrator : IAsyncDisposable
                 Interlocked.Read(ref rt.ValueCount),
                 Interlocked.Read(ref rt.PublishErrorCount) + bgErrors,
                 rt.RestartCount,
-                rt.Tags.Count);
+                rt.Tags.Count,
+                health?.PendingBytes ?? 0,
+                health?.DroppedFrameCount ?? 0);
         }).ToArray();
     }
 
