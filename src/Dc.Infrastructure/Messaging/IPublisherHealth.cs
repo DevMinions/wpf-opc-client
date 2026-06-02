@@ -9,4 +9,10 @@ public interface IPublisherHealth
 {
     /// 后台发送失败累计次数（每次 flush 批失败计一次）。
     long SendErrorCount { get; }
+
+    /// 当前离线队列未发字节数（无队列时 0）。
+    long PendingBytes { get; }
+
+    /// 累计因队列溢出被 drop-oldest 丢弃的帧数（无队列时 0）。
+    long DroppedFrameCount { get; }
 }
