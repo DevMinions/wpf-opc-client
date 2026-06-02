@@ -81,13 +81,8 @@ public partial class App : Application
             var dbFactory = _host.Services.GetRequiredService<IDbContextFactory<DcDbContext>>();
             using (var db = dbFactory.CreateDbContext())
             {
-                db.Database.EnsureCreated();
-                // EnsureCreated 不跑 schema 迁移；旧库手工补字段。SQLite 没有 IF NOT EXISTS 列语法，靠 try/catch 兜底
-                // 注意：表名是 dc_tasks (DcDbContext OnModelCreating 显式 ToTable)
-                try { db.Database.ExecuteSqlRaw("ALTER TABLE dc_tasks ADD COLUMN clsid TEXT NULL"); }
-                catch { /* 列已存在或表不存在(新库 EnsureCreated 已建好正确 schema) */ }
-                try { db.Database.ExecuteSqlRaw("ALTER TABLE dc_configs ADD COLUMN dc_description TEXT NOT NULL DEFAULT ''"); }
-                catch { /* 列已存在 */ }
+                // 建库 + 旧库列兼容，与无头 Cli 共用 DbSchemaInitializer 单一来源。
+                DbSchemaInitializer.EnsureCreated(db);
             }
 
             await _host.StartAsync();

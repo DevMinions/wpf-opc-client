@@ -24,8 +24,12 @@ public sealed class DbTaskLauncher
         _logger = logger;
     }
 
-    // CollectorTask → TaskStartRequest 的纯映射（与 TaskWorkspaceViewModel.StartSelectedAsync 保持一致）。
-    public static TaskStartRequest ToStartRequest(CollectorTask task) => new(
+    // CollectorTask → TaskStartRequest 的纯映射，连接选项口径单一来源（WPF 与无头 Cli 共用）。
+    // 无头 Cli 用 task.Tags（已 Include）；WPF 侧 Tag 单独加载，走下面的显式 tags 重载。
+    public static TaskStartRequest ToStartRequest(CollectorTask task) =>
+        ToStartRequest(task, task.Tags.Select(t => new TagDescriptor(t.Id, t.Item, t.DataType)).ToList());
+
+    public static TaskStartRequest ToStartRequest(CollectorTask task, IReadOnlyCollection<TagDescriptor> tags) => new(
         task.Id,
         (OpcProtocol)task.Type,
         new OpcConnectionOptions
@@ -37,7 +41,7 @@ public sealed class DbTaskLauncher
             DeadbandPercent = task.Deviation
         },
         task.TcpAddress,
-        task.Tags.Select(t => new TagDescriptor(t.Id, t.Item, t.DataType)).ToList());
+        tags);
 
     // 加载所有任务，启动 supportedProtocols 内、且至少有一个 Tag 的任务。返回 (已启动, 已跳过)。
     public async Task<(int Started, int Skipped)> StartAllAsync(

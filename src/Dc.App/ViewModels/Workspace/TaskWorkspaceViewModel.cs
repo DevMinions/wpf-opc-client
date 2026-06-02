@@ -6,7 +6,6 @@ using Dc.App.Dashboard;
 using Dc.App.Services;
 using Dc.App.ViewModels.Dashboard;
 using Dc.Infrastructure.Orchestration;
-using Dc.Opc.Abstractions;
 
 namespace Dc.App.ViewModels.Workspace;
 
@@ -232,19 +231,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         var (task, tags) = await _source.GetTaskWithTagsAsync(SelectedTask.TaskId);
         if (task is null) return;
 
-        var req = new TaskStartRequest(
-            task.Id,
-            (OpcProtocol)task.Type,
-            new OpcConnectionOptions
-            {
-                ServerUri = task.Node,
-                ServerProgId = task.Server,
-                ServerClsid = task.Clsid,
-                SamplingInterval = TimeSpan.FromMilliseconds(Math.Max(task.Interval, 1)),
-                DeadbandPercent = task.Deviation
-            },
-            task.TcpAddress,
-            tags);
+        // 映射口径与无头 Cli 共用（DbTaskLauncher 单一来源），tags 为本处单独加载的。
+        var req = DbTaskLauncher.ToStartRequest(task, tags);
 
         await _orchestrator.StartAsync(req);
         await LoadAsync();

@@ -111,14 +111,12 @@ try
 
     var host = builder.Build();
 
-    // EnsureCreated + 旧库列兼容（与 WPF App.xaml.cs 一致）
+    // EnsureCreated + 旧库列兼容，与 WPF 共用 DbSchemaInitializer 单一来源。
     using (var scope = host.Services.CreateScope())
     {
         var dbf = scope.ServiceProvider.GetRequiredService<IDbContextFactory<DcDbContext>>();
         using var db = dbf.CreateDbContext();
-        db.Database.EnsureCreated();
-        try { db.Database.ExecuteSqlRaw("ALTER TABLE dc_tasks ADD COLUMN clsid TEXT NULL"); } catch { /* 已存在 */ }
-        try { db.Database.ExecuteSqlRaw("ALTER TABLE dc_configs ADD COLUMN dc_description TEXT NOT NULL DEFAULT ''"); } catch { /* 已存在 */ }
+        DbSchemaInitializer.EnsureCreated(db);
     }
 
     Log.Information("Dc.Cli 启动，数据库 {DbPath}", dbPath);
