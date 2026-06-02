@@ -32,7 +32,9 @@ public class MetricsHttpServerTests
                 ValueCount: 42,
                 PublishErrorCount: 3,
                 RestartCount: 1,
-                SubscribedTagCount: 7),
+                SubscribedTagCount: 7,
+                QueuePendingBytes: 8192,
+                DroppedFrameCount: 11),
             // 尚无心跳 → 心跳龄 -1
             new TaskDiagnostics("T2", Now, null, null, 0, 0, 0, 0),
         };
@@ -46,6 +48,8 @@ public class MetricsHttpServerTests
         Assert.Contains("dc_collector_task_subscribed_tags{task_id=\"T1\"} 7", text);
         Assert.Contains("dc_collector_task_heartbeat_age_seconds{task_id=\"T1\"} 5", text);
         Assert.Contains("dc_collector_task_heartbeat_age_seconds{task_id=\"T2\"} -1", text);
+        Assert.Contains("dc_collector_task_queue_pending_bytes{task_id=\"T1\"} 8192", text);
+        Assert.Contains("dc_collector_task_dropped_frames{task_id=\"T1\"} 11", text);
     }
 
     [Fact]

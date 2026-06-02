@@ -149,6 +149,10 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                 foreach (var d in snap)
                     g.Line(d.TaskId, d.LastHeartbeatAt is { } hb ? (now - hb).TotalSeconds : -1d);
             });
+        Gauge(sb, "dc_collector_task_queue_pending_bytes", "每任务离线队列未发字节数。",
+            g => { foreach (var d in snap) g.Line(d.TaskId, d.QueuePendingBytes); });
+        Gauge(sb, "dc_collector_task_dropped_frames", "每任务累计因队列溢出丢弃的帧数。",
+            g => { foreach (var d in snap) g.Line(d.TaskId, d.DroppedFrameCount); });
 
         return sb.ToString();
     }
