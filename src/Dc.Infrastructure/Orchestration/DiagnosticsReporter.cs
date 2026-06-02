@@ -65,6 +65,10 @@ public sealed class DiagnosticsReporter : IHostedService, IAsyncDisposable
     {
         _meter = new Meter(DiagnosticsReporterOptions.MeterName);
 
+        // 进程存活恒为 1（与 /metrics 的 dc_collector_up 对齐，两条抓取路径指标集不漂移）。
+        _meter.CreateObservableGauge("dc.collector.up",
+            () => 1L, unit: "{up}", description: "Collector 进程存活（1=存活）");
+
         _meter.CreateObservableGauge("dc.collector.tasks.running",
             () => _provider().Count, unit: "{tasks}", description: "运行中的采集任务数");
 

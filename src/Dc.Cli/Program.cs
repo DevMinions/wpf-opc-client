@@ -12,6 +12,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
+// 健康探针模式（Docker HEALTHCHECK 调用）：GET 本地 /healthz，200 → exit 0，否则 exit 1。
+// 自包含，不依赖镜像内有 curl/wget；端口随 appsettings/env 的 Diagnostics:Http:Prefix。
+if (args.Contains("--healthcheck"))
+    return await HealthCheck.RunAsync();
+
 // 无头 OPC 采集器：从 sqlite.db 加载任务，跑 UA 采集 + TCP 发布，可在 Linux/Docker 部署。
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -78,6 +83,18 @@ try
         },
         sp.GetService<ILogger<DiagnosticsReporter>>()));
     builder.Services.AddHostedService(sp => sp.GetRequiredService<DiagnosticsReporter>());
+
+    // ── 诊断 HTTP 端点（/healthz /readyz /metrics）：给 Docker/k8s 探针 + Prometheus 抓取 ──
+    builder.Services.AddSingleton(sp => new MetricsServerOptions
+    {
+        Enabled = builder.Configuration.GetValue("Diagnostics:Http:Enabled", true),
+        Prefix = builder.Configuration.GetValue<string>("Diagnostics:Http:Prefix") ?? "http://+:9090/"
+    });
+    builder.Services.AddSingleton(sp => new MetricsHttpServer(
+        sp.GetRequiredService<TaskOrchestrator>().GetDiagnostics,
+        sp.GetRequiredService<MetricsServerOptions>(),
+        sp.GetService<ILogger<MetricsHttpServer>>()));
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<MetricsHttpServer>());
 
     // ── 从 DB 拉起任务的启动器 + 主运行服务 ──
     builder.Services.AddSingleton(sp => new DbTaskLauncher(

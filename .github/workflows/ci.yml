@@ -46,12 +46,25 @@ jobs:
           --logger "trx;LogFileName=test-results.trx"
           --results-directory ./test-results
 
+      # App 单元测试（ViewModel / Dashboard / HealthEvaluator 等）——net8.0-windows
+      - name: Test (App 单元测试)
+        run: dotnet test tests/Dc.App.Tests/Dc.App.Tests.csproj
+          --configuration Release -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
+          --logger "trx;LogFileName=app-results.trx"
+          --results-directory ./test-results
+
       # 集成测试（OPC UA 内嵌 server：订阅/浏览/读值/断线重连/无头端到端）——跨平台 net8.0
       - name: Test (Integration 集成测试)
         run: dotnet test tests/Dc.Integration.Tests/Dc.Integration.Tests.csproj
           --configuration Release
           --logger "trx;LogFileName=integration-results.trx"
           --results-directory ./test-results
+
+      # COM 集成测试（DA/AE）需 OPCEnum + 真实/模拟 OPC Server，CI 无此环境无法运行
+      # （WindowsComFactAttribute 在缺环境时自动 skip）。此处仅**编译**，守住 DA/AE 代码路径不被改坏。
+      - name: Build (COM 集成测试，编译守卫)
+        run: dotnet build tests/Dc.Integration.Tests.Com/Dc.Integration.Tests.Com.csproj
+          --configuration Release -p:Platform=x64 -p:CustomTestTarget=net8.0-windows
 
       - name: Upload test results
         if: always()

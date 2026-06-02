@@ -165,11 +165,23 @@ dotnet run --project src/Dc.App
 # tarball（自带运行时，无需装 .NET）
 tar xzf Dc.Cli-v<ver>-linux-x64.tar.gz && ./Dc.Cli
 
-# 或 Docker（含任务的 sqlite.db 放宿主 ./data 卷，Database__Path 已指向 /data）
-docker run -d --name dc-collector -v "$PWD/data:/data" ghcr.io/devminions/dc-cli:latest
+# 或 Docker（含任务的 sqlite.db 放宿主 ./data 卷，Database__Path 已指向 /data；9090 为诊断端口）
+docker run -d --name dc-collector -v "$PWD/data:/data" -p 9090:9090 ghcr.io/devminions/dc-cli:latest
 ```
 
 任务库 `sqlite.db` 可由 Windows GUI 端配置好后拷贝/共享给无头端（表结构一致）。日志走 stdout（`docker logs` 可见），`Ctrl+C` / `docker stop` 优雅关停。源码运行：`dotnet run --project src/Dc.Cli`。
+
+**诊断端点**（默认监听 `:9090`，可经 `Diagnostics:Http` 配置/关闭）：
+
+| 路径 | 用途 |
+|---|---|
+| `GET /healthz`、`/readyz` | 存活/就绪探针（Docker `HEALTHCHECK` 与 k8s 直接可用） |
+| `GET /metrics` | Prometheus 文本，导出 `dc_collector_*`（运行任务数、每任务值数/发布错误/重启/订阅 Tag 数/心跳龄） |
+
+镜像内置 `HEALTHCHECK`（调用 `Dc.Cli --healthcheck` 探 `/healthz`，无需镜像装 curl）。
+
+> ⚠️ `/metrics` **无鉴权**且默认绑全网卡（`http://+:9090/`），仅暴露给受信抓取网络（Prometheus / k8s），**勿把 9090 直接映射公网**；不需要可经 `Diagnostics:Http:Enabled=false` 关闭。
+> 镜像以非 root（uid 10001）运行：用 `-v` 绑定宿主目录时，该目录需对 uid 10001 可写（`chown -R 10001 ./data`，或 `docker run --user` 调整）。
 
 ### 配置
 
@@ -180,7 +192,10 @@ docker run -d --name dc-collector -v "$PWD/data:/data" ghcr.io/devminions/dc-cli
   "Database": { "Path": "sqlite.db" },
   "Messaging": { "Format": "msgpack" },
   "Orchestrator": { "WatchdogIntervalSeconds": 30, "HeartbeatTimeoutSeconds": 120 },
-  "Diagnostics": { "ReportIntervalSeconds": 30, "EnableLogging": true, "EnableMetrics": true },
+  "Diagnostics": {
+    "ReportIntervalSeconds": 30, "EnableLogging": true, "EnableMetrics": true,
+    "Http": { "Enabled": true, "Prefix": "http://+:9090/" }
+  },
   "OpcUa": { "AutoAcceptUntrustedCertificates": false, "MinimumCertificateKeySize": 2048 }
 }
 ```

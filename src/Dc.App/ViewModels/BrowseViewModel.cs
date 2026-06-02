@@ -287,7 +287,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     }
 
     // 异步读取选中变量节点的真实值。OnSelectedNodeChanged 在 UI 线程触发、await 默认续回 UI 线程，
-    // 故直接设属性安全。读完若选中已变，丢弃旧结果。DA/AE 浏览器默认返回 null（暂未实现）→ 显示「—」。
+    // 故直接设属性安全。读完若选中已变，丢弃旧结果。DA/AE 浏览器未 override ReadValueAsync → 返回 null 显示「—」。
     private async Task LoadSelectedNodeDetailAsync(OpcNode node)
     {
         var browser = _browser;
