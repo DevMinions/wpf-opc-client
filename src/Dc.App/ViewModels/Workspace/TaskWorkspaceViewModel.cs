@@ -280,8 +280,10 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     public async Task ImportAsync()
     {
         await TagsPanel.ImportAsync();
-        SelectedTab = "tags";
+        // LoadAsync 会恢复选中并经 OnSelectedTaskChanged 把页签重置为 overview，
+        // 故切到 tags 必须放在 LoadAsync 之后，否则会被覆盖回 overview。
         await LoadAsync();
+        SelectedTab = "tags";
     }
 
     // ── Null-object stubs for optional panels ──────────────────────────────
