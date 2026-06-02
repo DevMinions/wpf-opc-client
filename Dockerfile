@@ -18,10 +18,23 @@ FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app ./
 
+# 非 root 运行：缩小对外暴露 9090 网络服务的攻击面。建固定 uid 用户，
+# 并把 /app（Serilog 日志写 /app/logs）与 /data 卷归其所有。
+# 注意：用 -v 绑定宿主目录时，宿主目录需对 uid 10001 可写（见 README 部署说明）。
+RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin dc \
+    && mkdir -p /data /app/logs \
+    && chown -R dc:dc /data /app
+USER dc
+
 # 数据库与任务配置走挂载卷持久化；用环境变量覆盖 appsettings 的 Database:Path。
 # 运行示例：docker run -v /宿主/data:/data ghcr.io/<owner>/dc-cli:<ver>
 ENV Database__Path=/data/sqlite.db
 VOLUME ["/data"]
+
+# 诊断端点：/healthz /readyz（探针）+ /metrics（Prometheus）。容器内监听 9090。
+EXPOSE 9090
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD ["dotnet", "Dc.Cli.dll", "--healthcheck"]
 
 # 日志走 stdout（Serilog Console），docker logs 可见
 ENTRYPOINT ["dotnet", "Dc.Cli.dll"]
