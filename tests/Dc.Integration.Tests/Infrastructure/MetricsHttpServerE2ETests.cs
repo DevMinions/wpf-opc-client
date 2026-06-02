@@ -88,8 +88,10 @@ public class MetricsHttpServerE2ETests
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-            // 关闭时不监听 → 连接被拒
-            await Assert.ThrowsAnyAsync<HttpRequestException>(
+            // 关闭时不监听 → 请求不成功。失败形态跨平台不同：Linux 立即 connection-refused
+            // (HttpRequestException)，Windows 上无快速 RST → 命中超时 (TaskCanceledException)。
+            // 两者都证明无服务应答，故只断言「抛异常」而不锁定具体类型。
+            await Assert.ThrowsAnyAsync<Exception>(
                 () => http.GetAsync($"http://127.0.0.1:{port}/healthz"));
         }
         finally
