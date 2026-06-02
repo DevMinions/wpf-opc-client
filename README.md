@@ -62,7 +62,7 @@ docker logs -f dc-collector
 | 实时数据视图 | 事件驱动 + 三态质量码着色（Good/Uncertain/Bad） |
 | 任务编排 | `TaskOrchestrator`：启停 / 热增删 Tag / 心跳监控 / 超时自动重启 |
 | TCP 发布 | MessagePack / JSON 可切换，wire v1.1（magic + format-id），冷却重连 + 可选离线队列 |
-| 诊断 + 可观测 | WPF 面板（每任务速率/错误/重启/心跳 sparkline）；并经 `System.Diagnostics.Metrics` 暴露指标（dotnet-counters / OpenTelemetry 可抓）+ 周期结构化诊断日志 |
+| 诊断 + 可观测 | WPF 面板（每任务速率/错误/重启/心跳 sparkline）；并经 `System.Diagnostics.Metrics` + `/metrics` 暴露指标（速率/错误/重启/心跳龄/队列积压/丢弃帧数，dotnet-counters / OpenTelemetry / Prometheus 可抓）+ 周期结构化诊断日志（含队列溢出丢弃边沿告警） |
 | **无头 / 服务模式** | `Dc.Cli` 控制台：从 DB 加载任务跑 UA 采集 + 发布，**Linux/Docker 可部署**，复用同一采集引擎 |
 | Excel 导入/导出 Tag | ClosedXML，按 GroupName 解析 |
 | 系统托盘 + 单实例锁 · 滚动日志（Serilog） | |
