@@ -283,6 +283,24 @@ public class TaskOrchestratorTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => orch.StartAsync(req));
     }
 
+    [Fact]
+    public async Task GetDiagnostics_FoldsQueuePendingAndDroppedFromPublisher()
+    {
+        var (orch, _, pubFactory) = Build();
+        await using var _ = orch;
+        await orch.StartAsync(Request("t1"));
+
+        // 拿到该任务的 FakePublisher，设置健康计数
+        var pub = pubFactory.Created.First().Publisher;
+        pub.PendingBytes = 4096;
+        pub.DroppedFrameCount = 7;
+
+        var diag = orch.GetDiagnostics().Single(d => d.TaskId == "t1");
+
+        Assert.Equal(4096, diag.QueuePendingBytes);
+        Assert.Equal(7, diag.DroppedFrameCount);
+    }
+
     private static async Task WaitForAsync(Func<bool> condition, TimeSpan? timeout = null)
     {
         var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(2));

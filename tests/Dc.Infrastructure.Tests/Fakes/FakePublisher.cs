@@ -3,10 +3,15 @@ using Dc.Infrastructure.Messaging;
 
 namespace Dc.Infrastructure.Tests.Fakes;
 
-public sealed class FakePublisher : IPublisher
+public sealed class FakePublisher : IPublisher, IPublisherHealth
 {
     public ConcurrentQueue<object> Published { get; } = new();
     public bool Disposed { get; private set; }
+
+    // 测试可设的健康计数
+    public long SendErrorCount { get; set; }
+    public long PendingBytes { get; set; }
+    public long DroppedFrameCount { get; set; }
 
     // 可选：每次发布的人为延迟，用于让值在通道里积压（测试停止 drain）。默认 0 = 立即返回。
     public TimeSpan PublishDelay { get; set; } = TimeSpan.Zero;
