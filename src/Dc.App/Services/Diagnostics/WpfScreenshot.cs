@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -22,7 +23,11 @@ public static class WpfScreenshot
         // HTTP 在后台线程触发，必须切到 UI 线程访问视觉树。
         return dispatcher.Invoke(() =>
         {
-            var window = app.MainWindow;
+            // 截「当前激活窗口」：有模态对话框(新建任务/分组/Tag 编辑等)时截对话框，
+            // 否则截主窗口 —— 这样后台截图能覆盖弹窗，不只是主界面。
+            var window = app.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive)
+                         ?? app.MainWindow
+                         ?? app.Windows.OfType<Window>().LastOrDefault();
             if (window is null) return null;
 
             var width = (int)Math.Ceiling(window.ActualWidth);

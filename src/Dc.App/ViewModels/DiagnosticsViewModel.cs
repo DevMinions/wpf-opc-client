@@ -12,11 +12,17 @@ namespace Dc.App.ViewModels;
 public partial class DiagnosticsViewModel : ObservableObject, IDisposable, IEmbeddableDiagPanel
 {
     private readonly TaskOrchestrator _orchestrator;
+    private readonly Action<string>? _navigate;
     private readonly Dictionary<string, DiagnosticsRowViewModel> _rowIndex = new();
     private readonly DispatcherTimer _timer;
     private bool _disposed;
 
     [ObservableProperty] private string _title = "诊断";
+    [ObservableProperty] private bool _showNavigateCta;
+
+    public string? NavigateCtaText => ShowNavigateCta ? "去采集任务" : null;
+
+    partial void OnShowNavigateCtaChanged(bool value) => OnPropertyChanged(nameof(NavigateCtaText));
     [ObservableProperty] private int _refreshIntervalSec = 2;
     [ObservableProperty] private bool _autoRefresh = true;
     [ObservableProperty] private string? _taskScope;
@@ -29,9 +35,12 @@ public partial class DiagnosticsViewModel : ObservableObject, IDisposable, IEmbe
 
     public ObservableCollection<DiagnosticsRowViewModel> Rows { get; } = new();
 
-    public DiagnosticsViewModel(TaskOrchestrator orchestrator)
+    public DiagnosticsViewModel(TaskOrchestrator orchestrator,
+        Action<string>? navigate = null, bool showNavigateCta = false)
     {
         _orchestrator = orchestrator;
+        _navigate = navigate;
+        ShowNavigateCta = showNavigateCta;
         _timer = new DispatcherTimer(DispatcherPriority.Background,
             Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher)
         {
@@ -63,6 +72,9 @@ public partial class DiagnosticsViewModel : ObservableObject, IDisposable, IEmbe
     /// <summary>Returns true when <paramref name="taskId"/> matches the active scope (null = all tasks).</summary>
     public static bool MatchesScope(string? scope, string taskId) =>
         scope is null || string.Equals(scope, taskId, StringComparison.Ordinal);
+
+    [RelayCommand]
+    private void NavigateToWorkspace() => _navigate?.Invoke("workspace");
 
     [RelayCommand]
     public void Refresh()

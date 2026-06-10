@@ -293,4 +293,34 @@ public class TaskWorkspaceViewModelTests
         Assert.True(d.Tag.ImportCount >= 1);
         Assert.Equal("tags", vm.SelectedTab);
     }
+
+    // ── Task 3: NewTaskCommand ────────────────────────────────────────────────
+
+    private sealed class SavingEditor : Dc.App.Services.ITaskEditorDialog
+    {
+        public CollectorTask? Edit(CollectorTask? existing) => Task1("new-1");
+    }
+
+    [Fact]
+    public async Task NewTaskCommand_Exists_And_Saves_Via_Editor()
+    {
+        var src = new FakeTaskSource();
+        var orch = new FakeOrchView();
+        var overview = new WorkspaceOverviewViewModel(orch, () => Now);
+        var config = new WorkspaceConfigViewModel(new FakeEditor());
+        var vm = new TaskWorkspaceViewModel(
+            src, orch, () => Now, TimeSpan.FromSeconds(120),
+            overview, new FakeTagPanel(),
+            orchestrator: null,
+            editor: new SavingEditor(),
+            groupsPanel: new FakeGroupPanel(),
+            livePanel: new FakeLivePanel(),
+            diagPanel: new FakeDiagPanel(),
+            config: config);
+
+        Assert.NotNull(vm.NewTaskCommand);
+        await vm.NewTaskCommand.ExecuteAsync(null);
+
+        Assert.Single(src.Saved);
+    }
 }

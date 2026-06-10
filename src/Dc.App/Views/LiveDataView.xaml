@@ -1,7 +1,8 @@
 <UserControl x:Class="Dc.App.Views.LiveDataView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:controls="clr-namespace:Dc.App.Controls">
     <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -82,7 +83,8 @@
         <Border Grid.Row="2"
                 Style="{StaticResource DcCard}"
                 Margin="20,0,20,20"
-                Padding="0">
+                Padding="0"
+                Visibility="{Binding Rows.Count, Converter={StaticResource CountToVis}, ConverterParameter=Invert}">
             <DataGrid ItemsSource="{Binding RowsView}"
                       Style="{StaticResource DcDataGrid}"
                        EnableRowVirtualization="True"
@@ -230,5 +232,13 @@
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
+
+        <controls:EmptyState Grid.Row="2"
+            Icon="DataHistogram24"
+            Title="暂无实时数据"
+            Hint="运行采集任务后，这里实时显示订阅值"
+            ActionText="{Binding NavigateCtaText}"
+            ActionCommand="{Binding NavigateToWorkspaceCommand}"
+            Visibility="{Binding Rows.Count, Converter={StaticResource CountToVis}}" />
     </Grid>
 </UserControl>
