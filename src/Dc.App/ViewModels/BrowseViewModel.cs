@@ -25,10 +25,11 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     [ObservableProperty] private string _currentPath = "(根)";
     [ObservableProperty] private OpcNode? _selectedNode;
 
-    public bool ShowConnectPrompt => !Connected && !IsLoading;
+    public bool ShowConnectPrompt => !Connected && !IsLoading && !IsConnectError;
 
     partial void OnConnectedChanged(bool value) => OnPropertyChanged(nameof(ShowConnectPrompt));
     partial void OnIsLoadingChanged(bool value) => OnPropertyChanged(nameof(ShowConnectPrompt));
+    partial void OnIsConnectErrorChanged(bool value) => OnPropertyChanged(nameof(ShowConnectPrompt));
 
     // 节点详情：节点类来自 Kind；数据类型/当前值在选中变化时异步读取（UA ReadValue）。
     [ObservableProperty] private string _selectedNodeClass = "—";
@@ -253,6 +254,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     private async Task DisconnectAsync()
     {
         await DisposeBrowserAsync();
+        IsConnectError = false;
         _path.Clear();
         CurrentPath = "(未连接)";
         StatusMessage = "已断开";

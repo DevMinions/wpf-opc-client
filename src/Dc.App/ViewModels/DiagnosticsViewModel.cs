@@ -21,6 +21,8 @@ public partial class DiagnosticsViewModel : ObservableObject, IDisposable, IEmbe
     [ObservableProperty] private bool _showNavigateCta;
 
     public string? NavigateCtaText => ShowNavigateCta ? "去采集任务" : null;
+
+    partial void OnShowNavigateCtaChanged(bool value) => OnPropertyChanged(nameof(NavigateCtaText));
     [ObservableProperty] private int _refreshIntervalSec = 2;
     [ObservableProperty] private bool _autoRefresh = true;
     [ObservableProperty] private string? _taskScope;

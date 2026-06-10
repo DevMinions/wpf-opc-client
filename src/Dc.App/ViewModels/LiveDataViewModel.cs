@@ -38,6 +38,8 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
 
     public string? NavigateCtaText => ShowNavigateCta ? "去采集任务" : null;
 
+    partial void OnShowNavigateCtaChanged(bool value) => OnPropertyChanged(nameof(NavigateCtaText));
+
     private long _updatesAccum;
     private DateTimeOffset _lastRateAt = DateTimeOffset.UtcNow;
 
