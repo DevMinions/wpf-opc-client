@@ -28,6 +28,10 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
     private readonly Func<IReadOnlyList<TaskDiagnostics>> _provider;
     private readonly MetricsServerOptions _options;
     private readonly ILogger<MetricsHttpServer>? _logger;
+    // 可选截图 provider：返回 PNG 字节，null 表示当前不可用 → /screenshot 给 503。
+    // 用 byte[] 而非 WPF 类型，桌面端（Dc.App）注入 RenderTargetBitmap 实现，
+    // 无头端（Dc.Cli）传 null —— Infrastructure 因此保持零 WPF 依赖、跨平台不变。
+    private readonly Func<byte[]?>? _screenshotProvider;
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -35,11 +39,13 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
     public MetricsHttpServer(
         Func<IReadOnlyList<TaskDiagnostics>> diagnosticsProvider,
         MetricsServerOptions? options = null,
-        ILogger<MetricsHttpServer>? logger = null)
+        ILogger<MetricsHttpServer>? logger = null,
+        Func<byte[]?>? screenshotProvider = null)
     {
         _provider = diagnosticsProvider;
         _options = options ?? new MetricsServerOptions();
         _logger = logger;
+        _screenshotProvider = screenshotProvider;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -62,7 +68,8 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _loop = Task.Run(() => AcceptLoopAsync(_cts.Token));
-        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics）", _options.Prefix);
+        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}）",
+            _options.Prefix, _screenshotProvider is not null ? " /screenshot" : "");
         return Task.CompletedTask;
     }
 
@@ -108,6 +115,15 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                 Write(ctx, 200, "text/plain; version=0.0.4; charset=utf-8",
                     RenderPrometheus(_provider(), DateTimeOffset.UtcNow));
                 break;
+            case "/screenshot":
+                // 调试用后台截图：进程内渲染主窗口为 PNG（不依赖物理屏幕，遮挡/最小化也可）。
+                // provider 为空（无头端）或渲染失败返回 503，不影响其它端点。
+                var png = _screenshotProvider?.Invoke();
+                if (png is null || png.Length == 0)
+                    Write(ctx, 503, "text/plain; charset=utf-8", "screenshot unavailable");
+                else
+                    WriteBytes(ctx, 200, "image/png", png);
+                break;
             default:
                 Write(ctx, 404, "text/plain; charset=utf-8", "not found");
                 break;
@@ -115,8 +131,10 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
     }
 
     private static void Write(HttpListenerContext ctx, int status, string contentType, string body)
+        => WriteBytes(ctx, status, contentType, Encoding.UTF8.GetBytes(body));
+
+    private static void WriteBytes(HttpListenerContext ctx, int status, string contentType, byte[] bytes)
     {
-        var bytes = Encoding.UTF8.GetBytes(body);
         ctx.Response.StatusCode = status;
         ctx.Response.ContentType = contentType;
         ctx.Response.ContentLength64 = bytes.Length;

@@ -77,6 +77,40 @@ public class MetricsHttpServerE2ETests
         }
     }
 
+    [Fact(Timeout = 15_000)]
+    public async Task Screenshot_Returns_503_Without_Provider_And_Png_With_Provider()
+    {
+        // 假 provider 返回固定字节即可验证路由契约，无需 WPF。
+        var fakePng = new byte[] { 0x89, 0x50, 0x4E, 0x47, 1, 2, 3 };
+
+        var portA = GetFreePort();
+        var noProvider = new MetricsHttpServer(
+            Sample, new MetricsServerOptions { Enabled = true, Prefix = $"http://127.0.0.1:{portA}/" });
+        await noProvider.StartAsync(CancellationToken.None);
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            using var resp = await http.GetAsync($"http://127.0.0.1:{portA}/screenshot");
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, resp.StatusCode);
+        }
+        finally { await noProvider.StopAsync(CancellationToken.None); noProvider.Dispose(); }
+
+        var portB = GetFreePort();
+        var withProvider = new MetricsHttpServer(
+            Sample, new MetricsServerOptions { Enabled = true, Prefix = $"http://127.0.0.1:{portB}/" },
+            screenshotProvider: () => fakePng);
+        await withProvider.StartAsync(CancellationToken.None);
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            using var resp = await http.GetAsync($"http://127.0.0.1:{portB}/screenshot");
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+            Assert.Equal("image/png", resp.Content.Headers.ContentType?.MediaType);
+            Assert.Equal(fakePng, await resp.Content.ReadAsByteArrayAsync());
+        }
+        finally { await withProvider.StopAsync(CancellationToken.None); withProvider.Dispose(); }
+    }
+
     [Fact(Timeout = 10_000)]
     public async Task Disabled_DoesNotListen()
     {

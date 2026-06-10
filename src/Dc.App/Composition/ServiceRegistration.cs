@@ -103,7 +103,9 @@ public static class ServiceRegistration
         services.AddSingleton<MetricsHttpServer>(sp => new MetricsHttpServer(
             sp.GetRequiredService<TaskOrchestrator>().GetDiagnostics,
             sp.GetRequiredService<MetricsServerOptions>(),
-            sp.GetService<Microsoft.Extensions.Logging.ILogger<MetricsHttpServer>>()));
+            sp.GetService<Microsoft.Extensions.Logging.ILogger<MetricsHttpServer>>(),
+            // 桌面端注入 RenderTargetBitmap 后台截图;无头 Cli 不传 → /screenshot 给 503。
+            Dc.App.Services.Diagnostics.WpfScreenshot.Capture));
         services.AddHostedService(sp => sp.GetRequiredService<MetricsHttpServer>());
 
         services.AddSingleton<IOpcSubscriberFactory, Dc.Opc.Ua.OpcUaSubscriberFactory>();
