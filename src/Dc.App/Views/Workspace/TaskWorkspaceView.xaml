@@ -16,7 +16,8 @@
         </Grid.ColumnDefinitions>
 
         <!-- ═══ Master panel ═══ -->
-        <DockPanel Grid.Column="0">
+        <DockPanel Grid.Column="0"
+                   Visibility="{Binding AllTasks.Count, Converter={StaticResource CountToVis}, ConverterParameter=Invert}">
             <!-- Pills -->
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
                 <Border Background="{DynamicResource SystemFillColorSuccessBackgroundBrush}" CornerRadius="999" Padding="9,2" Margin="0,0,6,0">
@@ -128,7 +129,8 @@
         </DockPanel>
 
         <!-- ═══ Detail panel ═══ -->
-        <DockPanel Grid.Column="2">
+        <DockPanel Grid.Column="2"
+                   Visibility="{Binding AllTasks.Count, Converter={StaticResource CountToVis}, ConverterParameter=Invert}">
             <!-- Header: name + status + actions -->
             <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
                 <Grid.ColumnDefinitions>
@@ -312,5 +314,14 @@
                 </ContentControl.Resources>
             </ContentControl>
         </DockPanel>
+
+        <!-- 空状态：无任何采集任务时覆盖整页，主 CTA 居中 -->
+        <controls:EmptyState Grid.Column="0" Grid.ColumnSpan="3"
+                             Icon="TaskListSquareLtr24"
+                             Title="还没有采集任务"
+                             Hint="新建任务，连接 OPC 服务器开始采集数据"
+                             ActionText="+ 新建任务"
+                             ActionCommand="{Binding NewTaskCommand}"
+                             Visibility="{Binding AllTasks.Count, Converter={StaticResource CountToVis}}" />
     </Grid>
 </UserControl>

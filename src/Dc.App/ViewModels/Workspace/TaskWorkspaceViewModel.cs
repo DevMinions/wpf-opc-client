@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Dc.App.Dashboard;
 using Dc.App.Services;
 using Dc.App.ViewModels.Dashboard;
@@ -251,6 +252,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         await StartSelectedAsync();
     }
 
+    [RelayCommand]
     public async Task NewTaskAsync()
     {
         if (_editor is null) return;
