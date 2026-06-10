@@ -206,9 +206,18 @@ public static class ServiceRegistration
                  ?? System.Windows.Threading.Dispatcher.CurrentDispatcher);
         services.AddSingleton<GroupsViewModel>();
         services.AddSingleton<TagsViewModel>();
-        services.AddSingleton<LiveDataViewModel>();
+        services.AddSingleton<LiveDataViewModel>(sp => new LiveDataViewModel(
+            sp.GetRequiredService<TaskOrchestrator>(),
+            System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher,
+            navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>()
+                .NavigateCommand.Execute(key),
+            showNavigateCta: true));
         services.AddSingleton<BrowseViewModel>();
-        services.AddSingleton<DiagnosticsViewModel>();
+        services.AddSingleton<DiagnosticsViewModel>(sp => new DiagnosticsViewModel(
+            sp.GetRequiredService<TaskOrchestrator>(),
+            navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>()
+                .NavigateCommand.Execute(key),
+            showNavigateCta: true));
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<LogsViewModel>();
 

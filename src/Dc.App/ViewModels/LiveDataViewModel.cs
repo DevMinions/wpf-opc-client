@@ -26,12 +26,18 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     /// <summary>批量应用间隔（毫秒）。</summary>
     private const int BatchIntervalMs = 100;
 
+    private readonly Action<string>? _navigate;
+
     [ObservableProperty] private string _title = "实时数据";
     [ObservableProperty] private bool _paused;
     [ObservableProperty] private string? _taskFilter;
     [ObservableProperty] private string _searchText = string.Empty; // 按 Item 子串过滤
     [ObservableProperty] private int _rowCount;                     // 当前行数（工具栏显示）
     [ObservableProperty] private double _updatesPerSecond;          // 更新速率 /s（工具栏显示）
+    [ObservableProperty] private bool _showNavigateCta;
+
+    public string? NavigateCtaText => ShowNavigateCta ? "去采集任务" : null;
+
     private long _updatesAccum;
     private DateTimeOffset _lastRateAt = DateTimeOffset.UtcNow;
 
@@ -41,10 +47,13 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
 
     private bool _running;
 
-    public LiveDataViewModel(TaskOrchestrator orchestrator, Dispatcher dispatcher)
+    public LiveDataViewModel(TaskOrchestrator orchestrator, Dispatcher dispatcher,
+        Action<string>? navigate = null, bool showNavigateCta = false)
     {
         _orchestrator = orchestrator;
         _dispatcher = dispatcher;
+        _navigate = navigate;
+        ShowNavigateCta = showNavigateCta;
 
         RowsView = CollectionViewSource.GetDefaultView(Rows);
         RowsView.Filter = item =>
@@ -139,6 +148,9 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     partial void OnTaskFilterChanged(string? value) => RowsView.Refresh();
 
     partial void OnSearchTextChanged(string value) => RowsView.Refresh();
+
+    [RelayCommand]
+    private void NavigateToWorkspace() => _navigate?.Invoke("workspace");
 
     [RelayCommand]
     private void Clear()
