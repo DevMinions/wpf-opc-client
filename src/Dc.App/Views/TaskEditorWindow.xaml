@@ -40,9 +40,9 @@
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="0,1,0,0">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="取消" Width="80" Margin="0,0,8,0" IsCancel="True"
+                    <Button Content="取消" AutomationProperties.AutomationId="TaskCancel" Width="80" Margin="0,0,8,0" IsCancel="True"
                             Style="{StaticResource DcBtnGhostSm}" />
-                    <Button x:Name="SaveButton" Content="保存" Width="80"
+                    <Button x:Name="SaveButton" AutomationProperties.AutomationId="TaskSave" Content="保存" Width="80"
                             Click="OnSaveClick" IsDefault="True"
                             Style="{StaticResource DcBtnPrimarySm}" />
                 </StackPanel>
@@ -67,23 +67,23 @@
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="协议:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <ComboBox Grid.Row="0" Grid.Column="1"
+                        <ComboBox Grid.Row="0" Grid.Column="1" AutomationProperties.AutomationId="TaskProtocol"
                                   ItemsSource="{Binding Protocols}" SelectedItem="{Binding Protocol}" />
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="服务器:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"
+                        <TextBox Grid.Row="1" Grid.Column="1" AutomationProperties.AutomationId="TaskServer" Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"
                                  controls:Placeholder.Text="DA: ProgID / UA: opc.tcp://host:port" />
 
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="节点:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Node, UpdateSourceTrigger=PropertyChanged}"
+                        <TextBox Grid.Row="2" Grid.Column="1" AutomationProperties.AutomationId="TaskNode" Text="{Binding Node, UpdateSourceTrigger=PropertyChanged}"
                                  controls:Placeholder.Text="主机名或 IP" />
 
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="采样间隔:" Margin="0,7,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" />
                         <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,0,0,6">
-                            <TextBox Height="30" Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBox Height="30" AutomationProperties.AutomationId="TaskInterval" Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Text="毫秒 · 必须 &gt; 0" FontSize="11" Margin="2,3,0,0"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
@@ -91,14 +91,14 @@
                         <TextBlock Grid.Row="4" Grid.Column="0" Text="死区:" Margin="0,7,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" />
                         <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,6">
-                            <TextBox Height="30" Text="{Binding Deviation, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBox Height="30" AutomationProperties.AutomationId="TaskDeviation" Text="{Binding Deviation, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Text="百分比 0 – 100" FontSize="11" Margin="2,3,0,0"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
 
                         <TextBlock Grid.Row="5" Grid.Column="0" Text="TCP 地址:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding TcpAddress, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Grid.Row="5" Grid.Column="1" AutomationProperties.AutomationId="TaskTcpAddress" Text="{Binding TcpAddress, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
 
                     <!-- DA scan section -->
@@ -111,16 +111,16 @@
                             <DockPanel LastChildFill="True" Margin="0,0,0,6">
                                 <TextBlock Text="目标 IP:" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            VerticalAlignment="Center" Width="96" DockPanel.Dock="Left" />
-                                <Button DockPanel.Dock="Right" Content="扫描" Margin="8,0,0,0"
+                                <Button DockPanel.Dock="Right" AutomationProperties.AutomationId="ScanRun" Content="扫描" Margin="8,0,0,0"
                                         Command="{Binding ScanCommand}"
                                         Style="{StaticResource DcBtnGhostSm}" />
-                                <TextBox Text="{Binding DiscoveryHost, UpdateSourceTrigger=PropertyChanged}"
+                                <TextBox AutomationProperties.AutomationId="ScanHost" Text="{Binding DiscoveryHost, UpdateSourceTrigger=PropertyChanged}"
                                          VerticalAlignment="Center" controls:Placeholder.Text="localhost" />
                             </DockPanel>
                             <DockPanel LastChildFill="True" Margin="0,0,0,4">
                                 <TextBlock Text="发现:" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            VerticalAlignment="Center" Width="96" DockPanel.Dock="Left" />
-                                <ComboBox ItemsSource="{Binding DiscoveredServers}" SelectedItem="{Binding SelectedDiscoveredServer}"
+                                <ComboBox AutomationProperties.AutomationId="ScanResult" ItemsSource="{Binding DiscoveredServers}" SelectedItem="{Binding SelectedDiscoveredServer}"
                                           VerticalAlignment="Center" />
                             </DockPanel>
                             <TextBlock Text="{Binding ScanStatus}" Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontSize="11" />
@@ -135,7 +135,7 @@
                         <DockPanel LastChildFill="True" Margin="0,8,0,0">
                             <TextBlock Text="CLSID:" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        VerticalAlignment="Center" Width="96" DockPanel.Dock="Left" />
-                            <TextBox VerticalAlignment="Center" FontFamily="Consolas"
+                            <TextBox AutomationProperties.AutomationId="TaskClsid" VerticalAlignment="Center" FontFamily="Consolas"
                                      Text="{Binding Clsid, UpdateSourceTrigger=PropertyChanged}"
                                      controls:Placeholder.Text="CLSID 格式: 5CEE2576-..." />
                         </DockPanel>
