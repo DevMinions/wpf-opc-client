@@ -8,6 +8,7 @@
              xmlns:wsview="clr-namespace:Dc.App.Views.Workspace"
              xmlns:views="clr-namespace:Dc.App.Views"
              xmlns:viewsDash="clr-namespace:Dc.App.Views.Dashboard"
+             xmlns:conv="clr-namespace:Dc.App.Views.Converters"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <ResourceDictionary>
@@ -18,6 +19,7 @@
             </ResourceDictionary.MergedDictionaries>
 
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <conv:CountToVisibilityConverter x:Key="CountToVis" />
 
             <DataTemplate DataType="{x:Type vmDash:DashboardViewModel}">
                 <viewsDash:DashboardView />
