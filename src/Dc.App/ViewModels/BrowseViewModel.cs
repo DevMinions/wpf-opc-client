@@ -21,8 +21,14 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     [ObservableProperty] private bool _connected;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _statusMessage = "未连接";
+    [ObservableProperty] private bool _isConnectError;
     [ObservableProperty] private string _currentPath = "(根)";
     [ObservableProperty] private OpcNode? _selectedNode;
+
+    public bool ShowConnectPrompt => !Connected && !IsLoading;
+
+    partial void OnConnectedChanged(bool value) => OnPropertyChanged(nameof(ShowConnectPrompt));
+    partial void OnIsLoadingChanged(bool value) => OnPropertyChanged(nameof(ShowConnectPrompt));
 
     // 节点详情：节点类来自 Kind；数据类型/当前值在选中变化时异步读取（UA ReadValue）。
     [ObservableProperty] private string _selectedNodeClass = "—";
@@ -54,6 +60,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
+        IsConnectError = false;
         IsLoading = true;
         StatusMessage = "正在连接…";
         try
@@ -71,6 +78,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         catch (Exception ex)
         {
             Connected = false;
+            IsConnectError = true;
             StatusMessage = $"连接失败: {ex.Message}";
             await DisposeBrowserAsync();
         }

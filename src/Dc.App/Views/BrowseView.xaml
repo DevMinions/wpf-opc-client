@@ -19,6 +19,8 @@
             <RowDefinition Height="Auto" />
             <!-- breadcrumb -->
             <RowDefinition Height="Auto" />
+            <!-- connect error bar -->
+            <RowDefinition Height="Auto" />
             <!-- split: node list + detail -->
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
@@ -145,80 +147,98 @@
                        TextTrimming="CharacterEllipsis" />
         </DockPanel>
 
-        <!-- ═══ Row 5: Split layout — node list + detail panel ═══ -->
-        <Grid Grid.Row="5" Margin="20,0,20,8">
+        <!-- ═══ Row 5: Connect error bar ═══ -->
+        <Border Grid.Row="5" Margin="20,0,20,8"
+                Style="{StaticResource DcAlertBad}"
+                Visibility="{Binding IsConnectError, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding StatusMessage}" />
+        </Border>
+
+        <!-- ═══ Row 6: Split layout — node list + detail panel ═══ -->
+        <Grid Grid.Row="6" Margin="20,0,20,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="14" />
                 <ColumnDefinition Width="320" />
             </Grid.ColumnDefinitions>
 
-            <!-- Left: Node list card -->
-            <Border Grid.Column="0" Style="{StaticResource DcCard}" Padding="0">
-                <DataGrid ItemsSource="{Binding Children}"
-                          SelectedItem="{Binding SelectedNode}"
-                          AutoGenerateColumns="False"
-                          IsReadOnly="True"
-                          BorderThickness="0"
-                          Background="Transparent"
-                          GridLinesVisibility="Horizontal"
-                          HorizontalGridLinesBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                          HeadersVisibility="Column">
-                    <DataGrid.RowStyle>
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="Transparent" />
-                            <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGrid.RowStyle>
-                    <DataGrid.InputBindings>
-                        <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding DrillDownCommand}" />
-                    </DataGrid.InputBindings>
-                    <DataGrid.ColumnHeaderStyle>
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                            <Setter Property="Padding" Value="10,7" />
-                            <Setter Property="FontSize" Value="12" />
-                            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
-                            <Setter Property="BorderThickness" Value="0,0,0,1" />
-                        </Style>
-                    </DataGrid.ColumnHeaderStyle>
-                    <DataGrid.Columns>
-                        <!-- 图标列：📁 Folder / 🔢 Variable（对齐原型 emoji 首列） -->
-                        <DataGridTemplateColumn Header="" Width="40" CanUserSort="False">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="🔢" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Kind}" Value="Folder">
-                                                        <Setter Property="Text" Value="📁" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="名称" Binding="{Binding DisplayName}" Width="*" />
-                        <DataGridTextColumn Header="NodeId" Binding="{Binding Id}" Width="280">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FontFamily" Value="Consolas, Cascadia Code, monospace" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Border>
+            <!-- Left: Node list card (wrapped in Grid for EmptyState overlay) -->
+            <Grid Grid.Column="0">
+                <Border Style="{StaticResource DcCard}" Padding="0">
+                    <DataGrid ItemsSource="{Binding Children}"
+                              SelectedItem="{Binding SelectedNode}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              BorderThickness="0"
+                              Background="Transparent"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                              HeadersVisibility="Column">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.InputBindings>
+                            <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding DrillDownCommand}" />
+                        </DataGrid.InputBindings>
+                        <DataGrid.ColumnHeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <Setter Property="Padding" Value="10,7" />
+                                <Setter Property="FontSize" Value="12" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                                <Setter Property="BorderThickness" Value="0,0,0,1" />
+                            </Style>
+                        </DataGrid.ColumnHeaderStyle>
+                        <DataGrid.Columns>
+                            <!-- 图标列：📁 Folder / 🔢 Variable（对齐原型 emoji 首列） -->
+                            <DataGridTemplateColumn Header="" Width="40" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="🔢" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Kind}" Value="Folder">
+                                                            <Setter Property="Text" Value="📁" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="名称" Binding="{Binding DisplayName}" Width="*" />
+                            <DataGridTextColumn Header="NodeId" Binding="{Binding Id}" Width="280">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontFamily" Value="Consolas, Cascadia Code, monospace" />
+                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+
+                <!-- EmptyState overlay: visible when not connected and not loading -->
+                <controls:EmptyState
+                    Icon="Search24"
+                    Title="未连接到 OPC 服务器"
+                    Hint="填入端点地址，点连接浏览地址空间并复制 NodeId"
+                    ActionText="连接"
+                    ActionCommand="{Binding ConnectCommand}"
+                    Visibility="{Binding ShowConnectPrompt, Converter={StaticResource BoolToVis}}" />
+            </Grid>
 
             <!-- Right: Detail card -->
             <Border Grid.Column="2" Style="{StaticResource DcCard}">
