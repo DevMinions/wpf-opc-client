@@ -88,6 +88,24 @@ public static class ServiceRegistration
         });
         services.AddHostedService(sp => sp.GetRequiredService<DiagnosticsReporter>());
 
+        // 诊断 HTTP 端点（/healthz /readyz /metrics）：远程调试/Prometheus 直读运行时状态。
+        // 桌面端默认关闭（"Diagnostics:Http:Enabled": true 可开）；默认只绑 localhost——
+        // Windows 非管理员绑 "+" 需要 URL ACL 且会暴露所有网卡。监听失败仅记日志降级，不影响采集。
+        services.AddSingleton<MetricsServerOptions>(sp =>
+        {
+            var config = sp.GetService<IConfiguration>();
+            return new MetricsServerOptions
+            {
+                Enabled = config?.GetValue("Diagnostics:Http:Enabled", false) ?? false,
+                Prefix = config?.GetValue<string>("Diagnostics:Http:Prefix") ?? "http://localhost:9090/"
+            };
+        });
+        services.AddSingleton<MetricsHttpServer>(sp => new MetricsHttpServer(
+            sp.GetRequiredService<TaskOrchestrator>().GetDiagnostics,
+            sp.GetRequiredService<MetricsServerOptions>(),
+            sp.GetService<Microsoft.Extensions.Logging.ILogger<MetricsHttpServer>>()));
+        services.AddHostedService(sp => sp.GetRequiredService<MetricsHttpServer>());
+
         services.AddSingleton<IOpcSubscriberFactory, Dc.Opc.Ua.OpcUaSubscriberFactory>();
         services.AddSingleton<IOpcSubscriberFactory, Dc.Opc.Da.OpcDaSubscriberFactory>();
         services.AddSingleton<IOpcSubscriberFactory, Dc.Opc.Ae.OpcAeSubscriberFactory>();
