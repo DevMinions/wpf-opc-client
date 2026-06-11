@@ -134,6 +134,11 @@
                     Command="{Binding GoBackCommand}"
                     Style="{StaticResource DcBtnGhostSm}"
                     Margin="0,0,8,0" />
+            <Button Content="刷新值"
+                    DockPanel.Dock="Left"
+                    Command="{Binding RefreshValuesCommand}"
+                    Style="{StaticResource DcBtnGhostSm}"
+                    Margin="0,0,8,0" />
             <TextBlock Text="{Binding CurrentPath}"
                        DockPanel.Dock="Left"
                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
@@ -223,6 +228,21 @@
                                     <Style TargetType="TextBlock">
                                         <Setter Property="FontFamily" Value="Consolas, Cascadia Code, monospace" />
                                         <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="值" Binding="{Binding ValueText}" Width="160">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasValue}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsGood}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
