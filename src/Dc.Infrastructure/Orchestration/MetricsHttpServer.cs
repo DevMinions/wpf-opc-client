@@ -35,6 +35,9 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
     // 可选 LiveData flush 指标 provider：App VM 填充，无头端传 null。
     // 仅经 /metrics 暴露、不镜像到任何 Meter（UI 侧指标无 OTel 消费方）。
     private readonly Func<LiveFlushStats?>? _liveFlushProvider;
+    // 可选压测 runner：(tags,hz,seconds)->injected。null → /debug/stress 走 404（默认不暴露）。
+    // App 侧仅在 DC_DEBUG_STRESS=1 时注入，沿用 screenshot「provider 存在即启用」门控。
+    private readonly Func<int, int, int, Task<long>>? _stressRunner;
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -44,13 +47,15 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         MetricsServerOptions? options = null,
         ILogger<MetricsHttpServer>? logger = null,
         Func<byte[]?>? screenshotProvider = null,
-        Func<LiveFlushStats?>? liveFlushProvider = null)
+        Func<LiveFlushStats?>? liveFlushProvider = null,
+        Func<int, int, int, Task<long>>? stressRunner = null)
     {
         _provider = diagnosticsProvider;
         _options = options ?? new MetricsServerOptions();
         _logger = logger;
         _screenshotProvider = screenshotProvider;
         _liveFlushProvider = liveFlushProvider;
+        _stressRunner = stressRunner;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -73,8 +78,10 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _loop = Task.Run(() => AcceptLoopAsync(_cts.Token));
-        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}）",
-            _options.Prefix, _screenshotProvider is not null ? " /screenshot" : "");
+        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}{Stress}）",
+            _options.Prefix,
+            _screenshotProvider is not null ? " /screenshot" : "",
+            _stressRunner is not null ? " /debug/stress" : "");
         return Task.CompletedTask;
     }
 
@@ -129,11 +136,26 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                 else
                     WriteBytes(ctx, 200, "image/png", png);
                 break;
+            case "/debug/stress":
+                // 门控压测端点：runner 为空（默认/无头端）走 404，存在即同步执行并返回注入数。
+                // 同步阻塞至跑满 seconds 是端点契约（调用方按超时配置 HttpClient）。
+                if (_stressRunner is null) { Write(ctx, 404, "text/plain; charset=utf-8", "not found"); break; }
+                var qs = ctx.Request.QueryString;
+                var tags = ParseInt(qs["tags"], 1000);
+                var hz = ParseInt(qs["hz"], 10);
+                var seconds = ParseInt(qs["seconds"], 30);
+                var injected = _stressRunner(tags, hz, seconds).GetAwaiter().GetResult();
+                Write(ctx, 200, "application/json; charset=utf-8",
+                    $"{{\"injected\":{injected},\"tags\":{tags},\"hz\":{hz},\"seconds\":{seconds}}}");
+                break;
             default:
                 Write(ctx, 404, "text/plain; charset=utf-8", "not found");
                 break;
         }
     }
+
+    // query 整数解析：缺省/非法/非正 → def（压测参数都要 > 0）。
+    private static int ParseInt(string? s, int def) => int.TryParse(s, out var v) && v > 0 ? v : def;
 
     private static void Write(HttpListenerContext ctx, int status, string contentType, string body)
         => WriteBytes(ctx, status, contentType, Encoding.UTF8.GetBytes(body));

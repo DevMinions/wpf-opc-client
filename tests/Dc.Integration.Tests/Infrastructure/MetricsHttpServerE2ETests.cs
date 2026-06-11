@@ -111,6 +111,42 @@ public class MetricsHttpServerE2ETests
         finally { await withProvider.StopAsync(CancellationToken.None); withProvider.Dispose(); }
     }
 
+    [Fact(Timeout = 15_000)]
+    public async Task DebugStress_Returns_404_Without_Runner_And_Runs_With_Runner()
+    {
+        // 无 runner → 404
+        var portA = GetFreePort();
+        var noRunner = new MetricsHttpServer(
+            Sample, new MetricsServerOptions { Enabled = true, Prefix = $"http://127.0.0.1:{portA}/" });
+        await noRunner.StartAsync(CancellationToken.None);
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            using var resp = await http.PostAsync($"http://127.0.0.1:{portA}/debug/stress?tags=10&hz=5&seconds=1", null);
+            Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        }
+        finally { await noRunner.StopAsync(CancellationToken.None); noRunner.Dispose(); }
+
+        // 有 runner → 200 + JSON 含 injected，且 runner 收到解析后的参数
+        (int Tags, int Hz, int Sec) got = default;
+        Func<int, int, int, Task<long>> runner = (t, h, s) => { got = (t, h, s); return Task.FromResult(123L); };
+        var portB = GetFreePort();
+        var withRunner = new MetricsHttpServer(
+            Sample, new MetricsServerOptions { Enabled = true, Prefix = $"http://127.0.0.1:{portB}/" },
+            stressRunner: runner);
+        await withRunner.StartAsync(CancellationToken.None);
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            using var resp = await http.PostAsync($"http://127.0.0.1:{portB}/debug/stress?tags=1000&hz=20&seconds=30", null);
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+            var body = await resp.Content.ReadAsStringAsync();
+            Assert.Equal((1000, 20, 30), got);
+            Assert.Contains("123", body);
+        }
+        finally { await withRunner.StopAsync(CancellationToken.None); withRunner.Dispose(); }
+    }
+
     [Fact(Timeout = 10_000)]
     public async Task Disabled_DoesNotListen()
     {
