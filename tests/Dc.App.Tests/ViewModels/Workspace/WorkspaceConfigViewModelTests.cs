@@ -59,13 +59,14 @@ public class WorkspaceConfigViewModelTests
     [Fact]
     public void EditCommand_OnSuccess_RaisesEdited()
     {
-        var editor = new FakeEditor { ReturnValue = Task1("t1") };
+        var result = Task1("t1");
+        var editor = new FakeEditor { ReturnValue = result };
         var vm = new WorkspaceConfigViewModel(editor);
         vm.SetTask(Task1("t1"));
-        string? editedId = null;
-        vm.Edited += id => editedId = id;
+        CollectorTask? edited = null;
+        vm.Edited += t => edited = t;
         vm.EditCommand.Execute(null);
-        Assert.Equal("t1", editedId);
+        Assert.Same(result, edited);
     }
 
     [Fact]

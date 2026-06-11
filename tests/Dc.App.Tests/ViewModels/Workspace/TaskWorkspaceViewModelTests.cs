@@ -31,6 +31,12 @@ public class TaskWorkspaceViewModelTests
             Tasks.Add(task);
             return Task.CompletedTask;
         }
+
+        public List<CollectorTask> Updated { get; } = new();
+        public List<string> Deleted { get; } = new();
+        public Task UpdateTaskAsync(CollectorTask task) { Updated.Add(task); return Task.CompletedTask; }
+        public Task DeleteTaskCascadeAsync(string taskId) { Deleted.Add(taskId); return Task.CompletedTask; }
+        public Task<(int Groups, int Tags)> GetCountsAsync(string taskId) => Task.FromResult((2, 5));
     }
 
     private sealed class FakeOrchView : IDashboardOrchestratorView
@@ -80,6 +86,18 @@ public class TaskWorkspaceViewModelTests
         public CollectorTask? Edit(CollectorTask? existing) => null;
     }
 
+    private sealed class FakeConfirm : Dc.App.Services.IConfirmDialog
+    {
+        public bool Result = true;
+        public int Calls;
+        public bool Confirm(string title, string message) { Calls++; return Result; }
+    }
+
+    private sealed class EditorReturning(CollectorTask result) : Dc.App.Services.ITaskEditorDialog
+    {
+        public CollectorTask? Edit(CollectorTask? existing) => result;
+    }
+
     private static CollectorTask Task1(string id, string server = "炉温", byte type = 2)
         => new() { Id = id, Server = server, Node = "opc.tcp://x", Type = type,
                    TcpAddress = "10.0.0.1:9000", Interval = 1000, Deviation = 1, CreatedAt = Now.UtcDateTime };
@@ -125,6 +143,30 @@ public class TaskWorkspaceViewModelTests
     {
         var (d, vm) = BuildFull();
         return (d.Src, d.Orch, vm);
+    }
+
+    /// <summary>
+    /// Builds a VM over a caller-supplied source with optional editor/confirm overrides,
+    /// for the edit/delete command tests.
+    /// </summary>
+    private static TaskWorkspaceViewModel BuildVm(
+        FakeTaskSource src,
+        Dc.App.Services.ITaskEditorDialog? editor = null,
+        Dc.App.Services.IConfirmDialog? confirm = null)
+    {
+        var orch = new FakeOrchView();
+        var overview = new WorkspaceOverviewViewModel(orch, () => Now);
+        var config = new WorkspaceConfigViewModel(new FakeEditor());
+        return new TaskWorkspaceViewModel(
+            src, orch, () => Now, TimeSpan.FromSeconds(120),
+            overview, new FakeTagPanel(),
+            orchestrator: null,
+            editor: editor,
+            groupsPanel: new FakeGroupPanel(),
+            livePanel: new FakeLivePanel(),
+            diagPanel: new FakeDiagPanel(),
+            config: config,
+            confirm: confirm);
     }
 
     // ── Existing tests ────────────────────────────────────────────────────
@@ -322,5 +364,45 @@ public class TaskWorkspaceViewModelTests
         await vm.NewTaskCommand.ExecuteAsync(null);
 
         Assert.Single(src.Saved);
+    }
+
+    // ── Task 6: Edit / Delete commands ────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteSelected_Confirmed_CallsCascadeDelete()
+    {
+        var src = new FakeTaskSource { Tasks = { Task1("a") } };
+        var confirm = new FakeConfirm { Result = true };
+        var vm = BuildVm(src, confirm: confirm);
+        await vm.LoadAsync();
+        vm.SelectedTask = vm.AllTasks.First();
+        await vm.DeleteSelectedAsync();
+        Assert.Equal(1, confirm.Calls);
+        Assert.Equal(new[] { "a" }, src.Deleted);
+    }
+
+    [Fact]
+    public async Task DeleteSelected_Cancelled_DoesNotDelete()
+    {
+        var src = new FakeTaskSource { Tasks = { Task1("a") } };
+        var confirm = new FakeConfirm { Result = false };
+        var vm = BuildVm(src, confirm: confirm);
+        await vm.LoadAsync();
+        vm.SelectedTask = vm.AllTasks.First();
+        await vm.DeleteSelectedAsync();
+        Assert.Empty(src.Deleted);
+    }
+
+    [Fact]
+    public async Task EditSelected_NonNullResult_PersistsUpdate()
+    {
+        var src = new FakeTaskSource { Tasks = { Task1("a") } };
+        var editor = new EditorReturning(Task1("a", server: "改后"));
+        var vm = BuildVm(src, editor: editor);
+        await vm.LoadAsync();
+        vm.SelectedTask = vm.AllTasks.First();
+        await vm.EditSelectedAsync();
+        Assert.Single(src.Updated);
+        Assert.Equal("改后", src.Updated[0].Server);
     }
 }

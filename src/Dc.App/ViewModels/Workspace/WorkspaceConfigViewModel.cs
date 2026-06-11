@@ -20,7 +20,7 @@ public sealed partial class WorkspaceConfigViewModel : ObservableObject
 
     public IRelayCommand EditCommand { get; }
 
-    public event Action<string>? Edited;
+    public event Action<CollectorTask>? Edited;
 
     public WorkspaceConfigViewModel(ITaskEditorDialog editor)
     {
@@ -44,7 +44,7 @@ public sealed partial class WorkspaceConfigViewModel : ObservableObject
     {
         if (_task is null) return;
         var result = _editor.Edit(_task);
-        if (result is not null) Edited?.Invoke(_task.Id);
+        if (result is not null) Edited?.Invoke(result);
     }
 
     private static string Label(byte type) => type switch
