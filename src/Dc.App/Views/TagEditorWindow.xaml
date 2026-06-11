@@ -41,7 +41,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="36" />
                         <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="96" />
@@ -63,8 +63,10 @@
                               ItemsSource="{Binding DataTypeOptions}" SelectedItem="{Binding DataType}" />
 
                     <TextBlock Grid.Row="2" Grid.Column="0" Text="所属分组:"
+                               Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                     <ComboBox Grid.Row="2" Grid.Column="1"
+                              Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
                               ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding Group}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
