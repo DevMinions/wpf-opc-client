@@ -379,6 +379,28 @@ public class TaskOrchestratorTests
         await orch.DisposeAsync();
     }
 
+    [Fact(Timeout = 10_000)]
+    public async Task InjectFault_Stall_TriggersWatchdogRestart_AndMissReturnsFalse()
+    {
+        var (orch, _, _) = Build(new OrchestratorOptions
+        {
+            WatchdogInterval = TimeSpan.FromMilliseconds(50),
+            HeartbeatTimeout = TimeSpan.FromMilliseconds(120),
+        });
+
+        await orch.StartAsync(Request("t1"));
+        Assert.Equal(ConnectionState.Running, State(orch, "t1"));
+
+        Assert.False(orch.InjectFault("nope", "stall"));   // 不存在 → false
+        Assert.False(orch.InjectFault("t1", "bogus"));      // 未知 kind → false
+        Assert.True(orch.InjectFault("t1", "stall"));        // 命中 → true
+
+        await WaitForAsync(
+            () => orch.GetDiagnostics().Single(x => x.TaskId == "t1").RestartCount >= 1,
+            TimeSpan.FromSeconds(4));
+        await orch.DisposeAsync();
+    }
+
     private static async Task WaitForAsync(Func<bool> condition, TimeSpan? timeout = null)
     {
         var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(2));

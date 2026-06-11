@@ -109,6 +109,10 @@ public static class ServiceRegistration
                 ? (tags, hz, seconds, ct) => new SyntheticLoadGenerator(orch.InjectSynthetic)
                     .RunAsync("stress", tags, hz, seconds, ct)
                 : null;
+            // 故障注入器同样仅在 DC_DEBUG_STRESS=1 时注入；否则 faultInjector=null → /debug/fault 走 404（产线默认关）。
+            Func<string, string, bool>? faultInjector = stressEnabled
+                ? (task, kind) => orch.InjectFault(task, kind)
+                : null;
             return new MetricsHttpServer(
                 orch.GetDiagnostics,
                 sp.GetRequiredService<MetricsServerOptions>(),
@@ -117,7 +121,8 @@ public static class ServiceRegistration
                 Dc.App.Services.Diagnostics.WpfScreenshot.Capture,
                 // LiveData flush 指标：从单例 VM 取线程安全快照；VM 未建时 null → /metrics 不渲染 LiveData 段。
                 liveFlushProvider: () => sp.GetService<LiveDataViewModel>()?.GetFlushStats(),
-                stressRunner: stressRunner);
+                stressRunner: stressRunner,
+                faultInjector: faultInjector);
         });
         services.AddHostedService(sp => sp.GetRequiredService<MetricsHttpServer>());
 

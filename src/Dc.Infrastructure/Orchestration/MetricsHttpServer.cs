@@ -38,6 +38,9 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
     // 可选压测 runner：(tags,hz,seconds)->injected。null → /debug/stress 走 404（默认不暴露）。
     // App 侧仅在 DC_DEBUG_STRESS=1 时注入，沿用 screenshot「provider 存在即启用」门控。
     private readonly Func<int, int, int, CancellationToken, Task<long>>? _stressRunner;
+    // 可选故障注入器：(taskId,kind)->hit。null → /debug/fault 走 404（默认不暴露）。
+    // App 侧仅在 DC_DEBUG_STRESS=1 时注入，沿用「provider 存在即启用」门控。
+    private readonly Func<string, string, bool>? _faultInjector;
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -48,7 +51,8 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         ILogger<MetricsHttpServer>? logger = null,
         Func<byte[]?>? screenshotProvider = null,
         Func<LiveFlushStats?>? liveFlushProvider = null,
-        Func<int, int, int, CancellationToken, Task<long>>? stressRunner = null)
+        Func<int, int, int, CancellationToken, Task<long>>? stressRunner = null,
+        Func<string, string, bool>? faultInjector = null)
     {
         _provider = diagnosticsProvider;
         _options = options ?? new MetricsServerOptions();
@@ -56,6 +60,7 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         _screenshotProvider = screenshotProvider;
         _liveFlushProvider = liveFlushProvider;
         _stressRunner = stressRunner;
+        _faultInjector = faultInjector;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -78,10 +83,11 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _loop = Task.Run(() => AcceptLoopAsync(_cts.Token));
-        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}{Stress}）",
+        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}{Stress}{Fault}）",
             _options.Prefix,
             _screenshotProvider is not null ? " /screenshot" : "",
-            _stressRunner is not null ? " /debug/stress" : "");
+            _stressRunner is not null ? " /debug/stress" : "",
+            _faultInjector is not null ? " /debug/fault" : "");
         return Task.CompletedTask;
     }
 
@@ -149,6 +155,16 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                     t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
                 Write(ctx, 202, "application/json; charset=utf-8",
                     $"{{\"started\":true,\"tags\":{tags},\"hz\":{hz},\"seconds\":{seconds}}}");
+                break;
+            case "/debug/fault":
+                if (_faultInjector is null) { Write(ctx, 404, "text/plain; charset=utf-8", "not found"); break; }
+                if (ctx.Request.HttpMethod != "POST") { Write(ctx, 405, "text/plain; charset=utf-8", "method not allowed"); break; }
+                var fq = ctx.Request.QueryString;
+                var ftask = (fq["task"] ?? "").Replace("\"", "");   // 去引号防破坏 JSON
+                var fkind = (fq["kind"] ?? "stall").Replace("\"", "");
+                var hit = _faultInjector(ftask, fkind);
+                Write(ctx, 200, "application/json; charset=utf-8",
+                    $"{{\"injected\":{(hit ? "true" : "false")},\"task\":\"{ftask}\",\"kind\":\"{fkind}\"}}");
                 break;
             default:
                 Write(ctx, 404, "text/plain; charset=utf-8", "not found");

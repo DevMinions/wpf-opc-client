@@ -63,6 +63,21 @@ public sealed class TaskOrchestrator : IAsyncDisposable
     /// <summary>调试用合成注入：直接触发 TagValueReceived，与真值同路径。仅门控后被调用。</summary>
     internal void InjectSynthetic(string taskId, TagValue v) => TagValueReceived?.Invoke(taskId, v);
 
+    /// <summary>调试用：强制某任务进故障路径。kind="stall" 把心跳推回，使下次看门狗判超时→原地重连。
+    /// 命中返回 true。仅门控后被调用，绝不进产线路径。</summary>
+    internal bool InjectFault(string taskId, string kind)
+    {
+        if (!_running.TryGetValue(taskId, out var rt)) return false;
+        switch (kind)
+        {
+            case "stall":
+                rt.LastHeartbeat = DateTimeOffset.UtcNow - _options.HeartbeatTimeout - TimeSpan.FromSeconds(1);
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public IReadOnlyList<TaskDiagnostics> GetDiagnostics()
     {
         return _running.Values.Select(rt =>
