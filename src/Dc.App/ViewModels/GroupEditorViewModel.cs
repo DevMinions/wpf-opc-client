@@ -11,6 +11,7 @@ public partial class GroupEditorViewModel : ObservableObject
     [ObservableProperty] private CollectorTask? _task;
 
     public string? OriginalId { get; }
+    public bool ShowTaskSelector { get; }
     public ObservableCollection<CollectorTask> AvailableTasks { get; } = new();
 
     public GroupEditorViewModel(IEnumerable<CollectorTask> tasks, Group? existing, CollectorTask? defaultTask = null)
@@ -19,16 +20,18 @@ public partial class GroupEditorViewModel : ObservableObject
 
         if (existing is null)
         {
-            _title = "新建分组";
-            _task = defaultTask ?? AvailableTasks.FirstOrDefault();
+            _task = defaultTask;
+            _title = _task is null ? "新建分组" : $"新建分组 · 任务：{_task.Server}";
         }
         else
         {
-            _title = "编辑分组";
             OriginalId = existing.Id;
             _name = existing.Name;
             _task = AvailableTasks.FirstOrDefault(t => t.Id == existing.TaskId);
+            _title = _task is null ? "编辑分组" : $"编辑分组 · 任务：{_task.Server}";
         }
+
+        ShowTaskSelector = _task is null;
     }
 
     public IReadOnlyList<string> Validate()

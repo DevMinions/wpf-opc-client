@@ -19,6 +19,7 @@ public partial class TagEditorViewModel : ObservableObject
     public string? OriginalId { get; }
     public ObservableCollection<Group> AvailableGroups { get; } = new();
     public IReadOnlyList<OpcDataTypeOption> DataTypeOptions => OpcDataTypeOption.All;
+    public bool ShowGroupSelector { get; }
 
     public TagEditorViewModel(
         IEnumerable<Group> groups,
@@ -34,17 +35,19 @@ public partial class TagEditorViewModel : ObservableObject
 
         if (existing is null)
         {
-            _title = "新建 Tag";
-            _group = defaultGroup ?? AvailableGroups.FirstOrDefault();
+            _group = defaultGroup;
+            _title = _group is null ? "新建 Tag" : $"新建 Tag · 分组：{_group.Name}";
         }
         else
         {
-            _title = "编辑 Tag";
             OriginalId = existing.Id;
             _item = existing.Item;
             _dataType = OpcDataTypeOption.FromCode(existing.DataType);
             _group = AvailableGroups.FirstOrDefault(g => g.Id == existing.GroupId);
+            _title = _group is null ? "编辑 Tag" : $"编辑 Tag · 分组：{_group.Name}";
         }
+
+        ShowGroupSelector = _group is null;
     }
 
     public bool CanBrowse => _browseDialog is not null;
