@@ -32,6 +32,12 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
     // 用 byte[] 而非 WPF 类型，桌面端（Dc.App）注入 RenderTargetBitmap 实现，
     // 无头端（Dc.Cli）传 null —— Infrastructure 因此保持零 WPF 依赖、跨平台不变。
     private readonly Func<byte[]?>? _screenshotProvider;
+    // 可选 LiveData flush 指标 provider：App VM 填充，无头端传 null。
+    // 仅经 /metrics 暴露、不镜像到任何 Meter（UI 侧指标无 OTel 消费方）。
+    private readonly Func<LiveFlushStats?>? _liveFlushProvider;
+    // 可选压测 runner：(tags,hz,seconds)->injected。null → /debug/stress 走 404（默认不暴露）。
+    // App 侧仅在 DC_DEBUG_STRESS=1 时注入，沿用 screenshot「provider 存在即启用」门控。
+    private readonly Func<int, int, int, CancellationToken, Task<long>>? _stressRunner;
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -40,12 +46,16 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         Func<IReadOnlyList<TaskDiagnostics>> diagnosticsProvider,
         MetricsServerOptions? options = null,
         ILogger<MetricsHttpServer>? logger = null,
-        Func<byte[]?>? screenshotProvider = null)
+        Func<byte[]?>? screenshotProvider = null,
+        Func<LiveFlushStats?>? liveFlushProvider = null,
+        Func<int, int, int, CancellationToken, Task<long>>? stressRunner = null)
     {
         _provider = diagnosticsProvider;
         _options = options ?? new MetricsServerOptions();
         _logger = logger;
         _screenshotProvider = screenshotProvider;
+        _liveFlushProvider = liveFlushProvider;
+        _stressRunner = stressRunner;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -68,8 +78,10 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _loop = Task.Run(() => AcceptLoopAsync(_cts.Token));
-        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}）",
-            _options.Prefix, _screenshotProvider is not null ? " /screenshot" : "");
+        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}{Stress}）",
+            _options.Prefix,
+            _screenshotProvider is not null ? " /screenshot" : "",
+            _stressRunner is not null ? " /debug/stress" : "");
         return Task.CompletedTask;
     }
 
@@ -113,7 +125,7 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                 break;
             case "/metrics":
                 Write(ctx, 200, "text/plain; version=0.0.4; charset=utf-8",
-                    RenderPrometheus(_provider(), DateTimeOffset.UtcNow));
+                    RenderPrometheus(_provider(), DateTimeOffset.UtcNow, _liveFlushProvider?.Invoke()));
                 break;
             case "/screenshot":
                 // 调试用后台截图：进程内渲染主窗口为 PNG（不依赖物理屏幕，遮挡/最小化也可）。
@@ -124,11 +136,28 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                 else
                     WriteBytes(ctx, 200, "image/png", png);
                 break;
+            case "/debug/stress":
+                if (_stressRunner is null) { Write(ctx, 404, "text/plain; charset=utf-8", "not found"); break; }
+                if (ctx.Request.HttpMethod != "POST") { Write(ctx, 405, "text/plain; charset=utf-8", "method not allowed"); break; }
+                var qs = ctx.Request.QueryString;
+                var tags = ParseInt(qs["tags"], 1000);
+                var hz = ParseInt(qs["hz"], 10);
+                var seconds = ParseInt(qs["seconds"], 30);
+                // 后台运行、立即 202：避免阻塞单连接串行循环，压测期间 /metrics /healthz 仍可服务（dc-remote 边压边抓）。
+                // 调试端点，后台 Task 的异常吞掉不外抛（不影响诊断服务）。压测结果经 /metrics 的 dc_livedata_* 读取。
+                _ = _stressRunner(tags, hz, seconds, _cts?.Token ?? CancellationToken.None).ContinueWith(
+                    t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+                Write(ctx, 202, "application/json; charset=utf-8",
+                    $"{{\"started\":true,\"tags\":{tags},\"hz\":{hz},\"seconds\":{seconds}}}");
+                break;
             default:
                 Write(ctx, 404, "text/plain; charset=utf-8", "not found");
                 break;
         }
     }
+
+    // query 整数解析：缺省/非法/非正 → def（压测参数都要 > 0）。
+    private static int ParseInt(string? s, int def) => int.TryParse(s, out var v) && v > 0 ? v : def;
 
     private static void Write(HttpListenerContext ctx, int status, string contentType, string body)
         => WriteBytes(ctx, status, contentType, Encoding.UTF8.GetBytes(body));
@@ -144,7 +173,8 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
 
     // 用诊断快照渲染 Prometheus 文本。指标名 = DiagnosticsReporter Meter 名按 OTel 约定转下划线。
     // public static + 显式 now：便于单测（无需起 HttpListener / 控制时钟）。
-    public static string RenderPrometheus(IReadOnlyList<TaskDiagnostics> snap, DateTimeOffset now)
+    public static string RenderPrometheus(IReadOnlyList<TaskDiagnostics> snap, DateTimeOffset now,
+        LiveFlushStats? live = null)
     {
         var sb = new StringBuilder(256 + snap.Count * 256);
 
@@ -171,6 +201,17 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
             g => { foreach (var d in snap) g.Line(d.TaskId, d.QueuePendingBytes); });
         Gauge(sb, "dc_collector_task_dropped_frames", "每任务累计因队列溢出丢弃的帧数。",
             g => { foreach (var d in snap) g.Line(d.TaskId, d.DroppedFrameCount); });
+
+        // LiveData flush（仅 /metrics 暴露，无 Meter 镜像——UI 侧指标无 OTel 消费方，
+        // 是对项目「双路径」约定的有意例外；双路径只约束 collector 任务指标）。
+        if (live is not null)
+        {
+            Gauge(sb, "dc_livedata_flush_ms_p50", "LiveData flush 耗时 p50（毫秒）。", g => g.Line(null, live.P50Ms));
+            Gauge(sb, "dc_livedata_flush_ms_p95", "LiveData flush 耗时 p95（毫秒）。", g => g.Line(null, live.P95Ms));
+            Gauge(sb, "dc_livedata_coalesce_ratio", "LiveData 合并比（原始输入条数 / 输出 key 数，越大越密）。", g => g.Line(null, live.CoalesceRatio));
+            Gauge(sb, "dc_livedata_rows", "LiveData 当前行数。", g => g.Line(null, live.Rows));
+            Gauge(sb, "dc_livedata_updates_per_second", "LiveData 每秒原始更新数。", g => g.Line(null, live.UpdatesPerSecond));
+        }
 
         return sb.ToString();
     }

@@ -53,6 +53,28 @@ public class MetricsHttpServerTests
     }
 
     [Fact]
+    public void RenderPrometheus_WithLiveFlushStats_EmitsLiveGauges()
+    {
+        var live = new LiveFlushStats(P50Ms: 3.0, P95Ms: 12.0, CoalesceRatio: 9.5, Rows: 1000, UpdatesPerSecond: 9800);
+        var text = MetricsHttpServer.RenderPrometheus(Array.Empty<TaskDiagnostics>(), Now, live);
+
+        Assert.Contains("# TYPE dc_livedata_flush_ms_p50 gauge", text);
+        Assert.Contains("dc_livedata_flush_ms_p50 3", text);
+        Assert.Contains("dc_livedata_flush_ms_p95 12", text);
+        Assert.Contains("dc_livedata_coalesce_ratio 9.5", text);
+        Assert.Contains("dc_livedata_rows 1000", text);
+        Assert.Contains("dc_livedata_updates_per_second 9800", text);
+    }
+
+    [Fact]
+    public void RenderPrometheus_WithoutLiveFlushStats_OmitsLiveGauges()
+    {
+        var text = MetricsHttpServer.RenderPrometheus(Array.Empty<TaskDiagnostics>(), Now);
+
+        Assert.DoesNotContain("dc_livedata_", text);
+    }
+
+    [Fact]
     public void Render_EscapesLabelValues()
     {
         var tasks = new[] { new TaskDiagnostics("a\"b\\c", Now, null, null, 1, 0, 0, 0) };

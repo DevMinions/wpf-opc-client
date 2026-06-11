@@ -14,13 +14,13 @@ public partial class LiveDataRowViewModel : ObservableObject
     [ObservableProperty] private bool _isUncertain;
     [ObservableProperty] private int _updateCount;
 
-    public void Apply(TagValue v)
+    public void Apply(TagValue v, int rawCount = 1)
     {
         if (!Equals(Value, v.Value)) Value = v.Value;
         if (Quality != v.Quality) Quality = v.Quality;
         if (Timestamp != v.Timestamp) Timestamp = v.Timestamp;
         if (IsGood != v.IsGood) IsGood = v.IsGood;
         if (IsUncertain != v.IsUncertain) IsUncertain = v.IsUncertain; // 三态：Good/Uncertain/Bad
-        UpdateCount += 1;
+        UpdateCount += rawCount;
     }
 }
