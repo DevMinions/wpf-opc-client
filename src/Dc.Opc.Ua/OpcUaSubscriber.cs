@@ -229,8 +229,10 @@ public sealed class OpcUaSubscriber : IOpcSubscriber
 
             var s = _session;
             if (s is null) continue;
-            // 活性:Session.Connected 是缓存标志(server 断开后不翻假),必须叠加 KeepAliveStopped(SDK 探到会话keepalive停止)
-            // 才能在真掉线(自动重连一直失败)时停写心跳,让编排器看门狗按设计进 Restarting/Faulted。
+            // 活性门控:Session.Connected 是缓存标志(server 断开后不翻假),必须叠加 !KeepAliveStopped
+            // (SDK keepalive 活性信号:keepalive 在阈值窗口内无响应即翻真,通信恢复翻假)。
+            // 真掉线+自动重连持续失败时它保持真→心跳停写→编排器看门狗按设计进 Restarting/Faulted;
+            // 瞬断重连进行中它会短暂为真(短暂停心跳),但生产默认 HeartbeatTimeout 远大于单次心跳间隔,不会误触发重启。
             if (s.Connected && !s.KeepAliveStopped)
             {
                 _heartbeats.Writer.TryWrite(new HeartBeat(ChannelId, DateTimeOffset.UtcNow, s.Endpoint?.EndpointUrl));
