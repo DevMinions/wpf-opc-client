@@ -313,6 +313,72 @@ public class TaskOrchestratorTests
         Assert.Equal(7, diag.DroppedFrameCount);
     }
 
+    private static ConnectionState State(TaskOrchestrator o, string id)
+        => o.GetDiagnostics().Single(x => x.TaskId == id).State;
+
+    [Fact(Timeout = 15_000)]
+    public async Task Watchdog_RebindRestart_StaleThenRecover_BackToRunning()
+    {
+        var (orch, daFactory, _) = Build(new OrchestratorOptions
+        {
+            WatchdogInterval = TimeSpan.FromMilliseconds(50),
+            HeartbeatTimeout = TimeSpan.FromMilliseconds(120),
+            FaultThreshold = 3,
+            StopDrainTimeout = TimeSpan.FromMilliseconds(200),
+        });
+
+        await orch.StartAsync(Request("t1"));
+        Assert.Equal(ConnectionState.Running, State(orch, "t1"));
+
+        // 停发心跳 → 看门狗超时 → 原地重绑（server 正常，重连成功，RestartCount 增）
+        await WaitForAsync(() => orch.GetDiagnostics().Single(x => x.TaskId == "t1").RestartCount >= 1, TimeSpan.FromSeconds(4));
+
+        // 重绑会 factory.Create 新 sub；给最新的 sub 发心跳 → 恢复 Running
+        var fresh = daFactory.Created.Last();
+        fresh.EmitHeartbeat(new HeartBeat("t1", DateTimeOffset.UtcNow));
+        await WaitForAsync(() => State(orch, "t1") == ConnectionState.Running, TimeSpan.FromSeconds(4));
+        await orch.DisposeAsync();
+    }
+
+    [Fact(Timeout = 15_000)]
+    public async Task Watchdog_RebindRestart_PersistentFail_StaysInRunning_AndFaulted()
+    {
+        var (orch, daFactory, _) = Build(new OrchestratorOptions
+        {
+            WatchdogInterval = TimeSpan.FromMilliseconds(50),
+            HeartbeatTimeout = TimeSpan.FromMilliseconds(120),
+            FaultThreshold = 2,
+            StopDrainTimeout = TimeSpan.FromMilliseconds(200),
+        });
+
+        await orch.StartAsync(Request("t1"));
+        daFactory.ThrowOnConnectForFutureCreates = true;   // 之后每次重连 connect 抛
+        await WaitForAsync(() => State(orch, "t1") == ConnectionState.Faulted, TimeSpan.FromSeconds(6));
+        Assert.Contains(orch.GetDiagnostics(), x => x.TaskId == "t1");  // 仍在运行集，不消失
+        await orch.DisposeAsync();
+    }
+
+    [Fact(Timeout = 15_000)]
+    public async Task Watchdog_Faulted_ThenServerBack_RecoversToRunning()
+    {
+        var (orch, daFactory, _) = Build(new OrchestratorOptions
+        {
+            WatchdogInterval = TimeSpan.FromMilliseconds(50),
+            HeartbeatTimeout = TimeSpan.FromMilliseconds(120),
+            FaultThreshold = 2,
+            StopDrainTimeout = TimeSpan.FromMilliseconds(200),
+        });
+
+        await orch.StartAsync(Request("t1"));
+        daFactory.ThrowOnConnectForFutureCreates = true;
+        await WaitForAsync(() => State(orch, "t1") == ConnectionState.Faulted, TimeSpan.FromSeconds(6));
+        daFactory.ThrowOnConnectForFutureCreates = false;   // server 回来
+        await WaitForAsync(() => daFactory.Created.Count >= 3, TimeSpan.FromSeconds(4));
+        daFactory.Created.Last().EmitHeartbeat(new HeartBeat("t1", DateTimeOffset.UtcNow));
+        await WaitForAsync(() => State(orch, "t1") == ConnectionState.Running, TimeSpan.FromSeconds(4));
+        await orch.DisposeAsync();
+    }
+
     private static async Task WaitForAsync(Func<bool> condition, TimeSpan? timeout = null)
     {
         var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(2));
