@@ -51,6 +51,9 @@ public sealed class TaskOrchestrator : IAsyncDisposable
 
     public event Action<string, TagValue>? TagValueReceived;
 
+    /// <summary>调试用合成注入：直接触发 TagValueReceived，与真值同路径。仅门控后被调用。</summary>
+    internal void InjectSynthetic(string taskId, TagValue v) => TagValueReceived?.Invoke(taskId, v);
+
     public IReadOnlyList<TaskDiagnostics> GetDiagnostics()
     {
         return _running.Values.Select(rt =>

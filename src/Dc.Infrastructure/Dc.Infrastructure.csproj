@@ -12,6 +12,9 @@
     <PackageReference Include="ClosedXML" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Dc.Infrastructure.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Dc.Domain\Dc.Domain.csproj" />
     <ProjectReference Include="..\Dc.Opc.Abstractions\Dc.Opc.Abstractions.csproj" />
   </ItemGroup>
