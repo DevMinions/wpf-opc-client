@@ -30,7 +30,7 @@ internal sealed class MinimalUaNodeManager : CustomNodeManager2
         _stressTick = stressTick == default ? TimeSpan.FromMilliseconds(50) : stressTick;
     }
 
-    /// <summary>server 端压测计数器当前值（每拍全部 +1，故 = 每节点当前值）。供测试读最终值。</summary>
+    /// <summary>server 端压测拍数（tick 数）。每节点值=tick*N+索引，故 value/N==此值。供测试读最终值。</summary>
     public int StressTickCount { get { lock (Lock) return _stressTickCount; } }
 
     public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
@@ -100,7 +100,7 @@ internal sealed class MinimalUaNodeManager : CustomNodeManager2
                         ValueRank = ValueRanks.Scalar,
                         AccessLevel = AccessLevels.CurrentRead,
                         UserAccessLevel = AccessLevels.CurrentRead,
-                        Value = 0,
+                        Value = i,   // 初值=索引,使 value%N==i 在首拍前也成立
                         StatusCode = StatusCodes.Good,
                         Timestamp = DateTime.UtcNow
                     };
@@ -132,9 +132,10 @@ internal sealed class MinimalUaNodeManager : CustomNodeManager2
                     {
                         if (_stressVars is null) return;
                         _stressTickCount++;
-                        foreach (var sv in _stressVars)
+                        for (var i = 0; i < _stressVars.Length; i++)
                         {
-                            sv.Value = _stressTickCount;
+                            var sv = _stressVars[i];
+                            sv.Value = _stressTickCount * _stressNodes + i;  // 编码索引:value%N==i 验路由,value/N==tick 验计数
                             sv.Timestamp = DateTime.UtcNow;
                             sv.StatusCode = StatusCodes.Good;
                             sv.ClearChangeMasks(SystemContext, includeChildren: false);

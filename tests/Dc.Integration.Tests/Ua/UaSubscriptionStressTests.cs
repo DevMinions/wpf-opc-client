@@ -20,6 +20,9 @@ public class UaSubscriptionStressTests
         return tags;
     }
 
+    // 从 Item（如 "ns=2;s=Stress.7"）解析节点索引 7，用于路由身份断言 value%N==index
+    private static int NodeIndex(string item) => int.Parse(item[(item.LastIndexOf('.') + 1)..]);
+
     [Fact(Timeout = 60_000)]
     public async Task Throughput_ManyNodes_DeliversNearNOverP()
     {
@@ -54,6 +57,9 @@ public class UaSubscriptionStressTests
 
         var thru = received / sw.Elapsed.TotalSeconds;
         _out.WriteLine($"N={N} P={P.TotalMilliseconds}ms received={received} throughput={thru:F0}/s (理论 N/P={N/P.TotalSeconds:F0}/s) serverTicks={host.StressTickCount}");
+        var serverProduced = (long)N * host.StressTickCount;   // server 端总变化数
+        var coalesceRatio = received > 0 ? (double)serverProduced / received : 0;
+        _out.WriteLine($"合并比(server产出/交付)={coalesceRatio:F2} (QueueSize=1,tick {50}ms vs publish {P.TotalMilliseconds}ms)");
         Assert.True(thru >= 2500, $"交付吞吐应 ≥2500/s，实测 {thru:F0}/s");
     }
 
@@ -87,6 +93,8 @@ public class UaSubscriptionStressTests
                     var v = await sub.TagValues.ReadAsync(cts.Token);
                     total++;
                     var cur = Convert.ToInt32(v.Value);
+                    Assert.True(cur % N == NodeIndex(v.Item),
+                        $"路由串扰:{v.Item} 收到值 {cur}，但 {cur}%{N}={cur % N} ≠ 索引 {NodeIndex(v.Item)}");
                     if (lastByNode.TryGetValue(v.Item, out var prev) && cur < prev) monotonicViolations++;
                     lastByNode[v.Item] = cur;
                 }
@@ -99,15 +107,19 @@ public class UaSubscriptionStressTests
         while (sub.TagValues.TryRead(out var v))
         {
             total++;
-            lastByNode[v.Item] = Convert.ToInt32(v.Value);
+            var cur = Convert.ToInt32(v.Value);
+            Assert.True(cur % N == NodeIndex(v.Item),
+                $"路由串扰:{v.Item} 收到值 {cur}，但 {cur}%{N}={cur % N} ≠ 索引 {NodeIndex(v.Item)}");
+            lastByNode[v.Item] = cur;
         }
         var serverNow = host.StressTickCount;
 
         _out.WriteLine($"N={N} total={total} 单调违例={monotonicViolations} server当前={serverNow}");
         Assert.Equal(0, monotonicViolations);
         Assert.Equal(N, lastByNode.Count);
+        // 每节点最终 tick(value/N) 应接近 server 当前 tick;容差 ≤5 补偿「排空后读 serverNow,期间 server 又 tick 几拍」的时序差(非丢值)
         foreach (var kv in lastByNode)
-            Assert.True(serverNow - kv.Value <= 5,
-                $"{kv.Key} 最终值 {kv.Value} 落后 server {serverNow} 超过 5 拍");
+            Assert.True(serverNow - kv.Value / N <= 5,
+                $"{kv.Key} 最终 tick {kv.Value / N} 落后 server {serverNow} 超过 5 拍");
     }
 }
