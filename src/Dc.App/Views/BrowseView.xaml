@@ -134,6 +134,11 @@
                     Command="{Binding GoBackCommand}"
                     Style="{StaticResource DcBtnGhostSm}"
                     Margin="0,0,8,0" />
+            <Button Content="刷新值"
+                    DockPanel.Dock="Left"
+                    Command="{Binding RefreshValuesCommand}"
+                    Style="{StaticResource DcBtnGhostSm}"
+                    Margin="0,0,8,0" />
             <TextBlock Text="{Binding CurrentPath}"
                        DockPanel.Dock="Left"
                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
@@ -207,7 +212,7 @@
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Text" Value="🔢" />
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Kind}" Value="Folder">
+                                                        <DataTrigger Binding="{Binding Node.Kind}" Value="Folder">
                                                             <Setter Property="Text" Value="📁" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -217,12 +222,27 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="名称" Binding="{Binding DisplayName}" Width="*" />
-                            <DataGridTextColumn Header="NodeId" Binding="{Binding Id}" Width="280">
+                            <DataGridTextColumn Header="名称" Binding="{Binding Node.DisplayName}" Width="*" />
+                            <DataGridTextColumn Header="NodeId" Binding="{Binding Node.Id}" Width="280">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="FontFamily" Value="Consolas, Cascadia Code, monospace" />
                                         <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="值" Binding="{Binding ValueText}" Width="160">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasValue}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsGood}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -248,7 +268,7 @@
                     <!-- NodeId -->
                     <TextBlock Text="NodeId"
                                Style="{StaticResource DcMuted}" FontSize="11" Margin="0,8,0,2" />
-                    <TextBlock Text="{Binding SelectedNode.Id, FallbackValue='—'}"
+                    <TextBlock Text="{Binding SelectedNode.Node.Id, FallbackValue='—'}"
                                Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
                                FontFamily="Consolas, Cascadia Code, monospace"
                                FontSize="12" TextWrapping="Wrap" />
@@ -256,7 +276,7 @@
                     <!-- Display Name -->
                     <TextBlock Text="显示名"
                                Style="{StaticResource DcMuted}" FontSize="11" Margin="0,10,0,2" />
-                    <TextBlock Text="{Binding SelectedNode.DisplayName, FallbackValue='—'}"
+                    <TextBlock Text="{Binding SelectedNode.Node.DisplayName, FallbackValue='—'}"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
 
                     <!-- 节点类 -->
