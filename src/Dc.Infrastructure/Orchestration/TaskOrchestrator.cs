@@ -22,6 +22,9 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         public long ValueCount;
         public long PublishErrorCount;
         public int RestartCount { get; set; }
+        public ConnectionState State { get; set; } = ConnectionState.Connecting;
+        public int ConsecutiveStaleRestarts { get; set; }
+        public DateTimeOffset? LastRestartAt { get; set; }
     }
 
     private readonly IReadOnlyDictionary<OpcProtocol, IOpcSubscriberFactory> _factories;
@@ -31,8 +34,14 @@ public sealed class TaskOrchestrator : IAsyncDisposable
     private readonly ConcurrentDictionary<string, TaskRuntime> _running = new();
     private readonly SemaphoreSlim _mutationLock = new(1, 1);
     private readonly CancellationTokenSource _hostCts = new();
+    private readonly object _stateLock = new();
     private readonly Task _watchdogTask;
     private bool _disposed;
+
+    private void SetState(TaskRuntime rt, ConnectionState s)
+    {
+        lock (_stateLock) rt.State = s;
+    }
 
     public TaskOrchestrator(
         IEnumerable<IOpcSubscriberFactory> factories,
@@ -72,7 +81,8 @@ public sealed class TaskOrchestrator : IAsyncDisposable
                 rt.RestartCount,
                 rt.Tags.Count,
                 health?.PendingBytes ?? 0,
-                health?.DroppedFrameCount ?? 0);
+                health?.DroppedFrameCount ?? 0,
+                rt.State);
         }).ToArray();
     }
 
@@ -160,6 +170,19 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         var publisher = _publisherFactory.Create(request.PublisherAddress);
         var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostCts.Token);
 
+        var runtime = new TaskRuntime
+        {
+            TaskId = request.TaskId,
+            Request = request,
+            Subscriber = subscriber,
+            Publisher = publisher,
+            Cts = cts,
+            PipelineTask = Task.CompletedTask,
+            Tags = request.Tags.ToDictionary(t => t.Item),
+            State = ConnectionState.Connecting
+        };
+        _running[request.TaskId] = runtime; // 先入运行集 → GetDiagnostics 立即可见「连接中」
+
         try
         {
             await subscriber.ConnectAsync(ct).ConfigureAwait(false);
@@ -169,24 +192,16 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         {
             _logger?.LogError(ex, "任务 {TaskId} ({Protocol}) 连接/订阅失败：{Message}",
                 request.TaskId, request.Protocol, ex.Message);
+            _running.TryRemove(request.TaskId, out _);
             await SafeDisposeAsync(subscriber).ConfigureAwait(false);
             await SafeDisposeAsync(publisher).ConfigureAwait(false);
             cts.Dispose();
             throw;
         }
 
-        var runtime = new TaskRuntime
-        {
-            TaskId = request.TaskId,
-            Request = request,
-            Subscriber = subscriber,
-            Publisher = publisher,
-            Cts = cts,
-            PipelineTask = Task.CompletedTask,
-            Tags = request.Tags.ToDictionary(t => t.Item)
-        };
+        runtime.LastHeartbeat = DateTimeOffset.UtcNow;
         runtime.PipelineTask = Task.Run(() => RunPipelineAsync(runtime, cts.Token));
-        _running[request.TaskId] = runtime;
+        SetState(runtime, ConnectionState.Running);
         _logger?.LogInformation("任务 {TaskId} ({Protocol}) 已启动，订阅 {TagCount} 个 tag → {Publisher}",
             request.TaskId, request.Protocol, request.Tags.Count, request.PublisherAddress);
     }

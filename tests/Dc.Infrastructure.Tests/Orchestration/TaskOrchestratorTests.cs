@@ -271,6 +271,18 @@ public class TaskOrchestratorTests
         Assert.Equal(0, d.PublishErrorCount);
     }
 
+    [Fact(Timeout = 10_000)]
+    public async Task Start_TransitionsToRunning_AndDiagnosticsReportState()
+    {
+        var (orch, _, _) = Build();
+        await using var _d = orch;
+
+        await orch.StartAsync(Request("t1"));
+
+        var d = orch.GetDiagnostics().Single(x => x.TaskId == "t1");
+        Assert.Equal(ConnectionState.Running, d.State);
+    }
+
     [Fact]
     public async Task StartAsync_UnknownProtocol_Throws()
     {
