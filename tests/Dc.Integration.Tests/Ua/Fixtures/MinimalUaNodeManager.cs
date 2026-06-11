@@ -15,11 +15,23 @@ internal sealed class MinimalUaNodeManager : CustomNodeManager2
     private Timer? _ticker;
     private readonly int _extraIntVars;
 
-    public MinimalUaNodeManager(IServerInternal server, ApplicationConfiguration configuration, int extraIntVars = 0)
+    private readonly int _stressNodes;
+    private readonly TimeSpan _stressTick;
+    private BaseDataVariableState[]? _stressVars;
+    private Timer? _stressTicker;
+    private int _stressTickCount;
+
+    public MinimalUaNodeManager(IServerInternal server, ApplicationConfiguration configuration,
+        int extraIntVars = 0, int stressNodes = 0, TimeSpan stressTick = default)
         : base(server, configuration, TestNamespace)
     {
         _extraIntVars = extraIntVars;
+        _stressNodes = stressNodes;
+        _stressTick = stressTick == default ? TimeSpan.FromMilliseconds(50) : stressTick;
     }
+
+    /// <summary>server 端压测拍数（tick 数）。每节点值=tick*N+索引，故 value/N==此值。供测试读最终值。</summary>
+    public int StressTickCount { get { lock (Lock) return _stressTickCount; } }
 
     public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
     {
@@ -74,6 +86,29 @@ internal sealed class MinimalUaNodeManager : CustomNodeManager2
                 folder.AddChild(v);
             }
 
+            if (_stressNodes > 0)
+            {
+                _stressVars = new BaseDataVariableState[_stressNodes];
+                for (var i = 0; i < _stressNodes; i++)
+                {
+                    var sv = new BaseDataVariableState(folder)
+                    {
+                        NodeId = new NodeId($"Stress.{i}", NamespaceIndex),
+                        BrowseName = new QualifiedName($"Stress.{i}", NamespaceIndex),
+                        DisplayName = new LocalizedText($"Stress.{i}"),
+                        DataType = DataTypeIds.Int32,
+                        ValueRank = ValueRanks.Scalar,
+                        AccessLevel = AccessLevels.CurrentRead,
+                        UserAccessLevel = AccessLevels.CurrentRead,
+                        Value = i,   // 初值=索引,使 value%N==i 在首拍前也成立
+                        StatusCode = StatusCodes.Good,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    folder.AddChild(sv);
+                    _stressVars[i] = sv;
+                }
+            }
+
             AddPredefinedNode(SystemContext, folder);
 
             // 每 200ms 自增一次，确保订阅端能拿到变化通知
@@ -88,6 +123,26 @@ internal sealed class MinimalUaNodeManager : CustomNodeManager2
                     _demoInt.ClearChangeMasks(SystemContext, includeChildren: false);
                 }
             }, state: null, dueTime: TimeSpan.FromMilliseconds(200), period: TimeSpan.FromMilliseconds(200));
+
+            if (_stressNodes > 0)
+            {
+                _stressTicker = new Timer(_ =>
+                {
+                    lock (Lock)
+                    {
+                        if (_stressVars is null) return;
+                        _stressTickCount++;
+                        for (var i = 0; i < _stressVars.Length; i++)
+                        {
+                            var sv = _stressVars[i];
+                            sv.Value = _stressTickCount * _stressNodes + i;  // 编码索引:value%N==i 验路由,value/N==tick 验计数
+                            sv.Timestamp = DateTime.UtcNow;
+                            sv.StatusCode = StatusCodes.Good;
+                            sv.ClearChangeMasks(SystemContext, includeChildren: false);
+                        }
+                    }
+                }, state: null, dueTime: _stressTick, period: _stressTick);
+            }
         }
     }
 
@@ -97,6 +152,8 @@ internal sealed class MinimalUaNodeManager : CustomNodeManager2
         {
             _ticker?.Dispose();
             _ticker = null;
+            _stressTicker?.Dispose();
+            _stressTicker = null;
         }
         base.Dispose(disposing);
     }
