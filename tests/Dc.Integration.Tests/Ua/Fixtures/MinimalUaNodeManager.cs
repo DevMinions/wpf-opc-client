@@ -13,10 +13,12 @@ internal sealed class MinimalUaNodeManager : CustomNodeManager2
 
     private BaseDataVariableState? _demoInt;
     private Timer? _ticker;
+    private readonly int _extraIntVars;
 
-    public MinimalUaNodeManager(IServerInternal server, ApplicationConfiguration configuration)
+    public MinimalUaNodeManager(IServerInternal server, ApplicationConfiguration configuration, int extraIntVars = 0)
         : base(server, configuration, TestNamespace)
     {
+        _extraIntVars = extraIntVars;
     }
 
     public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
@@ -53,6 +55,24 @@ internal sealed class MinimalUaNodeManager : CustomNodeManager2
                 Timestamp = DateTime.UtcNow
             };
             folder.AddChild(_demoInt);
+
+            for (var i = 0; i < _extraIntVars; i++)
+            {
+                var v = new BaseDataVariableState(folder)
+                {
+                    NodeId = new NodeId($"Bench.{i}", NamespaceIndex),
+                    BrowseName = new QualifiedName($"Bench.{i}", NamespaceIndex),
+                    DisplayName = new LocalizedText($"Bench.{i}"),
+                    DataType = DataTypeIds.Int32,
+                    ValueRank = ValueRanks.Scalar,
+                    AccessLevel = AccessLevels.CurrentRead,
+                    UserAccessLevel = AccessLevels.CurrentRead,
+                    Value = i,
+                    StatusCode = StatusCodes.Good,
+                    Timestamp = DateTime.UtcNow
+                };
+                folder.AddChild(v);
+            }
 
             AddPredefinedNode(SystemContext, folder);
 

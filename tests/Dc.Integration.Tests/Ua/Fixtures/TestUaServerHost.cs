@@ -17,13 +17,15 @@ internal sealed class TestUaServerHost : IAsyncDisposable
 
     private readonly string _pkiRoot;
     private readonly bool _ownsPki;
+    private readonly int _extraIntVars;
     private ApplicationInstance? _app;
     private MinimalUaServer? _server;
 
     // pkiRoot 为空则自建临时目录并负责清理；传入则复用（重启时保留同一套 server 证书）。
-    public TestUaServerHost(int port, string? pkiRoot = null)
+    public TestUaServerHost(int port, string? pkiRoot = null, int extraIntVars = 0)
     {
         Port = port;
+        _extraIntVars = extraIntVars;
         if (pkiRoot is null)
         {
             _pkiRoot = Path.Combine(Path.GetTempPath(), "dc-it-ua-" + Guid.NewGuid().ToString("N")[..8]);
@@ -51,7 +53,7 @@ internal sealed class TestUaServerHost : IAsyncDisposable
         // 首次生成 self-signed 证书；隔离到 _pkiRoot 不污染开发者机器
         await _app.CheckApplicationInstanceCertificate(silent: true, minimumKeySize: 2048).ConfigureAwait(false);
 
-        _server = new MinimalUaServer();
+        _server = new MinimalUaServer(_extraIntVars);
         await _app.Start(_server).ConfigureAwait(false);
     }
 
