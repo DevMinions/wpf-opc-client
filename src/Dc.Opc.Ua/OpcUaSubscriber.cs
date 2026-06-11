@@ -229,7 +229,9 @@ public sealed class OpcUaSubscriber : IOpcSubscriber
 
             var s = _session;
             if (s is null) continue;
-            if (s.Connected)
+            // 活性:Session.Connected 是缓存标志(server 断开后不翻假),必须叠加 KeepAliveStopped(SDK 探到会话keepalive停止)
+            // 才能在真掉线(自动重连一直失败)时停写心跳,让编排器看门狗按设计进 Restarting/Faulted。
+            if (s.Connected && !s.KeepAliveStopped)
             {
                 _heartbeats.Writer.TryWrite(new HeartBeat(ChannelId, DateTimeOffset.UtcNow, s.Endpoint?.EndpointUrl));
             }
