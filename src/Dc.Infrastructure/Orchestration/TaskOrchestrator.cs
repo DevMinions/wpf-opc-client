@@ -310,10 +310,15 @@ public sealed class TaskOrchestrator : IAsyncDisposable
             var req = rt.Request;
             // 原地重绑：rt 全程留在 _running，重连失败也不移除 → GetDiagnostics 持续发该行，
             // 修复「重连失败任务凭空消失」缺陷，并让 Restarting/Faulted 状态可观测。
-            SetState(rt, ConnectionState.Restarting);
-            rt.LastRestartAt = DateTimeOffset.UtcNow;
-            rt.ConsecutiveStaleRestarts++;
-            rt.RestartCount++;
+            // 状态与连续陈旧计数一并在 _stateLock 内原子完成：与心跳恢复路径（同锁写 =0）
+            // 互斥，避免「++（重启开始）」与并发心跳回调 =0 的竞态。
+            lock (_stateLock)
+            {
+                rt.State = ConnectionState.Restarting;
+                rt.ConsecutiveStaleRestarts++;
+            }
+            rt.LastRestartAt = DateTimeOffset.UtcNow;   // 心跳路径不写，无需进锁
+            rt.RestartCount++;                          // 同上
             _logger?.LogWarning("任务 {TaskId} ({Protocol}) 心跳超时（>{Timeout}），看门狗原地重连（第 {Count} 次）",
                 taskId, req.Protocol, _options.HeartbeatTimeout, rt.RestartCount);
 
@@ -338,7 +343,7 @@ public sealed class TaskOrchestrator : IAsyncDisposable
                 cts.Dispose();
                 // 占位 Cts/PipelineTask 供后续 Stop 安全；推回心跳让下次 tick 再试；置 Faulted。
                 rt.PipelineTask = Task.CompletedTask;
-                rt.Cts = new CancellationTokenSource();
+                rt.Cts = CancellationTokenSource.CreateLinkedTokenSource(_hostCts.Token);
                 SetState(rt, ConnectionState.Faulted);
                 rt.LastHeartbeat = DateTimeOffset.UtcNow - _options.HeartbeatTimeout - TimeSpan.FromSeconds(1);
                 return;
@@ -348,9 +353,13 @@ public sealed class TaskOrchestrator : IAsyncDisposable
             rt.Subscriber = subscriber;
             rt.Cts = cts;
             rt.LastHeartbeat = DateTimeOffset.UtcNow;
-            SetState(rt, rt.ConsecutiveStaleRestarts >= _options.FaultThreshold
-                ? ConnectionState.Faulted   // 重连上了但反复超时 → 仍标故障，待心跳确认恢复
-                : ConnectionState.Running);
+            // 在同一 _stateLock 内读 ConsecutiveStaleRestarts + 写 State，保持与心跳路径一致。
+            lock (_stateLock)
+            {
+                rt.State = rt.ConsecutiveStaleRestarts >= _options.FaultThreshold
+                    ? ConnectionState.Faulted   // 重连上了但反复超时 → 仍标故障，待心跳确认恢复
+                    : ConnectionState.Running;
+            }
             rt.PipelineTask = Task.Run(() => RunPipelineAsync(rt, cts.Token));
         }
         finally
