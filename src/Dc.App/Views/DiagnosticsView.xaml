@@ -135,8 +135,9 @@
                         <StackPanel>
                             <TextBlock Text="发送错误" FontSize="12"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <TextBlock x:Name="ErrVal" Text="{Binding TotalErrors}" FontSize="26" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource SystemFillColorCriticalBrush}">
+                            <!-- 颜色全由下方 Style 决定（值=0 中性、>0 红）：本地 Foreground 会盖过
+                                 Style 触发器导致 0 也恒红，故移除；与右侧「重启次数」卡做法一致。 -->
+                            <TextBlock Text="{Binding TotalErrors}" FontSize="26" FontWeight="SemiBold">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
