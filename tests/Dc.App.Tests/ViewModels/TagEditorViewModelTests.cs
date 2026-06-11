@@ -43,4 +43,17 @@ public class TagEditorViewModelTests
         Assert.Contains("编辑 Tag", vm.Title);
         Assert.Contains("温度组", vm.Title);
     }
+
+    [Fact]
+    public void Edit_OrphanedGroup_ShowsSelector_TitlePlain()
+    {
+        // existing.GroupId 不在 AvailableGroups 中（分组已删）→ 无法锁定 → 显示选择器、标题退化
+        var g = Grp("g1", "温度组");
+        var existing = new Tag { Id = "tag1", Item = "x", DataType = 4, GroupId = "GONE", TaskId = "t1" };
+        var vm = new TagEditorViewModel(new[] { g }, existing, defaultGroup: null);
+
+        Assert.True(vm.ShowGroupSelector);
+        Assert.Null(vm.Group);
+        Assert.Equal("编辑 Tag", vm.Title);
+    }
 }

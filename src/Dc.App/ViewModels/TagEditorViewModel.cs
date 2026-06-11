@@ -19,7 +19,7 @@ public partial class TagEditorViewModel : ObservableObject
     public string? OriginalId { get; }
     public ObservableCollection<Group> AvailableGroups { get; } = new();
     public IReadOnlyList<OpcDataTypeOption> DataTypeOptions => OpcDataTypeOption.All;
-    public bool ShowGroupSelector { get; private set; }
+    public bool ShowGroupSelector { get; }
 
     public TagEditorViewModel(
         IEnumerable<Group> groups,

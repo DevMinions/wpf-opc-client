@@ -42,4 +42,17 @@ public class GroupEditorViewModelTests
         Assert.Contains("编辑分组", vm.Title);
         Assert.Contains("炉温", vm.Title);
     }
+
+    [Fact]
+    public void Edit_OrphanedTask_ShowsSelector_TitlePlain()
+    {
+        // existing.TaskId 不在 AvailableTasks 中（任务已删）→ 无法锁定 → 显示选择器、标题退化
+        var t = Task("t1", "炉温");
+        var existing = new Group { Id = "g1", Name = "G", TaskId = "GONE" };
+        var vm = new GroupEditorViewModel(new[] { t }, existing, defaultTask: null);
+
+        Assert.True(vm.ShowTaskSelector);
+        Assert.Null(vm.Task);
+        Assert.Equal("编辑分组", vm.Title);
+    }
 }
