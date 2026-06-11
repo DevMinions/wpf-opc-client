@@ -184,7 +184,7 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         {
             Gauge(sb, "dc_livedata_flush_ms_p50", "LiveData flush 耗时 p50（毫秒）。", g => g.Line(null, live.P50Ms));
             Gauge(sb, "dc_livedata_flush_ms_p95", "LiveData flush 耗时 p95（毫秒）。", g => g.Line(null, live.P95Ms));
-            Gauge(sb, "dc_livedata_coalesce_ratio", "LiveData 合并比（原始/输出）。", g => g.Line(null, live.CoalesceRatio));
+            Gauge(sb, "dc_livedata_coalesce_ratio", "LiveData 合并比（原始输入条数 / 输出 key 数，越大越密）。", g => g.Line(null, live.CoalesceRatio));
             Gauge(sb, "dc_livedata_rows", "LiveData 当前行数。", g => g.Line(null, live.Rows));
             Gauge(sb, "dc_livedata_updates_per_second", "LiveData 每秒原始更新数。", g => g.Line(null, live.UpdatesPerSecond));
         }
