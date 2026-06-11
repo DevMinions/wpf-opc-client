@@ -44,6 +44,8 @@ public partial class TaskEditorViewModel : ObservableValidator
     [RegularExpression(@"^[^:]+:\d+$", ErrorMessage = "TCP 地址格式应为 host:port")]
     private string _tcpAddress = "127.0.0.1:5000";
 
+    [ObservableProperty] private bool _useSecurity = true;   // 仅 UA 生效，默认安全
+
     // DA 扫描 UI
     [ObservableProperty] private string _discoveryHost = "localhost";
     [ObservableProperty] private string? _selectedDiscoveredServer;
@@ -51,6 +53,7 @@ public partial class TaskEditorViewModel : ObservableValidator
     [ObservableProperty] private string _scanStatus = string.Empty;
     public ObservableCollection<string> DiscoveredServers { get; } = new();
 
+    public bool IsUaProtocol => Protocol == OpcProtocol.Ua;
     public bool IsDaProtocol => Protocol == OpcProtocol.Da;
     // DA 和 AE 都走 classic OPC（DCOM/COM），扫描发现 + CLSID 兜底 UI 两者共用
     public bool IsClassicOpcProtocol => Protocol == OpcProtocol.Da || Protocol == OpcProtocol.Ae;
@@ -86,6 +89,7 @@ public partial class TaskEditorViewModel : ObservableValidator
             _interval = existing.Interval;
             _deviation = existing.Deviation;
             _tcpAddress = existing.TcpAddress;
+            _useSecurity = existing.UseSecurity;
             if (!string.IsNullOrEmpty(existing.Node)) _discoveryHost = existing.Node;
         }
 
@@ -96,6 +100,7 @@ public partial class TaskEditorViewModel : ObservableValidator
 
     partial void OnProtocolChanged(OpcProtocol value)
     {
+        OnPropertyChanged(nameof(IsUaProtocol));
         OnPropertyChanged(nameof(IsDaProtocol));
         OnPropertyChanged(nameof(IsClassicOpcProtocol));
     }
@@ -180,6 +185,7 @@ public partial class TaskEditorViewModel : ObservableValidator
         Type = (byte)Protocol,
         Interval = Interval,
         Deviation = Deviation,
-        TcpAddress = TcpAddress.Trim()
+        TcpAddress = TcpAddress.Trim(),
+        UseSecurity = UseSecurity
     };
 }
