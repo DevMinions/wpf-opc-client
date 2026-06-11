@@ -37,7 +37,7 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
     private readonly Func<LiveFlushStats?>? _liveFlushProvider;
     // 可选压测 runner：(tags,hz,seconds)->injected。null → /debug/stress 走 404（默认不暴露）。
     // App 侧仅在 DC_DEBUG_STRESS=1 时注入，沿用 screenshot「provider 存在即启用」门控。
-    private readonly Func<int, int, int, Task<long>>? _stressRunner;
+    private readonly Func<int, int, int, CancellationToken, Task<long>>? _stressRunner;
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -48,7 +48,7 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         ILogger<MetricsHttpServer>? logger = null,
         Func<byte[]?>? screenshotProvider = null,
         Func<LiveFlushStats?>? liveFlushProvider = null,
-        Func<int, int, int, Task<long>>? stressRunner = null)
+        Func<int, int, int, CancellationToken, Task<long>>? stressRunner = null)
     {
         _provider = diagnosticsProvider;
         _options = options ?? new MetricsServerOptions();
@@ -145,7 +145,7 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                 var seconds = ParseInt(qs["seconds"], 30);
                 // 后台运行、立即 202：避免阻塞单连接串行循环，压测期间 /metrics /healthz 仍可服务（dc-remote 边压边抓）。
                 // 调试端点，后台 Task 的异常吞掉不外抛（不影响诊断服务）。压测结果经 /metrics 的 dc_livedata_* 读取。
-                _ = _stressRunner(tags, hz, seconds).ContinueWith(
+                _ = _stressRunner(tags, hz, seconds, _cts?.Token ?? CancellationToken.None).ContinueWith(
                     t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
                 Write(ctx, 202, "application/json; charset=utf-8",
                     $"{{\"started\":true,\"tags\":{tags},\"hz\":{hz},\"seconds\":{seconds}}}");

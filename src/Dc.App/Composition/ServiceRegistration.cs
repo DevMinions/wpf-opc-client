@@ -105,9 +105,9 @@ public static class ServiceRegistration
             var orch = sp.GetRequiredService<TaskOrchestrator>();
             // 压测发生器仅在 DC_DEBUG_STRESS=1 时注入；否则 stressRunner=null → /debug/stress 走 404（产线默认关）。
             var stressEnabled = Environment.GetEnvironmentVariable("DC_DEBUG_STRESS") == "1";
-            Func<int, int, int, Task<long>>? stressRunner = stressEnabled
-                ? (tags, hz, seconds) => new SyntheticLoadGenerator(orch.InjectSynthetic)
-                    .RunAsync("stress", tags, hz, seconds, CancellationToken.None)
+            Func<int, int, int, CancellationToken, Task<long>>? stressRunner = stressEnabled
+                ? (tags, hz, seconds, ct) => new SyntheticLoadGenerator(orch.InjectSynthetic)
+                    .RunAsync("stress", tags, hz, seconds, ct)
                 : null;
             return new MetricsHttpServer(
                 orch.GetDiagnostics,

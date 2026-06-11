@@ -129,7 +129,7 @@ public class MetricsHttpServerE2ETests
 
         // 有 runner：GET → 405；POST → 202 + started，且 runner 后台收到解析参数
         var tcs = new TaskCompletionSource<(int, int, int)>();
-        Func<int, int, int, Task<long>> runner = (t, h, s) => { tcs.TrySetResult((t, h, s)); return Task.FromResult(123L); };
+        Func<int, int, int, CancellationToken, Task<long>> runner = (t, h, s, ct) => { tcs.TrySetResult((t, h, s)); return Task.FromResult(123L); };
         var portB = GetFreePort();
         var withRunner = new MetricsHttpServer(
             Sample, new MetricsServerOptions { Enabled = true, Prefix = $"http://127.0.0.1:{portB}/" },
