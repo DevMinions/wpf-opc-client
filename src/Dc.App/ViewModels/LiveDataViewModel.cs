@@ -108,12 +108,12 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
             tryDequeue: () => _buffer.TryDequeue(out var it)
                 ? (true, $"{it.TaskId}::{it.Value.Item}", it)
                 : (false, string.Empty, default),
-            apply: (_, it) => Apply(it.TaskId, it.Value));
+            apply: (_, it, n) => Apply(it.TaskId, it.Value, n));
 
         var rawCount = _coalescer.LastInputCount; // 原始流入条数（速率用）
 
         // 超限淘汰：最旧恒为 Rows[0]（只末尾 Add、只最旧端淘汰），key 由行重建 → 无线性查找
-        while (_rowIndex.Count > MaxRows)
+        while (Rows.Count > MaxRows)
         {
             var victim = Rows[0];
             Rows.RemoveAt(0);
@@ -137,7 +137,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
 
     internal void FlushForTest() => FlushBuffer();
 
-    private void Apply(string taskId, TagValue v)
+    private void Apply(string taskId, TagValue v, int rawCount)
     {
         if (!AvailableTaskIds.Contains(taskId)) AvailableTaskIds.Add(taskId);
 
@@ -148,7 +148,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
             _rowIndex[key] = row;
             Rows.Add(row);
         }
-        row.Apply(v);
+        row.Apply(v, rawCount);
     }
 
     partial void OnTaskFilterChanged(string? value) => RowsView.Refresh();

@@ -26,7 +26,7 @@ public class LiveCoalesceBenchmarkTests
         var sw = Stopwatch.StartNew();
         c.Coalesce(
             () => idx < items.Count ? (true, items[idx].Key, items[idx++].Val) : (false, string.Empty, 0),
-            (k, _) => appliedKeys.Add(k));
+            (k, _, _) => appliedKeys.Add(k));
         sw.Stop();
 
         var ratio = (double)c.LastInputCount / Math.Max(1, c.LastOutputCount);

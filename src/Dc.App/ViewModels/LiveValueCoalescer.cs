@@ -7,6 +7,7 @@ namespace Dc.App.ViewModels;
 public sealed class LiveValueCoalescer<TValue>
 {
     private readonly Dictionary<string, TValue> _latest = new();
+    private readonly Dictionary<string, int> _counts = new();
     private readonly List<string> _order = new();
 
     /// <summary>上次 Coalesce 的输入条数。</summary>
@@ -17,11 +18,13 @@ public sealed class LiveValueCoalescer<TValue>
 
     /// <summary>
     /// 排空 tryDequeue 返回的所有项，合并为每 key 最新值；
-    /// 然后按 key 首次出现顺序对每 key 触发一次 apply(key, latestValue)。
+    /// 然后按 key 首次出现顺序对每 key 触发一次 apply(key, latestValue, rawCount)，
+    /// 其中第三参 rawCount = 该 key 本批被折叠的原始条数（用于保真累加，如 UpdateCount）。
     /// </summary>
-    public void Coalesce(Func<(bool ok, string key, TValue value)> tryDequeue, Action<string, TValue> apply)
+    public void Coalesce(Func<(bool ok, string key, TValue value)> tryDequeue, Action<string, TValue, int> apply)
     {
         _latest.Clear();
+        _counts.Clear();
         _order.Clear();
         var input = 0;
         while (true)
@@ -31,9 +34,10 @@ public sealed class LiveValueCoalescer<TValue>
             input++;
             if (!_latest.ContainsKey(key)) _order.Add(key);
             _latest[key] = value;
+            _counts[key] = _counts.GetValueOrDefault(key) + 1;
         }
         LastInputCount = input;
         LastOutputCount = _order.Count;
-        foreach (var key in _order) apply(key, _latest[key]);
+        foreach (var key in _order) apply(key, _latest[key], _counts[key]);
     }
 }

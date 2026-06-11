@@ -37,4 +37,35 @@ public class LiveDataViewModelEvictionTests
         Assert.Contains(vm.Rows, r => r.Item == "item50");
         Assert.Contains(vm.Rows, r => r.Item == "item5049");
     }
+
+    [Fact]
+    public void Flush_ExactlyMaxRows_NoEviction()
+    {
+        var vm = NewVm(out _);
+        for (var i = 0; i < 5000; i++)
+            vm.EnqueueForTest("T1", new TagValue($"item{i}", i, 0xC0, DateTimeOffset.UtcNow));
+        vm.FlushForTest();
+        Assert.Equal(5000, vm.Rows.Count);
+        Assert.Contains(vm.Rows, r => r.Item == "item0");      // 边界：恰好不淘汰
+        Assert.Contains(vm.Rows, r => r.Item == "item4999");
+    }
+
+    [Fact]
+    public void Flush_MultipleAccumulating_EvictsAcrossFlushes()
+    {
+        var vm = NewVm(out _);
+        for (var i = 0; i < 4900; i++)
+            vm.EnqueueForTest("T1", new TagValue($"item{i}", i, 0xC0, DateTimeOffset.UtcNow));
+        vm.FlushForTest();
+        Assert.Equal(4900, vm.Rows.Count); // 未超限
+
+        for (var i = 4900; i < 5100; i++) // 再加 200 个新 key → 共 5100，淘汰 100
+            vm.EnqueueForTest("T1", new TagValue($"item{i}", i, 0xC0, DateTimeOffset.UtcNow));
+        vm.FlushForTest();
+        Assert.Equal(5000, vm.Rows.Count);
+        Assert.DoesNotContain(vm.Rows, r => r.Item == "item0");   // 第一批最旧的被淘汰
+        Assert.DoesNotContain(vm.Rows, r => r.Item == "item99");
+        Assert.Contains(vm.Rows, r => r.Item == "item100");
+        Assert.Contains(vm.Rows, r => r.Item == "item5099");
+    }
 }

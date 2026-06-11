@@ -19,7 +19,7 @@ public class LiveValueCoalescerTests
         var c = new LiveValueCoalescer<int>();
         var applied = new List<(string Key, int Val)>();
 
-        c.Coalesce(DequeueFrom(q), (k, v) => applied.Add((k, v)));
+        c.Coalesce(DequeueFrom(q), (k, v, _) => applied.Add((k, v)));
 
         Assert.Equal(new[] { ("a", 3), ("b", 5), ("c", 4) }, applied);
         Assert.Equal(5, c.LastInputCount);
@@ -33,7 +33,7 @@ public class LiveValueCoalescerTests
         var c = new LiveValueCoalescer<int>();
         var applied = new List<(string, int)>();
 
-        c.Coalesce(DequeueFrom(q), (k, v) => applied.Add((k, v)));
+        c.Coalesce(DequeueFrom(q), (k, v, _) => applied.Add((k, v)));
 
         Assert.Single(applied);
         Assert.Equal(("k", 10_000), applied[0]);
@@ -48,7 +48,7 @@ public class LiveValueCoalescerTests
         var c = new LiveValueCoalescer<int>();
         var applied = 0;
 
-        c.Coalesce(DequeueFrom(q), (_, _) => applied++);
+        c.Coalesce(DequeueFrom(q), (_, _, _) => applied++);
 
         Assert.Equal(0, applied);
         Assert.Equal(0, c.LastInputCount);
@@ -60,14 +60,25 @@ public class LiveValueCoalescerTests
     {
         var c = new LiveValueCoalescer<int>();
         var q1 = new Queue<(string, int)>(new[] { ("a", 1) });
-        c.Coalesce(DequeueFrom(q1), (_, _) => { });
+        c.Coalesce(DequeueFrom(q1), (_, _, _) => { });
 
         var q2 = new Queue<(string, int)>(new[] { ("b", 2), ("b", 3) });
         var applied = new List<(string, int)>();
-        c.Coalesce(DequeueFrom(q2), (k, v) => applied.Add((k, v)));
+        c.Coalesce(DequeueFrom(q2), (k, v, _) => applied.Add((k, v)));
 
         Assert.Equal(new[] { ("b", 3) }, applied);
         Assert.Equal(2, c.LastInputCount);
         Assert.Equal(1, c.LastOutputCount);
+    }
+
+    [Fact]
+    public void Coalesce_PassesPerKeyRawCount()
+    {
+        var q = new Queue<(string, int)>(new[] { ("a", 1), ("a", 2), ("b", 3), ("a", 4) });
+        var c = new LiveValueCoalescer<int>();
+        var counts = new Dictionary<string, int>();
+        c.Coalesce(DequeueFrom(q), (k, _, n) => counts[k] = n);
+        Assert.Equal(3, counts["a"]); // a 出现 3 次
+        Assert.Equal(1, counts["b"]);
     }
 }
