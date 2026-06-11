@@ -61,7 +61,7 @@
                             <RowDefinition Height="36" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="108" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
@@ -110,7 +110,7 @@
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
                             <DockPanel LastChildFill="True" Margin="0,0,0,6">
                                 <TextBlock Text="目标 IP:" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           VerticalAlignment="Center" Width="96" DockPanel.Dock="Left" />
+                                           VerticalAlignment="Center" Width="108" DockPanel.Dock="Left" />
                                 <Button DockPanel.Dock="Right" AutomationProperties.AutomationId="ScanRun" Content="扫描" Margin="8,0,0,0"
                                         Command="{Binding ScanCommand}"
                                         Style="{StaticResource DcBtnGhostSm}" />
@@ -119,7 +119,7 @@
                             </DockPanel>
                             <DockPanel LastChildFill="True" Margin="0,0,0,4">
                                 <TextBlock Text="发现:" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           VerticalAlignment="Center" Width="96" DockPanel.Dock="Left" />
+                                           VerticalAlignment="Center" Width="108" DockPanel.Dock="Left" />
                                 <ComboBox AutomationProperties.AutomationId="ScanResult" ItemsSource="{Binding DiscoveredServers}" SelectedItem="{Binding SelectedDiscoveredServer}"
                                           VerticalAlignment="Center" />
                             </DockPanel>
@@ -134,7 +134,7 @@
                               IsExpanded="False">
                         <DockPanel LastChildFill="True" Margin="0,8,0,0">
                             <TextBlock Text="CLSID:" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                       VerticalAlignment="Center" Width="96" DockPanel.Dock="Left" />
+                                       VerticalAlignment="Center" Width="108" DockPanel.Dock="Left" />
                             <TextBox AutomationProperties.AutomationId="TaskClsid" VerticalAlignment="Center" FontFamily="Consolas"
                                      Text="{Binding Clsid, UpdateSourceTrigger=PropertyChanged}"
                                      controls:Placeholder.Text="CLSID 格式: 5CEE2576-..." />

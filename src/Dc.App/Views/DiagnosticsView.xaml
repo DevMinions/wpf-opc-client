@@ -271,9 +271,10 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
+                            <!-- 任务列弹性：吸收剩余宽度，其余列固定 → 表格自适应窗宽、右侧列不被截 -->
                             <DataGridTextColumn Header="任务"
                                                 Binding="{Binding TaskId}"
-                                                Width="180" />
+                                                Width="*" MinWidth="140" />
                             <DataGridTextColumn Header="启动"
                                                 Binding="{Binding StartedAt, StringFormat={}{0:HH:mm:ss}}"
                                                 Width="80"
