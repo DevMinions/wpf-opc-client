@@ -4,6 +4,7 @@ using Xunit;
 
 namespace Dc.Infrastructure.Tests.Orchestration;
 
+[Collection("Timing-Sensitive")]
 public class SyntheticLoadGeneratorTests
 {
     [Fact]
