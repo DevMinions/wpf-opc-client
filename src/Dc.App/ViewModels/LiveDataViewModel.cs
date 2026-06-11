@@ -17,6 +17,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     private readonly Dispatcher _dispatcher;
     private readonly Dictionary<string, LiveDataRowViewModel> _rowIndex = new();
     private readonly ConcurrentQueue<(string TaskId, TagValue Value)> _buffer = new();
+    private readonly LiveValueCoalescer<(string TaskId, TagValue Value)> _coalescer = new();
     private readonly DispatcherTimer _batchTimer;
     private bool _disposed;
 
@@ -103,27 +104,26 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     /// <summary>将缓冲区所有值批量应用到 UI 行。</summary>
     private void FlushBuffer()
     {
-        var count = 0;
-        while (_buffer.TryDequeue(out var item))
-        {
-            Apply(item.TaskId, item.Value);
-            count++;
-        }
+        _coalescer.Coalesce(
+            tryDequeue: () => _buffer.TryDequeue(out var it)
+                ? (true, $"{it.TaskId}::{it.Value.Item}", it)
+                : (false, string.Empty, default),
+            apply: (_, it) => Apply(it.TaskId, it.Value));
 
-        // 超限时移除最旧行
+        var rawCount = _coalescer.LastInputCount; // 原始流入条数（速率用）
+
+        // 超限淘汰：最旧恒为 Rows[0]（只末尾 Add、只最旧端淘汰），key 由行重建 → 无线性查找
         while (_rowIndex.Count > MaxRows)
         {
-            // 找到最旧的 key（按插入顺序，Dictionary 在 .NET 8 保持插入序）
-            var oldestKey = _rowIndex.Keys.First();
-            var oldestRow = _rowIndex[oldestKey];
-            _rowIndex.Remove(oldestKey);
-            Rows.Remove(oldestRow);
+            var victim = Rows[0];
+            Rows.RemoveAt(0);
+            _rowIndex.Remove($"{victim.TaskId}::{victim.Item}");
         }
 
-        if (count > 0 || RowCount != Rows.Count) RowCount = Rows.Count;
+        if (rawCount > 0 || RowCount != Rows.Count) RowCount = Rows.Count;
 
         // 更新速率 /s：累计本次应用数，每 ≥1s 折算一次
-        _updatesAccum += count;
+        _updatesAccum += rawCount;
         var elapsed = (DateTimeOffset.UtcNow - _lastRateAt).TotalSeconds;
         if (elapsed >= 1.0)
         {
@@ -132,6 +132,10 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
             _lastRateAt = DateTimeOffset.UtcNow;
         }
     }
+
+    internal void EnqueueForTest(string taskId, TagValue v) => _buffer.Enqueue((taskId, v));
+
+    internal void FlushForTest() => FlushBuffer();
 
     private void Apply(string taskId, TagValue v)
     {
