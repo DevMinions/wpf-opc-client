@@ -321,5 +321,6 @@ public class TaskOrchestratorTests
             if (condition()) return;
             await Task.Delay(10);
         }
+        Assert.True(condition(), "WaitForAsync 条件未在超时内满足");
     }
 }

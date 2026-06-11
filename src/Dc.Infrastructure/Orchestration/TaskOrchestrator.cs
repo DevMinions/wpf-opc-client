@@ -200,8 +200,8 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         }
 
         runtime.LastHeartbeat = DateTimeOffset.UtcNow;
-        runtime.PipelineTask = Task.Run(() => RunPipelineAsync(runtime, cts.Token));
         SetState(runtime, ConnectionState.Running);
+        runtime.PipelineTask = Task.Run(() => RunPipelineAsync(runtime, cts.Token));
         _logger?.LogInformation("任务 {TaskId} ({Protocol}) 已启动，订阅 {TagCount} 个 tag → {Publisher}",
             request.TaskId, request.Protocol, request.Tags.Count, request.PublisherAddress);
     }
@@ -273,7 +273,8 @@ public sealed class TaskOrchestrator : IAsyncDisposable
             // 仅取候选 id（无锁）；真正的 staleness 判定与重启在锁内重新校验，避免按陈旧快照
             // 复活用户已 StopAsync 的任务，并让 RestartCount 与重启动作原子。
             var candidates = _running
-                .Where(kv => now - kv.Value.LastHeartbeat > _options.HeartbeatTimeout)
+                .Where(kv => kv.Value.State != ConnectionState.Connecting
+                          && now - kv.Value.LastHeartbeat > _options.HeartbeatTimeout)
                 .Select(kv => kv.Key)
                 .ToArray();
 
