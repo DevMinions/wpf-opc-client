@@ -27,6 +27,28 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     /// <summary>批量应用间隔（毫秒）。</summary>
     private const int BatchIntervalMs = 100;
 
+    /// <summary>搜索框防抖间隔（毫秒）：静默该时长后才刷新一次视图。</summary>
+    private const int SearchDebounceMs = 250;
+
+    private DispatcherTimer? _searchDebounce;
+
+    internal int RefreshCountForTest { get; private set; }
+
+    internal void ResetRefreshCountForTest() => RefreshCountForTest = 0;
+
+    private void DoRefresh()
+    {
+        RowsView.Refresh();
+        RefreshCountForTest++;
+    }
+
+    // 测试用：模拟 250ms 静默后的 Tick（直接触发刷新，绕过真实计时，避免 flaky）
+    internal void DebounceTickForTest()
+    {
+        _searchDebounce?.Stop();
+        DoRefresh();
+    }
+
     private readonly Action<string>? _navigate;
 
     [ObservableProperty] private string _title = "实时数据";
@@ -74,6 +96,13 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
             Interval = TimeSpan.FromMilliseconds(BatchIntervalMs)
         };
         _batchTimer.Tick += (_, _) => FlushBuffer();
+
+        // 搜索防抖定时器：连续输入只在静默 250ms 后刷新一次视图（5000 行打字不顿）
+        _searchDebounce = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
+        {
+            Interval = TimeSpan.FromMilliseconds(SearchDebounceMs)
+        };
+        _searchDebounce.Tick += (_, _) => { _searchDebounce!.Stop(); DoRefresh(); };
     }
 
     /// <summary>页面可见时调用（view Loaded）：订阅数据 + 启动批处理。幂等。</summary>
@@ -92,6 +121,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
         _running = false;
         _orchestrator.TagValueReceived -= OnTagValueReceived;
         _batchTimer.Stop();
+        _searchDebounce?.Stop();
     }
 
     private void OnTagValueReceived(string taskId, TagValue v)
@@ -151,9 +181,14 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
         row.Apply(v, rawCount);
     }
 
-    partial void OnTaskFilterChanged(string? value) => RowsView.Refresh();
+    partial void OnTaskFilterChanged(string? value) => DoRefresh(); // 下拉非高频，保持即时刷新
 
-    partial void OnSearchTextChanged(string value) => RowsView.Refresh();
+    partial void OnSearchTextChanged(string value)
+    {
+        // 高频输入：重置防抖窗口，静默 250ms 后由 Tick 触发一次刷新
+        _searchDebounce?.Stop();
+        _searchDebounce?.Start();
+    }
 
     [RelayCommand]
     private void NavigateToWorkspace() => _navigate?.Invoke("workspace");
@@ -161,6 +196,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     [RelayCommand]
     private void Clear()
     {
+        _searchDebounce?.Stop(); // 清空后避免挂起的防抖回调刷新已清集合
         _rowIndex.Clear();
         Rows.Clear();
         AvailableTaskIds.Clear();
@@ -178,5 +214,6 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
         if (_disposed) return;
         _disposed = true;
         Stop();
+        _searchDebounce?.Stop();
     }
 }

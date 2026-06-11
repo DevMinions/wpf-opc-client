@@ -68,4 +68,29 @@ public class LiveDataViewModelEvictionTests
         Assert.Contains(vm.Rows, r => r.Item == "item100");
         Assert.Contains(vm.Rows, r => r.Item == "item5099");
     }
+
+    [Fact]
+    public void SearchText_RapidChanges_RefreshesOnceAfterDebounceTick()
+    {
+        var vm = NewVm(out _);
+        vm.ResetRefreshCountForTest();
+
+        vm.SearchText = "a";
+        vm.SearchText = "ab";
+        vm.SearchText = "abc";
+        // 防抖窗口内多次赋值，Tick 未到 → 尚未刷新
+        Assert.Equal(0, vm.RefreshCountForTest);
+
+        vm.DebounceTickForTest(); // 模拟 250ms 静默后 Tick
+        Assert.Equal(1, vm.RefreshCountForTest);
+    }
+
+    [Fact]
+    public void TaskFilter_Change_RefreshesImmediately()
+    {
+        var vm = NewVm(out _);
+        vm.ResetRefreshCountForTest();
+        vm.TaskFilter = "T1";
+        Assert.Equal(1, vm.RefreshCountForTest); // 下拉即时刷新
+    }
 }
