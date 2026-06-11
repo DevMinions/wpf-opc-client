@@ -160,8 +160,8 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                 if (_faultInjector is null) { Write(ctx, 404, "text/plain; charset=utf-8", "not found"); break; }
                 if (ctx.Request.HttpMethod != "POST") { Write(ctx, 405, "text/plain; charset=utf-8", "method not allowed"); break; }
                 var fq = ctx.Request.QueryString;
-                var ftask = (fq["task"] ?? "").Replace("\"", "");   // 去引号防破坏 JSON
-                var fkind = (fq["kind"] ?? "stall").Replace("\"", "");
+                var ftask = EscapeJson(fq["task"] ?? "");
+                var fkind = EscapeJson(fq["kind"] ?? "stall");
                 var hit = _faultInjector(ftask, fkind);
                 Write(ctx, 200, "application/json; charset=utf-8",
                     $"{{\"injected\":{(hit ? "true" : "false")},\"task\":\"{ftask}\",\"kind\":\"{fkind}\"}}");
@@ -174,6 +174,11 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
 
     // query 整数解析：缺省/非法/非正 → def（压测参数都要 > 0）。
     private static int ParseInt(string? s, int def) => int.TryParse(s, out var v) && v > 0 ? v : def;
+
+    // 最小 JSON 字符串转义：反斜杠 → 引号 → 换行/回车/Tab。供 /debug/fault 回显 query 值。
+    private static string EscapeJson(string s)
+        => s.Replace("\\", "\\\\").Replace("\"", "\\\"")
+            .Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
 
     private static void Write(HttpListenerContext ctx, int status, string contentType, string body)
         => WriteBytes(ctx, status, contentType, Encoding.UTF8.GetBytes(body));

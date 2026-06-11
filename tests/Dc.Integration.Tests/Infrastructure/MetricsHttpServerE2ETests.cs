@@ -194,6 +194,17 @@ public class MetricsHttpServerE2ETests
             }
 
             Assert.Equal(("t1", "stall"), got);
+
+            // task 含反斜杠/引号不破坏响应（%5C 是反斜杠的 URL 编码）
+            using (var p2 = await http.PostAsync($"http://127.0.0.1:{portB}/debug/fault?task=a%5Cb&kind=stall", null))
+            {
+                Assert.Equal(HttpStatusCode.OK, p2.StatusCode);
+                var body2 = await p2.Content.ReadAsStringAsync();
+                Assert.Contains("\"injected\":true", body2);
+                // 反斜杠应被转义为 \\，响应是合法 JSON（用 System.Text.Json 解析不抛）
+                System.Text.Json.JsonDocument.Parse(body2);
+            }
+
             await withInj.StopAsync(CancellationToken.None);
         }
     }
