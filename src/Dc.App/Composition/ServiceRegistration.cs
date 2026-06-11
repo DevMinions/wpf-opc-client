@@ -100,12 +100,25 @@ public static class ServiceRegistration
                 Prefix = config?.GetValue<string>("Diagnostics:Http:Prefix") ?? "http://localhost:9090/"
             };
         });
-        services.AddSingleton<MetricsHttpServer>(sp => new MetricsHttpServer(
-            sp.GetRequiredService<TaskOrchestrator>().GetDiagnostics,
-            sp.GetRequiredService<MetricsServerOptions>(),
-            sp.GetService<Microsoft.Extensions.Logging.ILogger<MetricsHttpServer>>(),
-            // 桌面端注入 RenderTargetBitmap 后台截图;无头 Cli 不传 → /screenshot 给 503。
-            Dc.App.Services.Diagnostics.WpfScreenshot.Capture));
+        services.AddSingleton<MetricsHttpServer>(sp =>
+        {
+            var orch = sp.GetRequiredService<TaskOrchestrator>();
+            // 压测发生器仅在 DC_DEBUG_STRESS=1 时注入；否则 stressRunner=null → /debug/stress 走 404（产线默认关）。
+            var stressEnabled = Environment.GetEnvironmentVariable("DC_DEBUG_STRESS") == "1";
+            Func<int, int, int, Task<long>>? stressRunner = stressEnabled
+                ? (tags, hz, seconds) => new SyntheticLoadGenerator(orch.InjectSynthetic)
+                    .RunAsync("stress", tags, hz, seconds, CancellationToken.None)
+                : null;
+            return new MetricsHttpServer(
+                orch.GetDiagnostics,
+                sp.GetRequiredService<MetricsServerOptions>(),
+                sp.GetService<Microsoft.Extensions.Logging.ILogger<MetricsHttpServer>>(),
+                // 桌面端注入 RenderTargetBitmap 后台截图;无头 Cli 不传 → /screenshot 给 503。
+                Dc.App.Services.Diagnostics.WpfScreenshot.Capture,
+                // LiveData flush 指标：从单例 VM 取线程安全快照；VM 未建时 null → /metrics 不渲染 LiveData 段。
+                liveFlushProvider: () => sp.GetService<LiveDataViewModel>()?.GetFlushStats(),
+                stressRunner: stressRunner);
+        });
         services.AddHostedService(sp => sp.GetRequiredService<MetricsHttpServer>());
 
         services.AddSingleton<IOpcSubscriberFactory, Dc.Opc.Ua.OpcUaSubscriberFactory>();
