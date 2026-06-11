@@ -135,6 +135,7 @@ public static class ServiceRegistration
         services.AddSingleton<IOpcBrowserFactory, Dc.Opc.Ae.OpcAeBrowserFactory>();
 
         services.AddSingleton<ITaskEditorDialog, TaskEditorDialog>();
+        services.AddSingleton<IConfirmDialog, WpfConfirmDialog>();
         services.AddSingleton<IGroupEditorDialog, GroupEditorDialog>();
         services.AddSingleton<ITagEditorDialog, TagEditorDialog>();
         services.AddSingleton<IConfigEditorDialog, ConfigEditorDialog>();
@@ -217,7 +218,8 @@ public static class ServiceRegistration
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableGroupPanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableLivePanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableDiagPanel>(),
-                sp.GetRequiredService<Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel>()));
+                sp.GetRequiredService<Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel>(),
+                confirm: sp.GetRequiredService<Dc.App.Services.IConfirmDialog>()));
 
         // === 旧 VM 保留（其他 View 由 Shell 路由继续承载） ===
         services.AddSingleton<System.Windows.Threading.Dispatcher>(

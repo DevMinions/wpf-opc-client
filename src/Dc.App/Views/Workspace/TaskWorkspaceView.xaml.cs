@@ -45,6 +45,18 @@ public partial class TaskWorkspaceView : UserControl
         catch (Exception ex) { Log.Error(ex, "RestartSelected failed"); }
     }
 
+    private async void OnEdit(object s, System.Windows.RoutedEventArgs e)
+    {
+        try { if (Vm is { } v) await v.EditSelectedAsync(); }
+        catch (Exception ex) { Log.Error(ex, "EditSelected failed"); }
+    }
+
+    private async void OnDelete(object s, System.Windows.RoutedEventArgs e)
+    {
+        try { if (Vm is { } v) await v.DeleteSelectedAsync(); }
+        catch (Exception ex) { Log.Error(ex, "DeleteSelected failed"); }
+    }
+
     private async void OnNewTask(object s, System.Windows.RoutedEventArgs e)
     {
         try { if (Vm is { } v) await v.NewTaskAsync(); }

@@ -101,6 +101,13 @@
                         <TextBox Grid.Row="5" Grid.Column="1" AutomationProperties.AutomationId="TaskTcpAddress" Text="{Binding TcpAddress, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
 
+                    <!-- 安全连接：仅 UA 协议可见 -->
+                    <CheckBox Content="使用安全连接（推荐）"
+                              AutomationProperties.AutomationId="TaskUseSecurity"
+                              IsChecked="{Binding UseSecurity}"
+                              Visibility="{Binding IsUaProtocol, Converter={StaticResource BoolToVis}}"
+                              Margin="0,8,0,0" />
+
                     <!-- DA scan section -->
                     <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                             BorderThickness="0,1,0,0" Padding="0,10,0,8" Margin="0,10,0,0"

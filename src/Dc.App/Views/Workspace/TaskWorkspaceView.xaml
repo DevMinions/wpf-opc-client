@@ -246,6 +246,9 @@
                             </Style>
                         </Button.Style>
                     </Button>
+                    <!-- ✎ 编辑 / 🗑 删除：常驻，不随 IsRunning 切换可见 -->
+                    <Button Content="✎ 编辑" Margin="6,0,6,0" Click="OnEdit" Style="{StaticResource DcBtnGhostSm}" />
+                    <Button Content="🗑 删除" Click="OnDelete" Style="{StaticResource DcBtnGhostSm}" />
                 </StackPanel>
             </Grid>
 
