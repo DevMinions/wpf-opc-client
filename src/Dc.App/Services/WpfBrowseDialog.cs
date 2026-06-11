@@ -27,7 +27,7 @@ public sealed class WpfBrowseDialog : IBrowseDialog
         };
 
         var ok = window.ShowDialog() == true;
-        var nodeId = ok ? vm.SelectedNode?.Id : null;
+        var nodeId = ok ? vm.SelectedNode?.Node.Id : null;
         try { vm.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(2)); } catch { }
         return nodeId;
     }

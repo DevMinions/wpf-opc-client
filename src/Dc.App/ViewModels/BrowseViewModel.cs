@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dc.Opc.Abstractions;
+using System.Linq;
 
 namespace Dc.App.ViewModels;
 
@@ -23,7 +24,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     [ObservableProperty] private string _statusMessage = "未连接";
     [ObservableProperty] private bool _isConnectError;
     [ObservableProperty] private string _currentPath = "(根)";
-    [ObservableProperty] private OpcNode? _selectedNode;
+    [ObservableProperty] private BrowseNodeRowViewModel? _selectedNode;
 
     public bool ShowConnectPrompt => !Connected && !IsLoading && !IsConnectError;
 
@@ -36,7 +37,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     [ObservableProperty] private string _selectedNodeDataType = "—";
     [ObservableProperty] private string _selectedNodeValue = "—";
 
-    public ObservableCollection<OpcNode> Children { get; } = new();
+    public ObservableCollection<BrowseNodeRowViewModel> Children { get; } = new();
     public ObservableCollection<string> DiscoveredServers { get; } = new();
     public IReadOnlyList<OpcProtocol> AvailableProtocols { get; }
     public bool IsDaProtocol => Protocol == OpcProtocol.Da;
@@ -187,14 +188,14 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     private async Task DrillDownAsync()
     {
         if (SelectedNode is null || _browser is null) return;
-        if (SelectedNode.Kind != OpcNodeKind.Folder)
+        if (SelectedNode.Node.Kind != OpcNodeKind.Folder)
         {
-            StatusMessage = $"叶子节点不可下钻: {SelectedNode.Id}";
+            StatusMessage = $"叶子节点不可下钻: {SelectedNode.Node.Id}";
             return;
         }
-        _path.Push((SelectedNode.Id, SelectedNode.DisplayName));
+        _path.Push((SelectedNode.Node.Id, SelectedNode.Node.DisplayName));
         CurrentPath = string.Join(" / ", _path.Reverse().Select(p => p.Name));
-        await LoadChildrenAsync(SelectedNode.Id);
+        await LoadChildrenAsync(SelectedNode.Node.Id);
     }
 
     [RelayCommand(CanExecute = nameof(CanGoBack))]
@@ -211,7 +212,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     private void CopyNodeId()
     {
         if (SelectedNode is null) return;
-        try { System.Windows.Clipboard.SetText(SelectedNode.Id); StatusMessage = $"已复制: {SelectedNode.Id}"; }
+        try { System.Windows.Clipboard.SetText(SelectedNode.Node.Id); StatusMessage = $"已复制: {SelectedNode.Node.Id}"; }
         catch (Exception ex) { StatusMessage = $"复制失败: {ex.Message}"; }
     }
 
@@ -223,7 +224,9 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         {
             var list = await _browser.BrowseAsync(parentId);
             Children.Clear();
-            foreach (var n in list) Children.Add(n);
+            var rows = new List<BrowseNodeRowViewModel>(list.Count);
+            foreach (var n in list) { var r = new BrowseNodeRowViewModel(n); Children.Add(r); rows.Add(r); }
+            _ = LoadValuesAsync(rows);
         }
         catch (Exception ex)
         {
@@ -234,6 +237,26 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             IsLoading = false;
         }
     }
+
+    private async Task LoadValuesAsync(IReadOnlyList<BrowseNodeRowViewModel> rows)
+    {
+        if (_browser is null) return;
+        var items = rows.Where(r => r.Node.Kind == OpcNodeKind.Item).ToList();
+        if (items.Count == 0) return;
+        try
+        {
+            var values = await _browser.ReadValuesAsync(items.Select(r => r.Node.Id).ToList());
+            for (var i = 0; i < items.Count; i++) items[i].SetValue(values[i]);
+        }
+        catch (Exception ex)
+        {
+            foreach (var r in items) r.SetValue(null);
+            StatusMessage = $"读取值失败: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private Task RefreshValuesAsync() => LoadValuesAsync(Children.ToList());
 
     private async Task DisposeBrowserAsync()
     {
@@ -246,7 +269,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         Children.Clear();
     }
 
-    private bool CanDrill() => SelectedNode is { Kind: OpcNodeKind.Folder } && Connected;
+    private bool CanDrill() => SelectedNode?.Node is { Kind: OpcNodeKind.Folder } && Connected;
     private bool CanGoBack() => _path.Count > 1 && Connected;
     private bool CanCopy() => SelectedNode is not null;
 
@@ -266,13 +289,13 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         if (SelectedNode is null) return;
         try
         {
-            System.Windows.Clipboard.SetText(SelectedNode.Id);
-            StatusMessage = $"NodeId 已复制到剪贴板，请在 Tag 管理中新建并粘贴 Item: {SelectedNode.Id}";
+            System.Windows.Clipboard.SetText(SelectedNode.Node.Id);
+            StatusMessage = $"NodeId 已复制到剪贴板，请在 Tag 管理中新建并粘贴 Item: {SelectedNode.Node.Id}";
         }
         catch (Exception ex) { StatusMessage = $"操作失败: {ex.Message}"; }
     }
 
-    partial void OnSelectedNodeChanged(OpcNode? value)
+    partial void OnSelectedNodeChanged(BrowseNodeRowViewModel? value)
     {
         DrillDownCommand.NotifyCanExecuteChanged();
         CopyNodeIdCommand.NotifyCanExecuteChanged();
@@ -282,8 +305,8 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             SelectedNodeClass = SelectedNodeDataType = SelectedNodeValue = "—";
             return;
         }
-        SelectedNodeClass = value.Kind == OpcNodeKind.Folder ? "Folder" : "Variable";
-        if (value.Kind == OpcNodeKind.Item)
+        SelectedNodeClass = value.Node.Kind == OpcNodeKind.Folder ? "Folder" : "Variable";
+        if (value.Node.Kind == OpcNodeKind.Item)
         {
             SelectedNodeDataType = "…";
             SelectedNodeValue = "读取中…";
@@ -298,14 +321,14 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
 
     // 异步读取选中变量节点的真实值。OnSelectedNodeChanged 在 UI 线程触发、await 默认续回 UI 线程，
     // 故直接设属性安全。读完若选中已变，丢弃旧结果。DA/AE 浏览器未 override ReadValueAsync → 返回 null 显示「—」。
-    private async Task LoadSelectedNodeDetailAsync(OpcNode node)
+    private async Task LoadSelectedNodeDetailAsync(BrowseNodeRowViewModel row)
     {
         var browser = _browser;
         if (browser is null) return;
         try
         {
-            var r = await browser.ReadValueAsync(node.Id);
-            if (!ReferenceEquals(SelectedNode, node)) return;   // 选中已变，别覆盖
+            var r = await browser.ReadValueAsync(row.Node.Id);
+            if (!ReferenceEquals(SelectedNode, row)) return;   // 选中已变，别覆盖
             if (r is null)
             {
                 SelectedNodeDataType = "—";
@@ -318,7 +341,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            if (ReferenceEquals(SelectedNode, node))
+            if (ReferenceEquals(SelectedNode, row))
             {
                 SelectedNodeDataType = "—";
                 SelectedNodeValue = $"(读取失败: {ex.Message})";

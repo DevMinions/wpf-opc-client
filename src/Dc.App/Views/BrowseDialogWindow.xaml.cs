@@ -16,7 +16,7 @@ public partial class BrowseDialogWindow : Window
             MessageBox.Show("请先选中一个节点", "提示");
             return;
         }
-        if (vm.SelectedNode.Kind != OpcNodeKind.Item)
+        if (vm.SelectedNode.Node.Kind != OpcNodeKind.Item)
         {
             MessageBox.Show("请选择叶子节点（Variable），文件夹节点不可作为 Tag", "提示");
             return;
