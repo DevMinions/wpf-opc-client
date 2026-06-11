@@ -92,6 +92,46 @@ public sealed class OpcUaBrowser : IOpcBrowser
         var valueDv = results[0];
         var dataTypeDv = results.Count > 1 ? results[1] : null;
 
+        var result = BuildNodeValue(valueDv, dataTypeDv);
+        return Task.FromResult<OpcNodeValue?>(result);
+    }
+
+    public Task<IReadOnlyList<OpcNodeValue?>> ReadValuesAsync(
+        IReadOnlyList<string> nodeIds, CancellationToken ct = default)
+    {
+        if (_session is null) throw new InvalidOperationException("ConnectAsync must be called first");
+        var results = new OpcNodeValue?[nodeIds.Count];
+        if (nodeIds.Count == 0) return Task.FromResult<IReadOnlyList<OpcNodeValue?>>(results);
+
+        // 每节点 2 个 ReadValueId（Value+DataType）；按服务器 MaxNodesPerRead/2 分块，未知则 500。
+        uint maxNodes = _session.OperationLimits?.MaxNodesPerRead ?? 0u;
+        int chunk = maxNodes > 1 ? (int)(maxNodes / 2) : 500;
+        if (chunk < 1) chunk = 500;
+
+        for (var start = 0; start < nodeIds.Count; start += chunk)
+        {
+            var end = Math.Min(start + chunk, nodeIds.Count);
+            var toRead = new ReadValueIdCollection();
+            for (var i = start; i < end; i++)
+            {
+                var id = new NodeId(nodeIds[i]);
+                toRead.Add(new ReadValueId { NodeId = id, AttributeId = Attributes.Value });
+                toRead.Add(new ReadValueId { NodeId = id, AttributeId = Attributes.DataType });
+            }
+            _session.Read(null, 0, TimestampsToReturn.Source, toRead,
+                out DataValueCollection dvs, out DiagnosticInfoCollection _);
+            for (var i = start; i < end; i++)
+            {
+                var k = (i - start) * 2;
+                results[i] = BuildNodeValue(dvs[k], k + 1 < dvs.Count ? dvs[k + 1] : null);
+            }
+        }
+        return Task.FromResult<IReadOnlyList<OpcNodeValue?>>(results);
+    }
+
+    // 由一对 Value/DataType DataValue 组装 OpcNodeValue（质量位运算 + 类型解析）。
+    private OpcNodeValue BuildNodeValue(DataValue valueDv, DataValue? dataTypeDv)
+    {
         // 质量码同 TagValue 的位运算约定
         ushort quality;
         if (StatusCode.IsBad(valueDv.StatusCode)) quality = 0x00;
@@ -102,8 +142,7 @@ public sealed class OpcUaBrowser : IOpcBrowser
             ? null
             : new DateTimeOffset(DateTime.SpecifyKind(valueDv.SourceTimestamp, DateTimeKind.Utc));
 
-        var result = new OpcNodeValue(ResolveDataType(valueDv, dataTypeDv), valueDv.Value, quality, ts);
-        return Task.FromResult<OpcNodeValue?>(result);
+        return new OpcNodeValue(ResolveDataType(valueDv, dataTypeDv), valueDv.Value, quality, ts);
     }
 
     // 优先用值自带的类型信息（含标量/数组）；值空或坏时退而解析 DataType 属性（一个数据类型 NodeId）。
