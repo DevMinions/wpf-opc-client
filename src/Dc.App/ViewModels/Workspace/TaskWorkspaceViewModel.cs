@@ -65,7 +65,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         _heartbeatTimeout = heartbeatTimeout;
         _orchestrator = orchestrator;
         _editor = editor;
-        _confirm = confirm ?? new AlwaysYesConfirm();
+        _confirm = confirm ?? new DenyConfirm();
         Overview = overview;
         TagsPanel = tagsPanel;
         TagsPanel.IsEmbedded = true;
@@ -289,14 +289,15 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         var id = SelectedTask.TaskId;
         var name = SelectedTask.Name;
 
-        // 运行中先停（自动）
-        if (_orchestrator is not null && _orch.RunningTaskIds.Contains(id))
-            await _orchestrator.StopAsync(id);
-
+        // 先确认，确认后才产生任何副作用（取消 = 真 no-op，不停不删）
         var (g, t) = await _source.GetCountsAsync(id);
         if (!_confirm.Confirm("删除任务",
                 $"将删除任务「{name}」及其 {g} 个分组、{t} 个 Tag，不可恢复。确定删除？"))
             return;
+
+        // 确认后：运行中先停，再级联删
+        if (_orchestrator is not null && _orch.RunningTaskIds.Contains(id))
+            await _orchestrator.StopAsync(id);
 
         await _source.DeleteTaskCascadeAsync(id);
         SelectedTask = null;
@@ -346,8 +347,10 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         public Dc.Domain.Entities.CollectorTask? Edit(Dc.Domain.Entities.CollectorTask? existing) => null;
     }
 
-    private sealed class AlwaysYesConfirm : Dc.App.Services.IConfirmDialog
+    // 未注入确认框时 fail-safe 拒绝删除：避免漏接 DI 导致无确认静默删除。
+    // 生产经 ServiceRegistration 注入 WpfConfirmDialog（任务 8）；测试显式传 FakeConfirm。
+    private sealed class DenyConfirm : Dc.App.Services.IConfirmDialog
     {
-        public bool Confirm(string title, string message) => true;
+        public bool Confirm(string title, string message) => false;
     }
 }
