@@ -112,7 +112,7 @@ public class MetricsHttpServerE2ETests
     }
 
     [Fact(Timeout = 15_000)]
-    public async Task DebugStress_Returns_404_Without_Runner_And_Runs_With_Runner()
+    public async Task DebugStress_404_Without_Runner_405_On_Get_And_202_With_Runner()
     {
         // 无 runner → 404
         var portA = GetFreePort();
@@ -127,9 +127,9 @@ public class MetricsHttpServerE2ETests
         }
         finally { await noRunner.StopAsync(CancellationToken.None); noRunner.Dispose(); }
 
-        // 有 runner → 200 + JSON 含 injected，且 runner 收到解析后的参数
-        (int Tags, int Hz, int Sec) got = default;
-        Func<int, int, int, Task<long>> runner = (t, h, s) => { got = (t, h, s); return Task.FromResult(123L); };
+        // 有 runner：GET → 405；POST → 202 + started，且 runner 后台收到解析参数
+        var tcs = new TaskCompletionSource<(int, int, int)>();
+        Func<int, int, int, Task<long>> runner = (t, h, s) => { tcs.TrySetResult((t, h, s)); return Task.FromResult(123L); };
         var portB = GetFreePort();
         var withRunner = new MetricsHttpServer(
             Sample, new MetricsServerOptions { Enabled = true, Prefix = $"http://127.0.0.1:{portB}/" },
@@ -137,12 +137,23 @@ public class MetricsHttpServerE2ETests
         await withRunner.StartAsync(CancellationToken.None);
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            using var resp = await http.PostAsync($"http://127.0.0.1:{portB}/debug/stress?tags=1000&hz=20&seconds=30", null);
-            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
-            var body = await resp.Content.ReadAsStringAsync();
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+
+            // GET → 405
+            using (var getResp = await http.GetAsync($"http://127.0.0.1:{portB}/debug/stress?tags=10&hz=5&seconds=1"))
+                Assert.Equal(HttpStatusCode.MethodNotAllowed, getResp.StatusCode);
+
+            // POST → 202 + started
+            using (var resp = await http.PostAsync($"http://127.0.0.1:{portB}/debug/stress?tags=1000&hz=20&seconds=30", null))
+            {
+                Assert.Equal(HttpStatusCode.Accepted, resp.StatusCode);
+                var body = await resp.Content.ReadAsStringAsync();
+                Assert.Contains("\"started\":true", body);
+            }
+
+            // 后台 runner 应被调用并收到解析后的参数
+            var got = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
             Assert.Equal((1000, 20, 30), got);
-            Assert.Contains("123", body);
         }
         finally { await withRunner.StopAsync(CancellationToken.None); withRunner.Dispose(); }
     }

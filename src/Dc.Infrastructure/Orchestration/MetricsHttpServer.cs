@@ -137,16 +137,18 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                     WriteBytes(ctx, 200, "image/png", png);
                 break;
             case "/debug/stress":
-                // 门控压测端点：runner 为空（默认/无头端）走 404，存在即同步执行并返回注入数。
-                // 同步阻塞至跑满 seconds 是端点契约（调用方按超时配置 HttpClient）。
                 if (_stressRunner is null) { Write(ctx, 404, "text/plain; charset=utf-8", "not found"); break; }
+                if (ctx.Request.HttpMethod != "POST") { Write(ctx, 405, "text/plain; charset=utf-8", "method not allowed"); break; }
                 var qs = ctx.Request.QueryString;
                 var tags = ParseInt(qs["tags"], 1000);
                 var hz = ParseInt(qs["hz"], 10);
                 var seconds = ParseInt(qs["seconds"], 30);
-                var injected = _stressRunner(tags, hz, seconds).GetAwaiter().GetResult();
-                Write(ctx, 200, "application/json; charset=utf-8",
-                    $"{{\"injected\":{injected},\"tags\":{tags},\"hz\":{hz},\"seconds\":{seconds}}}");
+                // 后台运行、立即 202：避免阻塞单连接串行循环，压测期间 /metrics /healthz 仍可服务（dc-remote 边压边抓）。
+                // 调试端点，后台 Task 的异常吞掉不外抛（不影响诊断服务）。压测结果经 /metrics 的 dc_livedata_* 读取。
+                _ = _stressRunner(tags, hz, seconds).ContinueWith(
+                    t => { _ = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+                Write(ctx, 202, "application/json; charset=utf-8",
+                    $"{{\"started\":true,\"tags\":{tags},\"hz\":{hz},\"seconds\":{seconds}}}");
                 break;
             default:
                 Write(ctx, 404, "text/plain; charset=utf-8", "not found");
