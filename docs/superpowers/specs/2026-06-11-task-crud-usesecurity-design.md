@@ -21,7 +21,8 @@
 | 维度 | 决策 |
 |---|---|
 | 删除关联子项 | **级联删除**：一个事务里删 task + 其所有 group + 所有 tag；删前弹确认框显示数量 |
-| 删运行中任务 | **先停再删（自动）**：删前自动 `StopAsync` 退出运行集，再删 DB |
+| 删运行中任务 | **确认在前、副作用在后（as-built 改进）**：先 `GetCounts`+确认框，确认后才 `StopAsync`+级联删。取消 = 真 no-op（不停不删），比原设计「先停再确认」更安全 |
+| 漏接确认框 | **fail-safe 拒绝（as-built）**：VM 默认兜底 `DenyConfirm`（返回 false），漏接 DI 时删不掉而非无确认静默删；生产经 DI 注入 `WpfConfirmDialog` |
 | 编辑/删除入口 | **工具栏按钮**，与现有 启动/停止/重启 并列 |
 | UseSecurity 默认 | **仍 true**（CLAUDE.md 安全约束：不为图方便默认关）；旧库迁移列默认 1 |
 | UseSecurity 适用面 | **仅 UA（Type==2）显示开关**；DA/AE 无此概念、忽略 |
@@ -41,11 +42,12 @@
 
 - `IWorkspaceTaskSource` + `DbWorkspaceTaskSource` 新增 `Task DeleteTaskCascadeAsync(string taskId)`：
   开 `db.Database.BeginTransactionAsync()` → `ExecuteDeleteAsync`（或 `RemoveRange`）按 `TaskId` 删 `dc_tags` → `dc_groups` → 删 `dc_tasks` 该行 → commit。tag 同时挂 task 与 group，按 `task_id` 删可覆盖全部该任务的 tag（含分组下的），不留孤儿。
-- `TaskWorkspaceViewModel` 新增 `DeleteSelectedCommand` → `DeleteSelectedAsync`：
-  1. 若 `_orch.RunningTaskIds` 含该 id 且 `_orchestrator` 非空 → `await _orchestrator.StopAsync(id)`。
-  2. `var (g,t) = await _source.GetCountsAsync(id)`。
-  3. 弹确认框：「将删除任务 {name} 及其 {g} 个分组、{t} 个 tag，不可恢复。」可取消。
-  4. 确认 → `DeleteTaskCascadeAsync(id)` → `SelectedTask=null` → `LoadAsync()`。
+- `TaskWorkspaceViewModel` 新增 `DeleteSelectedCommand` → `DeleteSelectedAsync`（**as-built：确认在前、副作用在后**）：
+  1. `var (g,t) = await _source.GetCountsAsync(id)`。
+  2. 弹确认框：「将删除任务 {name} 及其 {g} 个分组、{t} 个 tag，不可恢复。」**取消即 return —— 真 no-op，不停不删**（比原设计「先停再确认」更安全：取消不中断运行中任务）。
+  3. 确认后：若 `_orch.RunningTaskIds` 含该 id 且 `_orchestrator` 非空 → `await _orchestrator.StopAsync(id)`。
+  4. `DeleteTaskCascadeAsync(id)` → `SelectedTask=null` → `LoadAsync()`。
+  - VM 默认确认兜底用 **fail-safe `DenyConfirm`**（返回 false）：漏接 DI 时删不掉而非无确认静默删；生产经 `ServiceRegistration` 注入 `WpfConfirmDialog`。
 - 确认框：先核实是否已有对话框/确认服务可复用；无则加一个极薄的 `IConfirmDialog.Confirm(title, message) : bool`（WPF `MessageBox` 实现 + 测试用 stub）。
 
 ### ③ UseSecurity 可配
