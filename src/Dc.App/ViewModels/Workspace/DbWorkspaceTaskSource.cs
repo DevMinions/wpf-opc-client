@@ -50,4 +50,16 @@ public sealed class DbWorkspaceTaskSource : IWorkspaceTaskSource
         db.Tasks.Add(task);
         await db.SaveChangesAsync();
     }
+
+    public async Task UpdateTaskAsync(CollectorTask task)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        await TaskStore.UpdateAsync(db, task);
+    }
+
+    public async Task DeleteTaskCascadeAsync(string taskId)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        await TaskStore.DeleteCascadeAsync(db, taskId);
+    }
 }

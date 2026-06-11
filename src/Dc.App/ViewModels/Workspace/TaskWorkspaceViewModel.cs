@@ -18,6 +18,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     private readonly TimeSpan _heartbeatTimeout;
     private readonly TaskOrchestrator? _orchestrator;
     private readonly ITaskEditorDialog? _editor;
+    private readonly Dc.App.Services.IConfirmDialog _confirm;
     private Dictionary<string, Dc.Domain.Entities.CollectorTask> _tasksById = new();
 
     public ObservableCollection<TaskMasterRow> AllTasks { get; } = new();
@@ -55,7 +56,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         IEmbeddableGroupPanel? groupsPanel = null,
         IEmbeddableLivePanel? livePanel = null,
         IEmbeddableDiagPanel? diagPanel = null,
-        WorkspaceConfigViewModel? config = null)
+        WorkspaceConfigViewModel? config = null,
+        Dc.App.Services.IConfirmDialog? confirm = null)
     {
         _source = source;
         _orch = orchestratorView;
@@ -63,6 +65,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         _heartbeatTimeout = heartbeatTimeout;
         _orchestrator = orchestrator;
         _editor = editor;
+        _confirm = confirm ?? new DenyConfirm();
         Overview = overview;
         TagsPanel = tagsPanel;
         TagsPanel.IsEmbedded = true;
@@ -82,7 +85,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
                 SelectedTab = "tags";
             }
         };
-        Config.Edited += async _ => await LoadAsync();
+        Config.Edited += async edited => await PersistEditedAsync(edited);
 
         FilteredTasks = CollectionViewSource.GetDefaultView(AllTasks);
         FilteredTasks.Filter = FilterRow;
@@ -264,6 +267,43 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         await LoadAsync();
     }
 
+    private async Task PersistEditedAsync(Dc.Domain.Entities.CollectorTask edited)
+    {
+        await _source.UpdateTaskAsync(edited);
+        await LoadAsync();
+    }
+
+    public async Task EditSelectedAsync()
+    {
+        if (SelectedTask is null || _editor is null) return;
+        var task = _tasksById.GetValueOrDefault(SelectedTask.TaskId);
+        if (task is null) return;
+        var edited = _editor.Edit(task);
+        if (edited is null) return;
+        await PersistEditedAsync(edited);
+    }
+
+    public async Task DeleteSelectedAsync()
+    {
+        if (SelectedTask is null) return;
+        var id = SelectedTask.TaskId;
+        var name = SelectedTask.Name;
+
+        // 先确认，确认后才产生任何副作用（取消 = 真 no-op，不停不删）
+        var (g, t) = await _source.GetCountsAsync(id);
+        if (!_confirm.Confirm("删除任务",
+                $"将删除任务「{name}」及其 {g} 个分组、{t} 个 Tag，不可恢复。确定删除？"))
+            return;
+
+        // 确认后：运行中先停，再级联删
+        if (_orchestrator is not null && _orch.RunningTaskIds.Contains(id))
+            await _orchestrator.StopAsync(id);
+
+        await _source.DeleteTaskCascadeAsync(id);
+        SelectedTask = null;
+        await LoadAsync();
+    }
+
     /// <summary>
     /// Delegates Excel import to the embedded TagsPanel, then switches to the Tags tab.
     /// </summary>
@@ -305,5 +345,12 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     private sealed class NullTaskEditorDialog : ITaskEditorDialog
     {
         public Dc.Domain.Entities.CollectorTask? Edit(Dc.Domain.Entities.CollectorTask? existing) => null;
+    }
+
+    // 未注入确认框时 fail-safe 拒绝删除：避免漏接 DI 导致无确认静默删除。
+    // 生产经 ServiceRegistration 注入 WpfConfirmDialog（任务 8）；测试显式传 FakeConfirm。
+    private sealed class DenyConfirm : Dc.App.Services.IConfirmDialog
+    {
+        public bool Confirm(string title, string message) => false;
     }
 }

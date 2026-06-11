@@ -1,4 +1,5 @@
 using Dc.App.ViewModels;
+using Dc.Domain.Entities;
 using Dc.Opc.Abstractions;
 
 namespace Dc.App.Tests.ViewModels;
@@ -63,5 +64,28 @@ public class TaskEditorViewModelTests
         Assert.True(vm.HasErrors);
         vm.TcpAddress = "127.0.0.1:5000";
         Assert.False(vm.HasErrors);
+    }
+
+    [Fact]
+    public void NewTask_UseSecurity_DefaultsTrue()
+        => Assert.True(new TaskEditorViewModel().UseSecurity);
+
+    [Fact]
+    public void Edit_RoundTripsUseSecurity_AndToEntity()
+    {
+        var existing = new CollectorTask { Id = "a", Server = "s", Node = "n", Type = 2, UseSecurity = false,
+            Interval = 1000, TcpAddress = "1.2.3.4:5" };
+        var vm = new TaskEditorViewModel(existing, Array.Empty<IOpcBrowserFactory>());
+        Assert.False(vm.UseSecurity);
+        Assert.False(vm.ToEntity().UseSecurity);
+    }
+
+    [Fact]
+    public void IsUaProtocol_TracksProtocol()
+    {
+        var vm = new TaskEditorViewModel();
+        Assert.True(vm.IsUaProtocol);
+        vm.Protocol = OpcProtocol.Da;
+        Assert.False(vm.IsUaProtocol);
     }
 }

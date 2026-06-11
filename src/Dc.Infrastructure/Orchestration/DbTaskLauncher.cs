@@ -37,6 +37,7 @@ public sealed class DbTaskLauncher
             ServerUri = task.Node,
             ServerProgId = task.Server,
             ServerClsid = task.Clsid,
+            UseSecurity = task.UseSecurity,
             SamplingInterval = TimeSpan.FromMilliseconds(Math.Max(task.Interval, 1)),
             DeadbandPercent = task.Deviation
         },
