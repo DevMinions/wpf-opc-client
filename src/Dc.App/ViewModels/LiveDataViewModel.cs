@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows.Data;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -73,6 +74,9 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     private int _flushMsCount;
     private int _flushMsHead;
 
+    // flush 统计快照：UI 线程算好后原子发布，供 /metrics 后台线程无锁读取。
+    private volatile LiveFlushStats _statsSnapshot = new(0, 0, 0, 0, 0);
+
     public ObservableCollection<LiveDataRowViewModel> Rows { get; } = new();
     public ObservableCollection<string> AvailableTaskIds { get; } = new();
     public ICollectionView RowsView { get; }
@@ -141,7 +145,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     /// <summary>将缓冲区所有值批量应用到 UI 行。</summary>
     private void FlushBuffer()
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var sw = Stopwatch.StartNew();
 
         _coalescer.Coalesce(
             tryDequeue: () => _buffer.TryDequeue(out var it)
@@ -182,14 +186,20 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
             _updatesAccum = 0;
             _lastRateAt = DateTimeOffset.UtcNow;
         }
+
+        // UI 线程算好不可变快照后原子发布，供 /metrics 后台线程无锁读取。
+        _statsSnapshot = ComputeFlushStats();
     }
 
     internal void EnqueueForTest(string taskId, TagValue v) => _buffer.Enqueue((taskId, v));
 
     internal void FlushForTest() => FlushBuffer();
 
-    /// <summary>当前 flush 统计快照：p50/p95 耗时、合并比、行数、更新速率。</summary>
-    public LiveFlushStats GetFlushStats()
+    // 后台线程（/metrics）安全：返回最近一次 flush 在 UI 线程算好的不可变快照（volatile 原子读）。
+    public LiveFlushStats GetFlushStats() => _statsSnapshot;
+
+    // 在 UI 线程（FlushBuffer）调用：从当前 ring/累计器/Rows 算快照。
+    private LiveFlushStats ComputeFlushStats()
     {
         double p50, p95;
         var n = Math.Min(_flushMsCount, _flushMsRing.Length);
