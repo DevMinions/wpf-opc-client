@@ -97,6 +97,14 @@ public sealed class DiagnosticsReporter : IHostedService, IAsyncDisposable
 
         _meter.CreateObservableGauge("dc.collector.task.dropped_frames",
             () => Each(d => d.DroppedFrameCount), unit: "{frames}", description: "每任务累计因队列溢出丢弃的帧数");
+
+        // 镜像 /metrics 的 dc_collector_task_state：每任务一条值恒 1 的样本，
+        // 带 task.id + state 维度，state 为连接态枚举小写名（双路径口径一致）。
+        _meter.CreateObservableGauge("dc.collector.task.state",
+            () => _provider().Select(d => new Measurement<long>(1L,
+                new KeyValuePair<string, object?>("task.id", d.TaskId),
+                new KeyValuePair<string, object?>("state", d.State.ToString().ToLowerInvariant()))),
+            unit: "{state}", description: "每任务连接状态（state 维度，值恒 1=当前态）");
     }
 
     // 每任务一个 Measurement，带 task.id 维度标签

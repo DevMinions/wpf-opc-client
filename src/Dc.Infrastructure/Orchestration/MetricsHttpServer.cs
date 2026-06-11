@@ -201,6 +201,13 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
             g => { foreach (var d in snap) g.Line(d.TaskId, d.QueuePendingBytes); });
         Gauge(sb, "dc_collector_task_dropped_frames", "每任务累计因队列溢出丢弃的帧数。",
             g => { foreach (var d in snap) g.Line(d.TaskId, d.DroppedFrameCount); });
+        Gauge(sb, "dc_collector_task_state",
+            "每任务连接状态（state 标签：connecting/running/restarting/faulted，值恒 1=当前态）。",
+            g =>
+            {
+                foreach (var d in snap)
+                    g.LineKv(("task_id", d.TaskId), ("state", d.State.ToString().ToLowerInvariant()));
+            });
 
         // LiveData flush（仅 /metrics 暴露，无 Meter 镜像——UI 侧指标无 OTel 消费方，
         // 是对项目「双路径」约定的有意例外；双路径只约束 collector 任务指标）。
@@ -244,6 +251,19 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
             if (taskId is not null)
                 sb.Append("{task_id=\"").Append(Escape(taskId)).Append("\"}");
             sb.Append(' ').Append(value.ToString("R", CultureInfo.InvariantCulture)).Append('\n');
+        }
+
+        // 写多标签样本（值恒 1）：用于「枚举状态当前态」类指标，如 dc_collector_task_state。
+        // 标签值复用 Line 的同一 Escape，转义口径不漂移。
+        public void LineKv(params (string Key, string Value)[] labels)
+        {
+            sb.Append(name).Append('{');
+            for (var i = 0; i < labels.Length; i++)
+            {
+                if (i > 0) sb.Append(',');
+                sb.Append(labels[i].Key).Append("=\"").Append(Escape(labels[i].Value)).Append('"');
+            }
+            sb.Append("} 1\n");
         }
 
         // Prometheus 标签值转义：反斜杠、双引号、换行。
