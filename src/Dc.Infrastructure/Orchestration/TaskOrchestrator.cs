@@ -22,6 +22,9 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         public long ValueCount;
         public long PublishErrorCount;
         public int RestartCount { get; set; }
+        public ConnectionState State { get; set; } = ConnectionState.Connecting;
+        public int ConsecutiveStaleRestarts { get; set; }
+        public DateTimeOffset? LastRestartAt { get; set; }
     }
 
     private readonly IReadOnlyDictionary<OpcProtocol, IOpcSubscriberFactory> _factories;
@@ -31,8 +34,14 @@ public sealed class TaskOrchestrator : IAsyncDisposable
     private readonly ConcurrentDictionary<string, TaskRuntime> _running = new();
     private readonly SemaphoreSlim _mutationLock = new(1, 1);
     private readonly CancellationTokenSource _hostCts = new();
+    private readonly object _stateLock = new();
     private readonly Task _watchdogTask;
     private bool _disposed;
+
+    private void SetState(TaskRuntime rt, ConnectionState s)
+    {
+        lock (_stateLock) rt.State = s;
+    }
 
     public TaskOrchestrator(
         IEnumerable<IOpcSubscriberFactory> factories,
@@ -54,6 +63,21 @@ public sealed class TaskOrchestrator : IAsyncDisposable
     /// <summary>调试用合成注入：直接触发 TagValueReceived，与真值同路径。仅门控后被调用。</summary>
     internal void InjectSynthetic(string taskId, TagValue v) => TagValueReceived?.Invoke(taskId, v);
 
+    /// <summary>调试用：强制某任务进故障路径。kind="stall" 把心跳推回，使下次看门狗判超时→原地重连。
+    /// 命中返回 true。仅门控后被调用，绝不进产线路径。</summary>
+    internal bool InjectFault(string taskId, string kind)
+    {
+        if (!_running.TryGetValue(taskId, out var rt)) return false;
+        switch (kind)
+        {
+            case "stall":
+                rt.LastHeartbeat = DateTimeOffset.UtcNow - _options.HeartbeatTimeout - TimeSpan.FromSeconds(1);
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public IReadOnlyList<TaskDiagnostics> GetDiagnostics()
     {
         return _running.Values.Select(rt =>
@@ -72,7 +96,8 @@ public sealed class TaskOrchestrator : IAsyncDisposable
                 rt.RestartCount,
                 rt.Tags.Count,
                 health?.PendingBytes ?? 0,
-                health?.DroppedFrameCount ?? 0);
+                health?.DroppedFrameCount ?? 0,
+                rt.State);
         }).ToArray();
     }
 
@@ -160,6 +185,19 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         var publisher = _publisherFactory.Create(request.PublisherAddress);
         var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostCts.Token);
 
+        var runtime = new TaskRuntime
+        {
+            TaskId = request.TaskId,
+            Request = request,
+            Subscriber = subscriber,
+            Publisher = publisher,
+            Cts = cts,
+            PipelineTask = Task.CompletedTask,
+            Tags = request.Tags.ToDictionary(t => t.Item),
+            State = ConnectionState.Connecting
+        };
+        _running[request.TaskId] = runtime; // 先入运行集 → GetDiagnostics 立即可见「连接中」
+
         try
         {
             await subscriber.ConnectAsync(ct).ConfigureAwait(false);
@@ -169,24 +207,16 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         {
             _logger?.LogError(ex, "任务 {TaskId} ({Protocol}) 连接/订阅失败：{Message}",
                 request.TaskId, request.Protocol, ex.Message);
+            _running.TryRemove(request.TaskId, out _);
             await SafeDisposeAsync(subscriber).ConfigureAwait(false);
             await SafeDisposeAsync(publisher).ConfigureAwait(false);
             cts.Dispose();
             throw;
         }
 
-        var runtime = new TaskRuntime
-        {
-            TaskId = request.TaskId,
-            Request = request,
-            Subscriber = subscriber,
-            Publisher = publisher,
-            Cts = cts,
-            PipelineTask = Task.CompletedTask,
-            Tags = request.Tags.ToDictionary(t => t.Item)
-        };
+        runtime.LastHeartbeat = DateTimeOffset.UtcNow;
+        SetState(runtime, ConnectionState.Running);
         runtime.PipelineTask = Task.Run(() => RunPipelineAsync(runtime, cts.Token));
-        _running[request.TaskId] = runtime;
         _logger?.LogInformation("任务 {TaskId} ({Protocol}) 已启动，订阅 {TagCount} 个 tag → {Publisher}",
             request.TaskId, request.Protocol, request.Tags.Count, request.PublisherAddress);
     }
@@ -230,6 +260,17 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         var heartTask = ConsumeAsync(rt.Subscriber.Heartbeats, h =>
         {
             rt.LastHeartbeat = h.Time;
+            // 心跳到达 → 视为恢复：清零连续陈旧计数、状态回 Running。
+            // 与重启路径（SetState）共用 _stateLock 串行，避免状态/计数写竞态。
+            lock (_stateLock)
+            {
+                if (rt.ConsecutiveStaleRestarts > 0
+                    || rt.State is ConnectionState.Faulted or ConnectionState.Restarting)
+                {
+                    rt.ConsecutiveStaleRestarts = 0;
+                    rt.State = ConnectionState.Running;
+                }
+            }
             return ValueTask.CompletedTask;
         }, ct);
 
@@ -258,7 +299,8 @@ public sealed class TaskOrchestrator : IAsyncDisposable
             // 仅取候选 id（无锁）；真正的 staleness 判定与重启在锁内重新校验，避免按陈旧快照
             // 复活用户已 StopAsync 的任务，并让 RestartCount 与重启动作原子。
             var candidates = _running
-                .Where(kv => now - kv.Value.LastHeartbeat > _options.HeartbeatTimeout)
+                .Where(kv => kv.Value.State != ConnectionState.Connecting
+                          && now - kv.Value.LastHeartbeat > _options.HeartbeatTimeout)
                 .Select(kv => kv.Key)
                 .ToArray();
 
@@ -281,17 +323,59 @@ public sealed class TaskOrchestrator : IAsyncDisposable
             if (!_factories.TryGetValue(rt.Request.Protocol, out var factory)) return;
 
             var req = rt.Request;
-            var prevCount = rt.RestartCount;
+            // 原地重绑：rt 全程留在 _running，重连失败也不移除 → GetDiagnostics 持续发该行，
+            // 修复「重连失败任务凭空消失」缺陷，并让 Restarting/Faulted 状态可观测。
+            // 状态与连续陈旧计数一并在 _stateLock 内原子完成：与心跳恢复路径（同锁写 =0）
+            // 互斥，避免「++（重启开始）」与并发心跳回调 =0 的竞态。
+            lock (_stateLock)
+            {
+                rt.State = ConnectionState.Restarting;
+                rt.ConsecutiveStaleRestarts++;
+            }
+            rt.LastRestartAt = DateTimeOffset.UtcNow;   // 心跳路径不写，无需进锁
+            rt.RestartCount++;                          // 同上
+            _logger?.LogWarning("任务 {TaskId} ({Protocol}) 心跳超时（>{Timeout}），看门狗原地重连（第 {Count} 次）",
+                taskId, req.Protocol, _options.HeartbeatTimeout, rt.RestartCount);
 
-            _logger?.LogWarning("任务 {TaskId} ({Protocol}) 心跳超时（>{Timeout}），看门狗重启（第 {Count} 次）",
-                taskId, req.Protocol, _options.HeartbeatTimeout, prevCount + 1);
+            // 拆旧管道（rt 保留在 _running）
+            rt.Cts.Cancel();
+            try { await rt.PipelineTask.WaitAsync(_options.StopDrainTimeout).ConfigureAwait(false); } catch { /* 取消/超时正常 */ }
+            await SafeDisposeAsync(rt.Subscriber).ConfigureAwait(false);
+            try { rt.Cts.Dispose(); } catch { }
 
-            await StopUnlockedAsync(taskId).ConfigureAwait(false);
-            await StartUnlockedAsync(req, factory, _hostCts.Token).ConfigureAwait(false);
+            // 重连
+            var subscriber = factory.Create(req.TaskId, req.OpcOptions);
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostCts.Token);
+            try
+            {
+                await subscriber.ConnectAsync(_hostCts.Token).ConfigureAwait(false);
+                await subscriber.SubscribeAsync(req.Tags, _hostCts.Token).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "任务 {TaskId} 重连失败 → 标记故障，留在运行集等下次看门狗重试", taskId);
+                await SafeDisposeAsync(subscriber).ConfigureAwait(false);
+                cts.Dispose();
+                // 占位 Cts/PipelineTask 供后续 Stop 安全；推回心跳让下次 tick 再试；置 Faulted。
+                rt.PipelineTask = Task.CompletedTask;
+                rt.Cts = CancellationTokenSource.CreateLinkedTokenSource(_hostCts.Token);
+                SetState(rt, ConnectionState.Faulted);
+                rt.LastHeartbeat = DateTimeOffset.UtcNow - _options.HeartbeatTimeout - TimeSpan.FromSeconds(1);
+                return;
+            }
 
-            // 锁内回写，与重启原子
-            if (_running.TryGetValue(taskId, out var fresh))
-                fresh.RestartCount = prevCount + 1;
+            // 重绑成功
+            rt.Subscriber = subscriber;
+            rt.Cts = cts;
+            rt.LastHeartbeat = DateTimeOffset.UtcNow;
+            // 在同一 _stateLock 内读 ConsecutiveStaleRestarts + 写 State，保持与心跳路径一致。
+            lock (_stateLock)
+            {
+                rt.State = rt.ConsecutiveStaleRestarts >= _options.FaultThreshold
+                    ? ConnectionState.Faulted   // 重连上了但反复超时 → 仍标故障，待心跳确认恢复
+                    : ConnectionState.Running;
+            }
+            rt.PipelineTask = Task.Run(() => RunPipelineAsync(rt, cts.Token));
         }
         finally
         {

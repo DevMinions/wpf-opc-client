@@ -158,6 +158,57 @@ public class MetricsHttpServerE2ETests
         finally { await withRunner.StopAsync(CancellationToken.None); withRunner.Dispose(); }
     }
 
+    [Fact(Timeout = 15_000)]
+    public async Task DebugFault_404_NoInjector_405_OnGet_200_WithInjector()
+    {
+        // 无 injector → 404
+        var portA = GetFreePort();
+        using (var noInj = new MetricsHttpServer(
+            Sample, new MetricsServerOptions { Enabled = true, Prefix = $"http://127.0.0.1:{portA}/" }))
+        {
+            await noInj.StartAsync(CancellationToken.None);
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            using var r = await http.PostAsync($"http://127.0.0.1:{portA}/debug/fault?task=t1&kind=stall", null);
+            Assert.Equal(HttpStatusCode.NotFound, r.StatusCode);
+            await noInj.StopAsync(CancellationToken.None);
+        }
+
+        // 有 injector：GET → 405；POST → 200 + injected，且 injector 收到解析参数
+        (string Task, string Kind) got = default;
+        Func<string, string, bool> injector = (t, k) => { got = (t, k); return true; };
+        var portB = GetFreePort();
+        using (var withInj = new MetricsHttpServer(
+            Sample, new MetricsServerOptions { Enabled = true, Prefix = $"http://127.0.0.1:{portB}/" },
+            faultInjector: injector))
+        {
+            await withInj.StartAsync(CancellationToken.None);
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+
+            using (var g = await http.GetAsync($"http://127.0.0.1:{portB}/debug/fault?task=t1&kind=stall"))
+                Assert.Equal(HttpStatusCode.MethodNotAllowed, g.StatusCode);
+
+            using (var p = await http.PostAsync($"http://127.0.0.1:{portB}/debug/fault?task=t1&kind=stall", null))
+            {
+                Assert.Equal(HttpStatusCode.OK, p.StatusCode);
+                Assert.Contains("\"injected\":true", await p.Content.ReadAsStringAsync());
+            }
+
+            Assert.Equal(("t1", "stall"), got);
+
+            // task 含反斜杠/引号不破坏响应（%5C 是反斜杠的 URL 编码）
+            using (var p2 = await http.PostAsync($"http://127.0.0.1:{portB}/debug/fault?task=a%5Cb&kind=stall", null))
+            {
+                Assert.Equal(HttpStatusCode.OK, p2.StatusCode);
+                var body2 = await p2.Content.ReadAsStringAsync();
+                Assert.Contains("\"injected\":true", body2);
+                // 反斜杠应被转义为 \\，响应是合法 JSON（用 System.Text.Json 解析不抛）
+                System.Text.Json.JsonDocument.Parse(body2);
+            }
+
+            await withInj.StopAsync(CancellationToken.None);
+        }
+    }
+
     [Fact(Timeout = 10_000)]
     public async Task Disabled_DoesNotListen()
     {

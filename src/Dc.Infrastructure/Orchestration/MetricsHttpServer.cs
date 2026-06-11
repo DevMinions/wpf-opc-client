@@ -38,6 +38,9 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
     // 可选压测 runner：(tags,hz,seconds)->injected。null → /debug/stress 走 404（默认不暴露）。
     // App 侧仅在 DC_DEBUG_STRESS=1 时注入，沿用 screenshot「provider 存在即启用」门控。
     private readonly Func<int, int, int, CancellationToken, Task<long>>? _stressRunner;
+    // 可选故障注入器：(taskId,kind)->hit。null → /debug/fault 走 404（默认不暴露）。
+    // App 侧仅在 DC_DEBUG_STRESS=1 时注入，沿用「provider 存在即启用」门控。
+    private readonly Func<string, string, bool>? _faultInjector;
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -48,7 +51,8 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         ILogger<MetricsHttpServer>? logger = null,
         Func<byte[]?>? screenshotProvider = null,
         Func<LiveFlushStats?>? liveFlushProvider = null,
-        Func<int, int, int, CancellationToken, Task<long>>? stressRunner = null)
+        Func<int, int, int, CancellationToken, Task<long>>? stressRunner = null,
+        Func<string, string, bool>? faultInjector = null)
     {
         _provider = diagnosticsProvider;
         _options = options ?? new MetricsServerOptions();
@@ -56,6 +60,7 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         _screenshotProvider = screenshotProvider;
         _liveFlushProvider = liveFlushProvider;
         _stressRunner = stressRunner;
+        _faultInjector = faultInjector;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -78,10 +83,11 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _loop = Task.Run(() => AcceptLoopAsync(_cts.Token));
-        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}{Stress}）",
+        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}{Stress}{Fault}）",
             _options.Prefix,
             _screenshotProvider is not null ? " /screenshot" : "",
-            _stressRunner is not null ? " /debug/stress" : "");
+            _stressRunner is not null ? " /debug/stress" : "",
+            _faultInjector is not null ? " /debug/fault" : "");
         return Task.CompletedTask;
     }
 
@@ -150,6 +156,16 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
                 Write(ctx, 202, "application/json; charset=utf-8",
                     $"{{\"started\":true,\"tags\":{tags},\"hz\":{hz},\"seconds\":{seconds}}}");
                 break;
+            case "/debug/fault":
+                if (_faultInjector is null) { Write(ctx, 404, "text/plain; charset=utf-8", "not found"); break; }
+                if (ctx.Request.HttpMethod != "POST") { Write(ctx, 405, "text/plain; charset=utf-8", "method not allowed"); break; }
+                var fq = ctx.Request.QueryString;
+                var ftask = EscapeJson(fq["task"] ?? "");
+                var fkind = EscapeJson(fq["kind"] ?? "stall");
+                var hit = _faultInjector(ftask, fkind);
+                Write(ctx, 200, "application/json; charset=utf-8",
+                    $"{{\"injected\":{(hit ? "true" : "false")},\"task\":\"{ftask}\",\"kind\":\"{fkind}\"}}");
+                break;
             default:
                 Write(ctx, 404, "text/plain; charset=utf-8", "not found");
                 break;
@@ -158,6 +174,11 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
 
     // query 整数解析：缺省/非法/非正 → def（压测参数都要 > 0）。
     private static int ParseInt(string? s, int def) => int.TryParse(s, out var v) && v > 0 ? v : def;
+
+    // 最小 JSON 字符串转义：反斜杠 → 引号 → 换行/回车/Tab。供 /debug/fault 回显 query 值。
+    private static string EscapeJson(string s)
+        => s.Replace("\\", "\\\\").Replace("\"", "\\\"")
+            .Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
 
     private static void Write(HttpListenerContext ctx, int status, string contentType, string body)
         => WriteBytes(ctx, status, contentType, Encoding.UTF8.GetBytes(body));
@@ -201,6 +222,13 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
             g => { foreach (var d in snap) g.Line(d.TaskId, d.QueuePendingBytes); });
         Gauge(sb, "dc_collector_task_dropped_frames", "每任务累计因队列溢出丢弃的帧数。",
             g => { foreach (var d in snap) g.Line(d.TaskId, d.DroppedFrameCount); });
+        Gauge(sb, "dc_collector_task_state",
+            "每任务连接状态（state 标签：connecting/running/restarting/faulted，值恒 1=当前态）。",
+            g =>
+            {
+                foreach (var d in snap)
+                    g.LineKv(("task_id", d.TaskId), ("state", d.State.ToString().ToLowerInvariant()));
+            });
 
         // LiveData flush（仅 /metrics 暴露，无 Meter 镜像——UI 侧指标无 OTel 消费方，
         // 是对项目「双路径」约定的有意例外；双路径只约束 collector 任务指标）。
@@ -244,6 +272,19 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
             if (taskId is not null)
                 sb.Append("{task_id=\"").Append(Escape(taskId)).Append("\"}");
             sb.Append(' ').Append(value.ToString("R", CultureInfo.InvariantCulture)).Append('\n');
+        }
+
+        // 写多标签样本（值恒 1）：用于「枚举状态当前态」类指标，如 dc_collector_task_state。
+        // 标签值复用 Line 的同一 Escape，转义口径不漂移。
+        public void LineKv(params (string Key, string Value)[] labels)
+        {
+            sb.Append(name).Append('{');
+            for (var i = 0; i < labels.Length; i++)
+            {
+                if (i > 0) sb.Append(',');
+                sb.Append(labels[i].Key).Append("=\"").Append(Escape(labels[i].Value)).Append('"');
+            }
+            sb.Append("} 1\n");
         }
 
         // Prometheus 标签值转义：反斜杠、双引号、换行。

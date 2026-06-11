@@ -91,7 +91,8 @@ public partial class DiagnosticsViewModel : ObservableObject, IDisposable, IEmbe
                 _rowIndex[d.TaskId] = row;
                 Rows.Add(row);
             }
-            row.Apply(d);
+            row.TickRecovery(); // 先递减上一帧「已恢复」倒计时（新建行 ticksLeft=0 时 no-op）
+            row.Apply(d);       // 再 Apply：可能重新触发并重置 ticks，避免同帧 off-by-one 少一帧绿闪
         }
         // Remove rows for tasks no longer in scope or no longer running
         for (int i = Rows.Count - 1; i >= 0; i--)

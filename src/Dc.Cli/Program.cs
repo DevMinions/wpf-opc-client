@@ -64,7 +64,8 @@ try
     builder.Services.AddSingleton(sp => new OrchestratorOptions
     {
         WatchdogInterval = TimeSpan.FromSeconds(builder.Configuration.GetValue("Orchestrator:WatchdogIntervalSeconds", 30)),
-        HeartbeatTimeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("Orchestrator:HeartbeatTimeoutSeconds", 120))
+        HeartbeatTimeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("Orchestrator:HeartbeatTimeoutSeconds", 120)),
+        FaultThreshold = builder.Configuration.GetValue("Orchestrator:FaultThreshold", 3)
     });
     builder.Services.AddSingleton(sp => new TaskOrchestrator(
         sp.GetServices<IOpcSubscriberFactory>(),

@@ -84,6 +84,20 @@ public class MetricsHttpServerTests
         Assert.Contains("task_id=\"a\\\"b\\\\c\"", text);
     }
 
+    [Fact]
+    public void RenderPrometheus_EmitsTaskState()
+    {
+        var tasks = new[]
+        {
+            new TaskDiagnostics("T1", Now, Now, Now, 5, 0, 0, 3, State: ConnectionState.Running),
+            new TaskDiagnostics("T2", Now, Now, Now, 0, 0, 2, 1, State: ConnectionState.Faulted),
+        };
+        var text = MetricsHttpServer.RenderPrometheus(tasks, Now);
+        Assert.Contains("# TYPE dc_collector_task_state gauge", text);
+        Assert.Contains("dc_collector_task_state{task_id=\"T1\",state=\"running\"} 1", text);
+        Assert.Contains("dc_collector_task_state{task_id=\"T2\",state=\"faulted\"} 1", text);
+    }
+
     [Theory]
     [InlineData("http://+:9090/", 9090)]          // 全网卡前缀
     [InlineData("http://localhost:8080/", 8080)]  // 具名主机

@@ -96,6 +96,49 @@ public class DiagnosticsReporterTests
         Assert.Contains(recorded, r => r.Name == "dc.collector.task.dropped_frames" && r.TaskId == "task-A" && r.Value == 9);
     }
 
+    // 镜像 /metrics 的 dc_collector_task_state：每任务一条值恒 1 的 gauge，带 task.id + state（小写枚举名）维度。
+    [Fact]
+    public async Task Metrics_EmitsTaskStateDimension()
+    {
+        IReadOnlyList<TaskDiagnostics> snapshot = new[]
+        {
+            new TaskDiagnostics("T1", DateTimeOffset.UtcNow.AddMinutes(-5),
+                DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, 5, 0, 0, 3, State: ConnectionState.Running),
+            new TaskDiagnostics("T2", DateTimeOffset.UtcNow.AddMinutes(-5),
+                DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, 0, 0, 2, 1, State: ConnectionState.Faulted),
+        };
+        await using var reporter = new DiagnosticsReporter(
+            () => snapshot, new DiagnosticsReporterOptions { EnableLogging = false });
+
+        var recorded = new List<(string Name, double Value, string? TaskId, string? State)>();
+        using var listener = new MeterListener
+        {
+            InstrumentPublished = (inst, l) =>
+            {
+                if (inst.Meter.Name == DiagnosticsReporterOptions.MeterName) l.EnableMeasurementEvents(inst);
+            }
+        };
+        void Record<T>(Instrument inst, T value, ReadOnlySpan<KeyValuePair<string, object?>> tags) where T : struct
+        {
+            string? taskId = null, state = null;
+            foreach (var t in tags)
+            {
+                if (t.Key == "task.id") taskId = t.Value as string;
+                else if (t.Key == "state") state = t.Value as string;
+            }
+            recorded.Add((inst.Name, Convert.ToDouble(value), taskId, state));
+        }
+        listener.SetMeasurementEventCallback<int>((i, v, t, _) => Record(i, v, t));
+        listener.SetMeasurementEventCallback<long>((i, v, t, _) => Record(i, v, t));
+        listener.Start();
+        listener.RecordObservableInstruments();
+
+        Assert.Contains(recorded, m => m.Name == "dc.collector.task.state"
+            && m.TaskId == "T1" && m.State == "running" && m.Value == 1);
+        Assert.Contains(recorded, m => m.Name == "dc.collector.task.state"
+            && m.TaskId == "T2" && m.State == "faulted" && m.Value == 1);
+    }
+
     [Fact]
     public void LogOnce_EdgeLogsDropStartAndStop()
     {

@@ -10,4 +10,5 @@ public sealed record TaskDiagnostics(
     int RestartCount,
     int SubscribedTagCount,
     long QueuePendingBytes = 0,
-    long DroppedFrameCount = 0);
+    long DroppedFrameCount = 0,
+    ConnectionState State = ConnectionState.Running);

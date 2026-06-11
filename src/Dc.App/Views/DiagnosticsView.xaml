@@ -275,6 +275,64 @@
                             <DataGridTextColumn Header="任务"
                                                 Binding="{Binding TaskId}"
                                                 Width="*" MinWidth="140" />
+
+                            <!-- 连接状态徽章 pill（对齐 LiveDataView 质量 pill 风格：软底 + 同色 SemiBold 文字）。
+                                 默认 Running 绿；DataTrigger 按 ConnectionState 枚举成员名切文案/色。
+                                 「✓ 已恢复」绿闪标由 JustRecovered 控制可见（5 刷新帧瞬态，见 DiagnosticsRowViewModel）。 -->
+                            <DataGridTemplateColumn Header="状态" Width="120" SortMemberPath="State">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Border CornerRadius="999" Padding="8,2" VerticalAlignment="Center">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{DynamicResource SystemFillColorSuccessBackgroundBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding State}" Value="Connecting">
+                                                                <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBackgroundBrush}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding State}" Value="Restarting">
+                                                                <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBackgroundBrush}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding State}" Value="Faulted">
+                                                                <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBackgroundBrush}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock FontSize="11" FontWeight="SemiBold">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="运行正常" />
+                                                            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding State}" Value="Connecting">
+                                                                    <Setter Property="Text" Value="连接中" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Restarting">
+                                                                    <Setter Property="Text" Value="重启中" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Faulted">
+                                                                    <Setter Property="Text" Value="故障" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                            <!-- 已恢复绿闪标（5 帧瞬态，JustRecovered 控制可见性） -->
+                                            <TextBlock Text="✓ 已恢复" FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource SystemFillColorSuccessBrush}"
+                                                       VerticalAlignment="Center" Margin="6,0,0,0"
+                                                       Visibility="{Binding JustRecovered, Converter={StaticResource BoolToVis}}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
                             <DataGridTextColumn Header="启动"
                                                 Binding="{Binding StartedAt, StringFormat={}{0:HH:mm:ss}}"
                                                 Width="80"
