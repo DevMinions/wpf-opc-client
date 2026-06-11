@@ -93,4 +93,21 @@ public class LiveDataViewModelEvictionTests
         vm.TaskFilter = "T1";
         Assert.Equal(1, vm.RefreshCountForTest); // 下拉即时刷新
     }
+
+    [Fact]
+    public void FlushStats_AfterFlushes_ReportsRatioAndRows()
+    {
+        var vm = NewVm(out _);
+        // 同 key 多次 + 多 key：制造合并比（5 轮 × 100 key = 500 输入 → 100 输出）
+        for (var r = 0; r < 5; r++)
+            for (var k = 0; k < 100; k++)
+                vm.EnqueueForTest("T1", new TagValue($"item{k}", r, 0xC0, DateTimeOffset.UtcNow));
+        vm.FlushForTest();
+
+        var s = vm.GetFlushStats();
+        Assert.Equal(100, s.Rows);
+        Assert.True(s.CoalesceRatio > 4.5, $"500 输入/100 输出≈5，实测 {s.CoalesceRatio:F1}");
+        Assert.True(s.P50Ms >= 0);
+        Assert.True(s.P95Ms >= s.P50Ms);
+    }
 }

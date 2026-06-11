@@ -66,6 +66,13 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     private long _updatesAccum;
     private DateTimeOffset _lastRateAt = DateTimeOffset.UtcNow;
 
+    // flush 统计：合并比累计 + flush 耗时环形缓冲（p50/p95）
+    private long _totalCoalesceIn;
+    private long _totalCoalesceOut;
+    private readonly double[] _flushMsRing = new double[128];
+    private int _flushMsCount;
+    private int _flushMsHead;
+
     public ObservableCollection<LiveDataRowViewModel> Rows { get; } = new();
     public ObservableCollection<string> AvailableTaskIds { get; } = new();
     public ICollectionView RowsView { get; }
@@ -134,6 +141,8 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     /// <summary>将缓冲区所有值批量应用到 UI 行。</summary>
     private void FlushBuffer()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
         _coalescer.Coalesce(
             tryDequeue: () => _buffer.TryDequeue(out var it)
                 ? (true, $"{it.TaskId}::{it.Value.Item}", it)
@@ -148,6 +157,18 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
             var victim = Rows[0];
             Rows.RemoveAt(0);
             _rowIndex.Remove($"{victim.TaskId}::{victim.Item}");
+        }
+
+        sw.Stop();
+
+        // flush 统计：仅在本批有工作时记录（空 flush 不污染 p50/p95）
+        if (rawCount > 0)
+        {
+            _totalCoalesceIn += _coalescer.LastInputCount;
+            _totalCoalesceOut += _coalescer.LastOutputCount;
+            _flushMsRing[_flushMsHead] = sw.Elapsed.TotalMilliseconds;
+            _flushMsHead = (_flushMsHead + 1) % _flushMsRing.Length;
+            _flushMsCount++;
         }
 
         if (rawCount > 0 || RowCount != Rows.Count) RowCount = Rows.Count;
@@ -166,6 +187,24 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     internal void EnqueueForTest(string taskId, TagValue v) => _buffer.Enqueue((taskId, v));
 
     internal void FlushForTest() => FlushBuffer();
+
+    /// <summary>当前 flush 统计快照：p50/p95 耗时、合并比、行数、更新速率。</summary>
+    public LiveFlushStats GetFlushStats()
+    {
+        double p50, p95;
+        var n = Math.Min(_flushMsCount, _flushMsRing.Length);
+        if (n == 0) { p50 = 0; p95 = 0; }
+        else
+        {
+            var copy = new double[n];
+            Array.Copy(_flushMsRing, copy, n);
+            Array.Sort(copy);
+            p50 = copy[(int)(n * 0.50)];
+            p95 = copy[Math.Min(n - 1, (int)(n * 0.95))];
+        }
+        var ratio = _totalCoalesceOut > 0 ? (double)_totalCoalesceIn / _totalCoalesceOut : 0;
+        return new LiveFlushStats(p50, p95, ratio, Rows.Count, UpdatesPerSecond);
+    }
 
     private void Apply(string taskId, TagValue v, int rawCount)
     {
@@ -201,6 +240,12 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
         Rows.Clear();
         AvailableTaskIds.Clear();
         RowCount = 0;
+
+        // 重置 flush 统计累计器，避免清空后陈旧统计（ring 数组无需清零，count=0 即 n=0）
+        _totalCoalesceIn = 0;
+        _totalCoalesceOut = 0;
+        _flushMsCount = 0;
+        _flushMsHead = 0;
     }
 
     [RelayCommand]
