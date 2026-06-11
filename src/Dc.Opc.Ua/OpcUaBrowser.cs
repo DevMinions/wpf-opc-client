@@ -96,15 +96,22 @@ public sealed class OpcUaBrowser : IOpcBrowser
         return Task.FromResult<OpcNodeValue?>(result);
     }
 
-    public Task<IReadOnlyList<OpcNodeValue?>> ReadValuesAsync(
+    public async Task<IReadOnlyList<OpcNodeValue?>> ReadValuesAsync(
         IReadOnlyList<string> nodeIds, CancellationToken ct = default)
     {
         if (_session is null) throw new InvalidOperationException("ConnectAsync must be called first");
         var results = new OpcNodeValue?[nodeIds.Count];
-        if (nodeIds.Count == 0) return Task.FromResult<IReadOnlyList<OpcNodeValue?>>(results);
+        if (nodeIds.Count == 0) return results;
 
+        await Task.Run(() => ReadValuesCore(nodeIds, results), ct).ConfigureAwait(false);
+        return results;
+    }
+
+    // 同步分块读（在后台线程跑，避免阻塞 UI）。结果写入传入的 results 数组。
+    private void ReadValuesCore(IReadOnlyList<string> nodeIds, OpcNodeValue?[] results)
+    {
         // 每节点 2 个 ReadValueId（Value+DataType）；按服务器 MaxNodesPerRead/2 分块，未知则 500。
-        uint maxNodes = _session.OperationLimits?.MaxNodesPerRead ?? 0u;
+        uint maxNodes = _session!.OperationLimits?.MaxNodesPerRead ?? 0u;
         int chunk = maxNodes > 1 ? (int)(maxNodes / 2) : 500;
         if (chunk < 1) chunk = 500;
 
@@ -126,7 +133,6 @@ public sealed class OpcUaBrowser : IOpcBrowser
                 results[i] = BuildNodeValue(dvs[k], k + 1 < dvs.Count ? dvs[k + 1] : null);
             }
         }
-        return Task.FromResult<IReadOnlyList<OpcNodeValue?>>(results);
     }
 
     // 由一对 Value/DataType DataValue 组装 OpcNodeValue（质量位运算 + 类型解析）。
