@@ -20,7 +20,8 @@ public partial class DiagnosticsRowViewModel : ObservableObject
     [ObservableProperty] private ConnectionState _state;     // 连接生命周期态，状态徽章列用
     [ObservableProperty] private bool _justRecovered;        // 重启/故障后刚恢复，绿闪瞬态
 
-    private const int RecoverySeconds = 5;
+    // 「已恢复」绿闪持续的刷新帧数（非秒；刷新间隔见 DiagnosticsViewModel.RefreshIntervalSec）。
+    private const int RecoveryTicks = 5;
     private int _recoveryTicksLeft;
 
     // 速率滚动窗口（最近 N 个 values/s 采样），供行内 sparkline 趋势图。
@@ -43,7 +44,7 @@ public partial class DiagnosticsRowViewModel : ObservableObject
             && d.State == ConnectionState.Running)
         {
             JustRecovered = true;
-            _recoveryTicksLeft = RecoverySeconds;
+            _recoveryTicksLeft = RecoveryTicks;
         }
 
         TaskId = d.TaskId;
