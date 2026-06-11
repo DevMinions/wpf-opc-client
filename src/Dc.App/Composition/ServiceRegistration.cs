@@ -61,7 +61,8 @@ public static class ServiceRegistration
             return new OrchestratorOptions
             {
                 WatchdogInterval = TimeSpan.FromSeconds(config.GetValue("Orchestrator:WatchdogIntervalSeconds", 30)),
-                HeartbeatTimeout = TimeSpan.FromSeconds(config.GetValue("Orchestrator:HeartbeatTimeoutSeconds", 120))
+                HeartbeatTimeout = TimeSpan.FromSeconds(config.GetValue("Orchestrator:HeartbeatTimeoutSeconds", 120)),
+                FaultThreshold = config.GetValue("Orchestrator:FaultThreshold", 3)
             };
         });
 
