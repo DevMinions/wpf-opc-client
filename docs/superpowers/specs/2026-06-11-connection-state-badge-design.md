@@ -28,8 +28,10 @@
 - 不给 `IOpcSubscriber` 加跨协议连接状态事件（保持现有粗粒度重启模型；状态由编排器生命周期 + 心跳派生）。
 - 不做故障历史/时间线（本轮只做「当前状态徽章」；时间线是另一方向）。
 - 不做主动弹窗通知（徽章为主；通知是另一方向）。
-- 不改看门狗的重启策略/退避（只观测+标注，不改行为）。
+- 不改看门狗的重启**策略与退避**（仍是「心跳超时→重启订阅」、立即重试）。**但重启机制从「移除+重建 rt」改为「原地重绑 rt」**——这是为让「重启中/故障」状态可观测的必要改动（见 §4.3），顺带修复既有缺陷「重连 connect 失败的任务凭空离开 _running 再不重试」（改为留在 _running 标 Faulted，由下次看门狗 tick 重试）。
 - `/debug/fault` 仅门控调试设施，不进产线路径、不持久化。
+
+> **架构决策（已与用户确认）**：现有重启 = `StopUnlockedAsync`(`_running.TryRemove`) + `StartUnlockedAsync`(新建 rt)。重启期间 rt 不在 `_running` → `GetDiagnostics` 不发该行 → 「重启中」不可观测；且 server 宕机时重连 connect 抛异常会让任务彻底消失。故改为**原地重绑**：rt 跨重连存活。
 
 ## 3. 决策（已与用户确认）
 - 核心缺口：显式连接状态徽章。
@@ -65,16 +67,27 @@ public enum ConnectionState
 - `public DateTimeOffset? LastRestartAt { get; set; }`（判定「重启后是否已恢复心跳」用）
 
 ### 4.3 转移点（编排器置位）
-- `StartUnlockedAsync` 进入连接阶段：`rt.State = Connecting`（构造 rt 时默认即 Connecting）。
-- 订阅成功、pipeline 起：`rt.State = Running`。
-- `RestartIfStaleAsync` 锁内确认要重启时：`rt.State = Restarting`、`rt.LastRestartAt = now`、`rt.ConsecutiveStaleRestarts++`。随后 Stop+Start（Start 内部又 Connecting→Running）。
-  - 重启完成回写时：若 `ConsecutiveStaleRestarts >= FaultThreshold` 则置 `rt.State = Faulted`（覆盖 Start 设的 Running，表示「虽重启起来了但反复超时」）；否则保持 Running。
-- **心跳恢复归零 + 退出 Faulted**：pipeline 收到心跳时更新 `LastHeartbeat`（现有逻辑）。新增：收到心跳且 `LastRestartAt` 之后已稳定（`now - LastRestartAt > HeartbeatTimeout` 且心跳新鲜）→ `ConsecutiveStaleRestarts = 0`，若当前是 Faulted 则回 `Running`。
-  - 实现位置：心跳处理处（pipeline 消费 Heartbeats 通道更新 `LastHeartbeat` 的地方）顺带判定。
-- 用户 `StopAsync` → 任务移出 `_running`（`StopUnlockedAsync` 走 `_running.TryRemove`）→ 从 GetDiagnostics 快照消失（无 Stopped 态值；见 §5.3）。
-- `FaultThreshold` 放 `OrchestratorOptions`（默认 3），便于测试调小。
 
-> 并发：`rt.State` 等字段的读写都在 `_mutationLock` 内（重启路径）或 pipeline 单线程（心跳更新）。`GetDiagnostics` 读 `rt.State` 为单字段读（enum=int，原子），与现有 `RestartCount` 读同等宽松度，一致即可。
+**初次启动（`StartUnlockedAsync`，改为 rt-first 以让「连接中」可观测）**：
+- 现状是「connect+subscribe 成功后才建 rt」→ 初连不可观测。改为：先建 rt（`State = Connecting`）并加入 `_running`，再 `ConnectAsync`+`SubscribeAsync`，成功后启 pipeline、`State = Running`。
+- connect/subscribe 失败：从 `_running` `TryRemove` 该 rt、Dispose、`throw`（与现有错误语义一致，初次失败不残留）。
+
+**看门狗重启（`RestartIfStaleAsync`，改为原地重绑）**：
+- 锁内确认仍需重启（任务在、心跳确超时）后，**保持同一 rt 在 `_running`**，依次：
+  1. `rt.State = Restarting`、`rt.LastRestartAt = now`、`rt.ConsecutiveStaleRestarts++`、`rt.RestartCount++`。
+  2. 拆除旧管道：取消 `rt.Cts`、await 旧 `PipelineTask`（带 `StopDrainTimeout`）、`SafeDisposeAsync(rt.Subscriber)`。
+  3. 新建 subscriber + 新 `Cts`，`ConnectAsync`+`SubscribeAsync`：
+     - 成功 → 重绑 `rt.Subscriber/Cts/PipelineTask`、`rt.LastHeartbeat = now`、若 `ConsecutiveStaleRestarts >= FaultThreshold` 则 `State = Faulted` 否则 `State = Running`。
+     - 失败（server 仍宕）→ `rt.State = Faulted`，**rt 留在 `_running`**（不消失），下次看门狗 tick 再重连（既有「凭空消失」缺陷由此修复）。
+- 全程 rt 在 `_running` → `GetDiagnostics` 持续发该行，徽章可见 Running→Restarting→Running/Faulted。
+
+**心跳恢复归零 + 退出 Faulted**（pipeline 消费 Heartbeats 处，**已核实在 `RunPipelineAsync` 的 `heartTask = ConsumeAsync(rt.Subscriber.Heartbeats, h => { rt.LastHeartbeat = h.Time; ...})`**）：
+- 在该回调里顺带：若 `rt.State == Faulted` 或 `rt.ConsecutiveStaleRestarts > 0`，且本次心跳新鲜 → `rt.ConsecutiveStaleRestarts = 0`、`rt.State = Running`（恢复）。
+
+- 用户 `StopAsync` → `StopUnlockedAsync` `_running.TryRemove` → 从快照消失（无 Stopped 态值；§5.3）。
+- `FaultThreshold` 放 `OrchestratorOptions`（默认 3），测试调小。
+
+> 并发：`rt.State`/`ConsecutiveStaleRestarts` 写在 `_mutationLock` 内（重启路径）或 pipeline 心跳单线程（恢复路径）。两路径可能并发（看门狗重启 vs pipeline 心跳）——但重启路径会先取消旧 pipeline 再重绑，恢复路径作用于当前 pipeline，时序上重启进行中旧 pipeline 已被取消、新 pipeline 尚未起，竞争窗口小且都是单 enum/int 字段写（原子）。`GetDiagnostics` 读 `rt.State` 为单字段读，与现有 `RestartCount` 同等宽松度。**实现时 restart 路径置 Restarting/Faulted 与 heartbeat 路径置 Running 用同一 `_stateLock`（轻量 lock）串行化这两个状态写**，避免「恢复把重启中覆盖」的竞态。
 
 ### 4.4 TaskDiagnostics + /metrics
 - `TaskDiagnostics` record 末尾加 `ConnectionState State = ConnectionState.Running`（带默认值，兼容现有构造点/测试）。
