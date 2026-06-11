@@ -43,7 +43,7 @@
                     <Button Content="取消" AutomationProperties.AutomationId="TaskCancel" Width="80" Margin="0,0,8,0" IsCancel="True"
                             Style="{StaticResource DcBtnGhostSm}" />
                     <Button x:Name="SaveButton" AutomationProperties.AutomationId="TaskSave" Content="保存" Width="80"
-                            Click="OnSaveClick" IsDefault="True"
+                            Click="OnSaveClick" IsDefault="True" IsEnabled="{Binding CanSave}"
                             Style="{StaticResource DcBtnPrimarySm}" />
                 </StackPanel>
             </Border>

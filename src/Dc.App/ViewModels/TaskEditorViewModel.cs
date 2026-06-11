@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dc.Domain.Entities;
@@ -6,18 +8,41 @@ using Dc.Opc.Abstractions;
 
 namespace Dc.App.ViewModels;
 
-public partial class TaskEditorViewModel : ObservableObject
+// ObservableValidator：字段带校验特性 + [NotifyDataErrorInfo] → 输入即时触发 INotifyDataErrorInfo，
+// View 的 TextBox 自动红框、CanSave 据 HasErrors 禁用保存。默认协议 Ua（与浏览节点一致、跨平台通用）。
+public partial class TaskEditorViewModel : ObservableValidator
 {
     private readonly Dictionary<OpcProtocol, IOpcBrowserFactory> _factories;
 
     [ObservableProperty] private string _title;
-    [ObservableProperty] private string _server = string.Empty;       // OPC DA ProgID 或 UA URL
-    [ObservableProperty] private string _node = "localhost";          // OPC DA Host；UA 时通常和 Server 同
+
+    [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [Required(AllowEmptyStrings = false, ErrorMessage = "服务器不能为空")]
+    private string _server = string.Empty;       // OPC DA ProgID 或 UA URL
+
+    [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [Required(AllowEmptyStrings = false, ErrorMessage = "节点不能为空")]
+    private string _node = "localhost";          // OPC DA Host；UA 时通常和 Server 同
+
     [ObservableProperty] private string _clsid = string.Empty;        // DA 兜底，可空
-    [ObservableProperty] private OpcProtocol _protocol = OpcProtocol.Da;
-    [ObservableProperty] private int _interval = 1000;
-    [ObservableProperty] private int _deviation = 0;
-    [ObservableProperty] private string _tcpAddress = "127.0.0.1:5000";
+    [ObservableProperty] private OpcProtocol _protocol = OpcProtocol.Ua;
+
+    [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [Range(1, int.MaxValue, ErrorMessage = "采样间隔必须大于 0 ms")]
+    private int _interval = 1000;
+
+    [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [Range(0, 100, ErrorMessage = "死区必须在 0-100 范围内")]
+    private int _deviation = 0;
+
+    [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [RegularExpression(@"^[^:]+:\d+$", ErrorMessage = "TCP 地址格式应为 host:port")]
+    private string _tcpAddress = "127.0.0.1:5000";
 
     // DA 扫描 UI
     [ObservableProperty] private string _discoveryHost = "localhost";
@@ -31,10 +56,14 @@ public partial class TaskEditorViewModel : ObservableObject
     public bool IsClassicOpcProtocol => Protocol == OpcProtocol.Da || Protocol == OpcProtocol.Ae;
     public string? OriginalId { get; }
 
+    // Ua 优先（默认协议），与浏览节点默认一致
     public IReadOnlyList<OpcProtocol> Protocols { get; } = new[]
     {
-        OpcProtocol.Da, OpcProtocol.Ua, OpcProtocol.Ae
+        OpcProtocol.Ua, OpcProtocol.Da, OpcProtocol.Ae
     };
+
+    // 无校验错误才可保存；ErrorsChanged 时通知（见构造）。
+    public bool CanSave => !HasErrors;
 
     public TaskEditorViewModel() : this(null, Array.Empty<IOpcBrowserFactory>()) { }
 
@@ -59,6 +88,10 @@ public partial class TaskEditorViewModel : ObservableObject
             _tcpAddress = existing.TcpAddress;
             if (!string.IsNullOrEmpty(existing.Node)) _discoveryHost = existing.Node;
         }
+
+        // HasErrors 变化时刷新 CanSave（驱动保存按钮禁用）；初次全量校验让初始态正确。
+        ErrorsChanged += (_, _) => OnPropertyChanged(nameof(CanSave));
+        ValidateAllProperties();
     }
 
     partial void OnProtocolChanged(OpcProtocol value)
@@ -127,16 +160,15 @@ public partial class TaskEditorViewModel : ObservableObject
         }
     }
 
+    // 保存时点的兜底校验：单一来源 = 字段上的校验特性（避免规则两处维护）。
     public IReadOnlyList<string> Validate()
     {
-        var errors = new List<string>();
-        if (string.IsNullOrWhiteSpace(Server)) errors.Add("服务器不能为空");
-        if (string.IsNullOrWhiteSpace(Node)) errors.Add("节点不能为空");
-        if (Interval < 1) errors.Add("采样间隔必须大于 0 ms");
-        if (Deviation < 0 || Deviation > 100) errors.Add("死区必须在 0-100 范围内");
-        if (string.IsNullOrWhiteSpace(TcpAddress) || !TcpAddress.Contains(':'))
-            errors.Add("TCP 地址格式应为 host:port");
-        return errors;
+        ValidateAllProperties();
+        return GetErrors()
+            .Select(e => e.ErrorMessage ?? string.Empty)
+            .Where(m => m.Length > 0)
+            .Distinct()
+            .ToList();
     }
 
     public CollectorTask ToEntity() => new()
