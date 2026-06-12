@@ -99,6 +99,13 @@ public class TaskWorkspaceViewModelTests
         public void ShowError(string title, string message) => Errors.Add((title, message));
     }
 
+    private sealed class NullPublisherFactory : Dc.Infrastructure.Messaging.IPublisherFactory
+    {
+        // StartAsync 在查 subscriber factory 时就抛（协议未注册），走不到 publisherFactory，故永不被调。
+        public Dc.Infrastructure.Messaging.IPublisher Create(string address)
+            => throw new System.NotSupportedException("test stub");
+    }
+
     private sealed class EditorReturning(CollectorTask result) : Dc.App.Services.ITaskEditorDialog
     {
         public CollectorTask? Edit(CollectorTask? existing) => result;
@@ -422,7 +429,9 @@ public class TaskWorkspaceViewModelTests
     {
         var src = new FakeTaskSource { Tasks = { Task1("a") } };       // type=2 Ua
         var notify = new FakeNotification();
-        await using var orch = new TaskOrchestrator(Array.Empty<Dc.Opc.Abstractions.IOpcSubscriberFactory>());
+        await using var orch = new TaskOrchestrator(
+            Array.Empty<Dc.Opc.Abstractions.IOpcSubscriberFactory>(),
+            new NullPublisherFactory());
         var vm = BuildVm(src, orchestrator: orch, notify: notify);
         await vm.LoadAsync();
         vm.SelectedTask = vm.AllTasks.First();
