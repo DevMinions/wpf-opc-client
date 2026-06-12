@@ -93,6 +93,19 @@ public class TaskWorkspaceViewModelTests
         public bool Confirm(string title, string message) { Calls++; return Result; }
     }
 
+    private sealed class FakeNotification : Dc.App.Services.INotificationService
+    {
+        public List<(string Title, string Message)> Errors { get; } = new();
+        public void ShowError(string title, string message) => Errors.Add((title, message));
+    }
+
+    private sealed class NullPublisherFactory : Dc.Infrastructure.Messaging.IPublisherFactory
+    {
+        // StartAsync 在查 subscriber factory 时就抛（协议未注册），走不到 publisherFactory，故永不被调。
+        public Dc.Infrastructure.Messaging.IPublisher Create(string address)
+            => throw new System.NotSupportedException("test stub");
+    }
+
     private sealed class EditorReturning(CollectorTask result) : Dc.App.Services.ITaskEditorDialog
     {
         public CollectorTask? Edit(CollectorTask? existing) => result;
@@ -152,7 +165,9 @@ public class TaskWorkspaceViewModelTests
     private static TaskWorkspaceViewModel BuildVm(
         FakeTaskSource src,
         Dc.App.Services.ITaskEditorDialog? editor = null,
-        Dc.App.Services.IConfirmDialog? confirm = null)
+        Dc.App.Services.IConfirmDialog? confirm = null,
+        TaskOrchestrator? orchestrator = null,
+        Dc.App.Services.INotificationService? notify = null)
     {
         var orch = new FakeOrchView();
         var overview = new WorkspaceOverviewViewModel(orch, () => Now);
@@ -160,13 +175,14 @@ public class TaskWorkspaceViewModelTests
         return new TaskWorkspaceViewModel(
             src, orch, () => Now, TimeSpan.FromSeconds(120),
             overview, new FakeTagPanel(),
-            orchestrator: null,
+            orchestrator: orchestrator,
             editor: editor,
             groupsPanel: new FakeGroupPanel(),
             livePanel: new FakeLivePanel(),
             diagPanel: new FakeDiagPanel(),
             config: config,
-            confirm: confirm);
+            confirm: confirm,
+            notify: notify);
     }
 
     // ── Existing tests ────────────────────────────────────────────────────
@@ -404,5 +420,24 @@ public class TaskWorkspaceViewModelTests
         await vm.EditSelectedAsync();
         Assert.Single(src.Updated);
         Assert.Equal("改后", src.Updated[0].Server);
+    }
+
+    // ── Task 5: 启动失败通知 ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task StartSelected_WhenOrchestratorThrows_ShowsErrorNotification()
+    {
+        var src = new FakeTaskSource { Tasks = { Task1("a") } };       // type=2 Ua
+        var notify = new FakeNotification();
+        await using var orch = new TaskOrchestrator(
+            Array.Empty<Dc.Opc.Abstractions.IOpcSubscriberFactory>(),
+            new NullPublisherFactory());
+        var vm = BuildVm(src, orchestrator: orch, notify: notify);
+        await vm.LoadAsync();
+        vm.SelectedTask = vm.AllTasks.First();
+        await vm.StartSelectedAsync();
+        Assert.Single(notify.Errors);
+        Assert.Equal("任务启动失败", notify.Errors[0].Title);
+        Assert.False(vm.AllTasks.First().IsRunning);
     }
 }

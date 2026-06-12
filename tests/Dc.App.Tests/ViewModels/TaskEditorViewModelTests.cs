@@ -88,4 +88,33 @@ public class TaskEditorViewModelTests
         vm.Protocol = OpcProtocol.Da;
         Assert.False(vm.IsUaProtocol);
     }
+
+    [Fact]
+    public void Ua_SettingNode_MirrorsToServer()
+    {
+        var vm = new TaskEditorViewModel();          // 默认 Ua
+        vm.Node = "opc.tcp://host:4840/x";
+        Assert.Equal("opc.tcp://host:4840/x", vm.Server);
+        Assert.Equal("opc.tcp://host:4840/x", vm.ToEntity().Server);
+    }
+
+    [Fact]
+    public void Da_SettingNode_DoesNotMirrorToServer()
+    {
+        var vm = new TaskEditorViewModel { Protocol = OpcProtocol.Da };
+        vm.Server = "Matrikon.OPC.Simulation.1";
+        vm.Node = "192.168.1.10";
+        Assert.Equal("Matrikon.OPC.Simulation.1", vm.Server);   // DA 不镜像
+    }
+
+    [Fact]
+    public void NodeLabel_And_Placeholder_TrackProtocol()
+    {
+        var vm = new TaskEditorViewModel();          // Ua
+        Assert.Equal("服务器地址:", vm.NodeLabel);
+        Assert.Contains("opc.tcp", vm.NodePlaceholder);
+        vm.Protocol = OpcProtocol.Da;
+        Assert.Equal("节点:", vm.NodeLabel);
+        Assert.DoesNotContain("opc.tcp", vm.NodePlaceholder);
+    }
 }

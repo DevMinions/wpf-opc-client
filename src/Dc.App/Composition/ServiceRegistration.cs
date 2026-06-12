@@ -136,6 +136,10 @@ public static class ServiceRegistration
 
         services.AddSingleton<ITaskEditorDialog, TaskEditorDialog>();
         services.AddSingleton<IConfirmDialog, WpfConfirmDialog>();
+        // 非模态 toast 通知：WPF-UI ISnackbarService + INotificationService 适配层。
+        // SnackbarPresenter 在 App 启动 Show 前经 SetSnackbarPresenter 接线（见 App.xaml.cs）。
+        services.AddSingleton<Wpf.Ui.ISnackbarService, Wpf.Ui.SnackbarService>();
+        services.AddSingleton<Dc.App.Services.INotificationService, Dc.App.Services.SnackbarNotificationService>();
         services.AddSingleton<IGroupEditorDialog, GroupEditorDialog>();
         services.AddSingleton<ITagEditorDialog, TagEditorDialog>();
         services.AddSingleton<IConfigEditorDialog, ConfigEditorDialog>();
@@ -219,7 +223,8 @@ public static class ServiceRegistration
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableLivePanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableDiagPanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel>(),
-                confirm: sp.GetRequiredService<Dc.App.Services.IConfirmDialog>()));
+                confirm: sp.GetRequiredService<Dc.App.Services.IConfirmDialog>(),
+                notify: sp.GetRequiredService<Dc.App.Services.INotificationService>()));
 
         // === 旧 VM 保留（其他 View 由 Shell 路由继续承载） ===
         services.AddSingleton<System.Windows.Threading.Dispatcher>(
