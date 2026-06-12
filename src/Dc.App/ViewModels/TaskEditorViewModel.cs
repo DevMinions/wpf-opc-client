@@ -57,6 +57,9 @@ public partial class TaskEditorViewModel : ObservableValidator
     public bool IsDaProtocol => Protocol == OpcProtocol.Da;
     // DA 和 AE 都走 classic OPC（DCOM/COM），扫描发现 + CLSID 兜底 UI 两者共用
     public bool IsClassicOpcProtocol => Protocol == OpcProtocol.Da || Protocol == OpcProtocol.Ae;
+    // UA 下节点即服务器地址，显示标签和占位符随协议切换
+    public string NodeLabel => IsUaProtocol ? "服务器地址:" : "节点:";
+    public string NodePlaceholder => IsUaProtocol ? "opc.tcp://host:port/path" : "主机名或 IP";
     public string? OriginalId { get; }
 
     // Ua 优先（默认协议），与浏览节点默认一致
@@ -98,11 +101,19 @@ public partial class TaskEditorViewModel : ObservableValidator
         ValidateAllProperties();
     }
 
+    partial void OnNodeChanged(string value)
+    {
+        if (IsUaProtocol) Server = value;
+    }
+
     partial void OnProtocolChanged(OpcProtocol value)
     {
         OnPropertyChanged(nameof(IsUaProtocol));
         OnPropertyChanged(nameof(IsDaProtocol));
         OnPropertyChanged(nameof(IsClassicOpcProtocol));
+        OnPropertyChanged(nameof(NodeLabel));
+        OnPropertyChanged(nameof(NodePlaceholder));
+        if (IsUaProtocol) Server = Node;
     }
 
     // 与 BrowseViewModel 同套逻辑：用 LocalPath 防 {} 被编码成 %7B/%7D，再按 '/' 拆出 progId 与 clsid
