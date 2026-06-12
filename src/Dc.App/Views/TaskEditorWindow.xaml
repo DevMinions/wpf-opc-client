@@ -54,7 +54,7 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="36" />
-                            <RowDefinition Height="36" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="36" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -71,14 +71,16 @@
                                   ItemsSource="{Binding Protocols}" SelectedItem="{Binding Protocol}" />
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="服务器:"
+                                   Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <TextBox Grid.Row="1" Grid.Column="1" AutomationProperties.AutomationId="TaskServer" Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"
-                                 controls:Placeholder.Text="DA: ProgID / UA: opc.tcp://host:port" />
+                                 Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}"
+                                 controls:Placeholder.Text="ProgID（如 Matrikon.OPC.Simulation.1）" />
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="节点:"
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding NodeLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <TextBox Grid.Row="2" Grid.Column="1" AutomationProperties.AutomationId="TaskNode" Text="{Binding Node, UpdateSourceTrigger=PropertyChanged}"
-                                 controls:Placeholder.Text="主机名或 IP" />
+                                 controls:Placeholder.Text="{Binding NodePlaceholder}" />
 
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="采样间隔:" Margin="0,7,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" />
