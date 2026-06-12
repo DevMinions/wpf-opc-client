@@ -100,5 +100,10 @@
                 </TextBlock>
             </DockPanel>
         </Border>
+
+        <!-- 非模态 toast 浮层：跨全部行、底部居中，浮在最上层。
+             ISnackbarService.SetSnackbarPresenter(RootSnackbarPresenter) 在 App 启动 Show 前接线（任务 4）。-->
+        <ui:SnackbarPresenter x:Name="RootSnackbarPresenter" Grid.RowSpan="3"
+                              VerticalAlignment="Bottom" Margin="0,0,0,40" />
     </Grid>
 </ui:FluentWindow>

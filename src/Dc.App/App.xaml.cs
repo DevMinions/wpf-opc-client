@@ -92,6 +92,10 @@ public partial class App : Application
             themeSvc.Initialize();
 
             var window = Services.GetRequiredService<Dc.App.Views.Shell.ShellWindow>();
+            // 非模态 toast 浮层接线：必须在第一次可能弹 toast 前（Show 前最稳）把 ShellWindow 的
+            // SnackbarPresenter 注入 ISnackbarService，否则后续 ShowError 无承载控件。
+            Services.GetRequiredService<Wpf.Ui.ISnackbarService>()
+                .SetSnackbarPresenter(window.RootSnackbarPresenter);
             // Strategy B (shutting-down-wpf-gracefully): OnExplicitShutdown + MainWindow.Closed
             // 窗口关闭后在此做异步清理，最后调 Shutdown() 结束进程
             window.Closed += OnMainWindowClosed;
