@@ -24,7 +24,7 @@ public partial class TaskEditorViewModel : ObservableValidator
     [ObservableProperty]
     [NotifyDataErrorInfo]
     [Required(AllowEmptyStrings = false, ErrorMessage = "节点不能为空")]
-    private string _node = "localhost";          // OPC DA Host；UA 时通常和 Server 同
+    private string _node = "localhost";          // OPC DA Host；UA 时即服务器地址(opc.tcp URL)，由 OnNodeChanged 镜像进 Server
 
     [ObservableProperty] private string _clsid = string.Empty;        // DA 兜底，可空
     [ObservableProperty] private OpcProtocol _protocol = OpcProtocol.Ua;
