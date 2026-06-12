@@ -19,6 +19,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     private readonly TaskOrchestrator? _orchestrator;
     private readonly ITaskEditorDialog? _editor;
     private readonly Dc.App.Services.IConfirmDialog _confirm;
+    private readonly Dc.App.Services.INotificationService _notify;
     private Dictionary<string, Dc.Domain.Entities.CollectorTask> _tasksById = new();
 
     public ObservableCollection<TaskMasterRow> AllTasks { get; } = new();
@@ -57,7 +58,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         IEmbeddableLivePanel? livePanel = null,
         IEmbeddableDiagPanel? diagPanel = null,
         WorkspaceConfigViewModel? config = null,
-        Dc.App.Services.IConfirmDialog? confirm = null)
+        Dc.App.Services.IConfirmDialog? confirm = null,
+        Dc.App.Services.INotificationService? notify = null)
     {
         _source = source;
         _orch = orchestratorView;
@@ -66,6 +68,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         _orchestrator = orchestrator;
         _editor = editor;
         _confirm = confirm ?? new DenyConfirm();
+        _notify = notify ?? new NullNotification();
         Overview = overview;
         TagsPanel = tagsPanel;
         TagsPanel.IsEmbedded = true;
@@ -238,7 +241,14 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         // 映射口径与无头 Cli 共用（DbTaskLauncher 单一来源），tags 为本处单独加载的。
         var req = DbTaskLauncher.ToStartRequest(task, tags);
 
-        await _orchestrator.StartAsync(req);
+        try
+        {
+            await _orchestrator.StartAsync(req);
+        }
+        catch (Exception ex)
+        {
+            _notify.ShowError("任务启动失败", ex.Message);
+        }
         await LoadAsync();
     }
 
@@ -352,5 +362,12 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     private sealed class DenyConfirm : Dc.App.Services.IConfirmDialog
     {
         public bool Confirm(string title, string message) => false;
+    }
+
+    // 未注入通知服务时兜底：测试/未接线场景不弹不崩。
+    // 生产经 ServiceRegistration 注入（任务 3/4）。
+    private sealed class NullNotification : Dc.App.Services.INotificationService
+    {
+        public void ShowError(string title, string message) { }
     }
 }
