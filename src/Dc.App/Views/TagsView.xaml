@@ -121,8 +121,8 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
                     <DataGridTextColumn Header="数据类型" Binding="{Binding DataType}" Width="80" />
-                    <DataGridTextColumn Header="分组" Binding="{Binding GroupId}" Width="180" />
-                    <DataGridTextColumn Header="任务" Binding="{Binding TaskId}" Width="180" />
+                    <DataGridTextColumn Header="分组" Binding="{Binding GroupName}" Width="180" />
+                    <DataGridTextColumn Header="任务" Binding="{Binding TaskName}" Width="180" />
                     <DataGridTextColumn Header="创建时间"
                                         Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"
                                         Width="160" />

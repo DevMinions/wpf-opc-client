@@ -23,7 +23,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
 
     [ObservableProperty] private string _title = "Tag 管理";
     [ObservableProperty] private bool _isLoading;
-    [ObservableProperty] private Tag? _selectedTag;
+    [ObservableProperty] private TagRow? _selectedTag;
     [ObservableProperty] private Group? _groupFilter;
     [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private bool _isEmbedded;
@@ -45,7 +45,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         OnPropertyChanged(nameof(CreateGroupCtaText));
     }
 
-    public ObservableCollection<Tag> Tags { get; } = new();
+    public ObservableCollection<TagRow> Tags { get; } = new();
     public ObservableCollection<Group> AvailableGroups { get; } = new();
     private readonly Dictionary<string, CollectorTask> _taskById = new();
 
@@ -101,10 +101,16 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             AvailableGroups.Clear();
             foreach (var g in groups) AvailableGroups.Add(g);
             NewCommand.NotifyCanExecuteChanged(); // 分组数变化 → 「新建」可用性 + 空状态刷新
+            var groupNameById = groups.ToDictionary(g => g.Id, g => g.Name);
 
             var tasks = await db.Tasks.AsNoTracking().ToListAsync();
             _taskById.Clear();
             foreach (var t in tasks) _taskById[t.Id] = t;
+            // 任务名:优先 Name,回落 Server(UA URL/DA ProgID),再回落 Id——与列表口径一致。
+            string TaskName(string tid) =>
+                _taskById.TryGetValue(tid, out var t) && !string.IsNullOrWhiteSpace(t.Name) ? t.Name!
+                : _taskById.TryGetValue(tid, out var t2) && !string.IsNullOrWhiteSpace(t2.Server) ? t2.Server
+                : tid;
 
             var q = db.Tags.AsNoTracking().AsQueryable();
             if (TaskScope is not null) q = q.Where(t => t.TaskId == TaskScope);
@@ -116,7 +122,11 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             }
             var list = await q.OrderBy(t => t.Item).Take(500).ToListAsync();
             Tags.Clear();
-            foreach (var t in list) Tags.Add(t);
+            foreach (var t in list)
+            {
+                var gName = groupNameById.TryGetValue(t.GroupId, out var gn) ? gn : t.GroupId;
+                Tags.Add(new TagRow(t, gName, TaskName(t.TaskId)));
+            }
         }
         finally
         {
@@ -140,7 +150,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         {
             db.Tags.Add(edited);
             await db.SaveChangesAsync();
-            Tags.Add(edited);
+            Tags.Add(ToRow(edited));
             await TryHotAddAsync(edited);
         }
         catch (DbUpdateException ex)
@@ -153,7 +163,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     private async Task EditAsync()
     {
         if (SelectedTag is null) return;
-        var edited = _editor.Edit(AvailableGroups, SelectedTag, null, taskId => _taskById.TryGetValue(taskId, out var t) ? t : null);
+        var edited = _editor.Edit(AvailableGroups, SelectedTag.Tag, null, taskId => _taskById.TryGetValue(taskId, out var t) ? t : null);
         if (edited is null) return;
 
         await using var db = await _dbFactory.CreateDbContextAsync();
@@ -178,16 +188,18 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         var idx = Tags.IndexOf(SelectedTag);
         if (idx >= 0)
         {
-            Tags[idx] = entity;
-            SelectedTag = entity; // 替换后重选，保持高亮一致
+            var row = ToRow(entity);
+            Tags[idx] = row;
+            SelectedTag = row; // 替换后重选，保持高亮一致
         }
     }
 
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private async Task DeleteAsync()
     {
-        var tag = SelectedTag;
-        if (tag is null) return;
+        var row = SelectedTag;
+        if (row is null) return;
+        var tag = row.Tag;
 
         var confirm = MessageDialog.Confirm("删除确认", $"确定删除 Tag {tag.Item}？", MessageDialogKind.Warning);
         if (!confirm) return;
@@ -195,7 +207,17 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         await using var db = await _dbFactory.CreateDbContextAsync();
         await db.Tags.Where(t => t.Id == tag.Id).ExecuteDeleteAsync();
         await TryHotRemoveAsync(tag.TaskId, tag.Item);
-        Tags.Remove(tag);
+        Tags.Remove(row);
+    }
+
+    // Tag → TagRow:分组名/任务名解析与 LoadAsync 同口径(名 → Server → Id)。
+    private TagRow ToRow(Tag t)
+    {
+        var gName = AvailableGroups.FirstOrDefault(g => g.Id == t.GroupId)?.Name ?? t.GroupId;
+        var taskName = _taskById.TryGetValue(t.TaskId, out var tk) && !string.IsNullOrWhiteSpace(tk.Name) ? tk.Name!
+            : _taskById.TryGetValue(t.TaskId, out var tk2) && !string.IsNullOrWhiteSpace(tk2.Server) ? tk2.Server
+            : t.TaskId;
+        return new TagRow(t, gName, taskName);
     }
 
     [RelayCommand]
@@ -314,7 +336,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
 
     private bool HasSelection() => SelectedTag is not null;
 
-    partial void OnSelectedTagChanged(Tag? value)
+    partial void OnSelectedTagChanged(TagRow? value)
     {
         DeleteCommand.NotifyCanExecuteChanged();
         EditCommand.NotifyCanExecuteChanged();
