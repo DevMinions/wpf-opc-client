@@ -53,7 +53,7 @@ public sealed class OpcUaSubscriber : IOpcSubscriber
         var endpointDescription = CoreClientUtils.SelectEndpoint(
             appConfig,
             _options.ServerUri,
-            useSecurity: _options.UseSecurity);
+            useSecurity: _options.UseSecurity && OpcUaApplicationConfig.UseSecurity);
 
         _logger?.LogInformation("OPC UA 连接 {ServerUri}，安全策略 {Policy}/{Mode}（{ChannelId}）",
             _options.ServerUri, endpointDescription.SecurityPolicyUri, endpointDescription.SecurityMode, ChannelId);

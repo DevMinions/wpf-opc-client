@@ -107,6 +107,8 @@ try
     // ── OPC UA 安全基线：默认严格（AutoAccept=false / 2048-bit），与 WPF 一致，可经 appsettings 覆盖 ──
     OpcUaApplicationConfig.AutoAcceptUntrustedCertificates =
         builder.Configuration.GetValue("OpcUa:AutoAcceptUntrustedCertificates", false);
+    OpcUaApplicationConfig.UseSecurity =
+        builder.Configuration.GetValue("OpcUa:UseSecurity", true);
     OpcUaApplicationConfig.MinimumCertificateKeySize =
         builder.Configuration.GetValue<ushort>("OpcUa:MinimumCertificateKeySize", 2048);
 

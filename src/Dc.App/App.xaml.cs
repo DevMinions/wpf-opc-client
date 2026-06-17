@@ -75,6 +75,8 @@ public partial class App : Application
             var uaConfig = _host.Services.GetRequiredService<IConfiguration>();
             Dc.Opc.Ua.OpcUaApplicationConfig.AutoAcceptUntrustedCertificates =
                 uaConfig.GetValue("OpcUa:AutoAcceptUntrustedCertificates", defaultValue: false);
+            Dc.Opc.Ua.OpcUaApplicationConfig.UseSecurity =
+                uaConfig.GetValue("OpcUa:UseSecurity", defaultValue: true);
             Dc.Opc.Ua.OpcUaApplicationConfig.MinimumCertificateKeySize =
                 uaConfig.GetValue<ushort>("OpcUa:MinimumCertificateKeySize", defaultValue: 2048);
 

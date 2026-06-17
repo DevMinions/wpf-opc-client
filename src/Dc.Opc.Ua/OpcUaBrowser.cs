@@ -25,7 +25,7 @@ public sealed class OpcUaBrowser : IOpcBrowser
             silent: true,
             minimumKeySize: OpcUaApplicationConfig.MinimumCertificateKeySize).ConfigureAwait(false);
 
-        var endpointDescription = CoreClientUtils.SelectEndpoint(appConfig, options.ServerUri, useSecurity: options.UseSecurity);
+        var endpointDescription = CoreClientUtils.SelectEndpoint(appConfig, options.ServerUri, useSecurity: options.UseSecurity && OpcUaApplicationConfig.UseSecurity);
         var configuredEndpoint = new ConfiguredEndpoint(null, endpointDescription, EndpointConfiguration.Create(appConfig));
 
         _session = await Session.Create(
