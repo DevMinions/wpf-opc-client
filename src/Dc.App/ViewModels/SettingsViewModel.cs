@@ -52,13 +52,13 @@ public partial class SettingsViewModel : ObservableObject
             var bundle = await _backup.ExportAsync(db);
             var json = _backup.SerializeToJson(bundle);
             await File.WriteAllTextAsync(path, json);
-            System.Windows.MessageBox.Show(
+            MessageDialog.Show("导出成功",
                 $"已导出 {bundle.Tasks.Count} 任务 / {bundle.Groups.Count} 分组 / {bundle.Tags.Count} Tag / {bundle.Configs.Count} 配置到 {path}",
-                "导出成功");
+                MessageDialogKind.Success);
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"导出失败：{ex.Message}", "错误");
+            MessageDialog.Show("错误", $"导出失败：{ex.Message}", MessageDialogKind.Error);
         }
     }
 
@@ -68,6 +68,7 @@ public partial class SettingsViewModel : ObservableObject
         var path = _filePicker.PickOpenFile("JSON|*.json", "导入备份");
         if (path is null) return;
 
+        // 三选一(替换/合并/取消):自定义两按钮对话框无法表达,保留原生 MessageBox。
         var replace = System.Windows.MessageBox.Show(
             "是 = 替换模式（清空现有数据再导入）\n否 = 合并模式（保留现有数据，仅插入新 ID）\n取消 = 取消导入",
             "选择导入模式", System.Windows.MessageBoxButton.YesNoCancel, System.Windows.MessageBoxImage.Question);
@@ -87,12 +88,12 @@ public partial class SettingsViewModel : ObservableObject
             var msg = $"已导入 任务 {result.TasksImported} / 分组 {result.GroupsImported} / Tag {result.TagsImported} / 配置 {result.ConfigsImported}";
             if (result.Errors.Count > 0)
                 msg += $"\n错误 ({result.Errors.Count}):\n" + string.Join("\n", result.Errors.Take(5));
-            System.Windows.MessageBox.Show(msg, "导入结果");
+            MessageDialog.Show("导入结果", msg, result.Errors.Count > 0 ? MessageDialogKind.Warning : MessageDialogKind.Success);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"导入失败：{ex.Message}", "错误");
+            MessageDialog.Show("错误", $"导入失败：{ex.Message}", MessageDialogKind.Error);
         }
     }
 
@@ -130,7 +131,7 @@ public partial class SettingsViewModel : ObservableObject
         }
         catch (DbUpdateException ex)
         {
-            System.Windows.MessageBox.Show($"保存失败（Key 可能已存在）：{ex.InnerException?.Message ?? ex.Message}", "错误");
+            MessageDialog.Show("错误", $"保存失败（Key 可能已存在）：{ex.InnerException?.Message ?? ex.Message}", MessageDialogKind.Error);
         }
     }
 
@@ -161,10 +162,8 @@ public partial class SettingsViewModel : ObservableObject
         var entry = SelectedEntry;
         if (entry is null) return;
 
-        var confirm = System.Windows.MessageBox.Show(
-            $"确定删除配置项 {entry.Key}？",
-            "删除确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
-        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+        var confirm = MessageDialog.Confirm("删除确认", $"确定删除配置项 {entry.Key}？", MessageDialogKind.Warning);
+        if (!confirm) return;
 
         await using var db = await _dbFactory.CreateDbContextAsync();
         await db.Configs.Where(c => c.Id == entry.Id).ExecuteDeleteAsync();

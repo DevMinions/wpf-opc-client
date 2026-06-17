@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Dc.App.Composition;
+using Dc.App.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +36,7 @@ public partial class App : Application
         _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out bool createdNew);
         if (!createdNew)
         {
-            MessageBox.Show("应用已在运行中。", "数据采集", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageDialog.Show("数据采集", "应用已在运行中。", MessageDialogKind.Info);
             Shutdown(0);
             return;
         }
@@ -103,6 +104,8 @@ public partial class App : Application
         catch (Exception ex)
         {
             Log.Fatal(ex, "Application failed to start");
+            // 启动失败的兜底路径:此时 MainWindow/host 可能未就绪,保留原生 MessageBox 以保鲁棒性
+            // (自定义圆角窗依赖资源加载,异常态下可能二次失败)。
             MessageBox.Show($"启动失败：{ex.Message}", "Dc.App", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
         }

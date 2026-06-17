@@ -145,7 +145,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         }
         catch (DbUpdateException ex)
         {
-            System.Windows.MessageBox.Show($"保存失败（可能 Item 已存在）：{ex.InnerException?.Message ?? ex.Message}", "错误");
+            MessageDialog.Show("错误", $"保存失败（可能 Item 已存在）：{ex.InnerException?.Message ?? ex.Message}", MessageDialogKind.Error);
         }
     }
 
@@ -189,10 +189,8 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         var tag = SelectedTag;
         if (tag is null) return;
 
-        var confirm = System.Windows.MessageBox.Show(
-            $"确定删除 Tag {tag.Item}？",
-            "删除确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
-        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+        var confirm = MessageDialog.Confirm("删除确认", $"确定删除 Tag {tag.Item}？", MessageDialogKind.Warning);
+        if (!confirm) return;
 
         await using var db = await _dbFactory.CreateDbContextAsync();
         await db.Tags.Where(t => t.Id == tag.Id).ExecuteDeleteAsync();
@@ -214,7 +212,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"读取失败: {ex.Message}", "错误");
+            MessageDialog.Show("错误", $"读取失败: {ex.Message}", MessageDialogKind.Error);
             return;
         }
 
@@ -270,7 +268,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         var msg = $"成功导入: {inserted} 条";
         if (errors.Count > 0)
             msg += $"\n错误 ({errors.Count}):\n" + string.Join("\n", errors.Take(8));
-        System.Windows.MessageBox.Show(msg, "导入结果");
+        MessageDialog.Show("导入结果", msg, errors.Count > 0 ? MessageDialogKind.Warning : MessageDialogKind.Success);
         await LoadAsync();
     }
 
@@ -296,11 +294,11 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         {
             await using var fs = File.Create(path);
             _excel.Write(list, groupMap, fs);
-            System.Windows.MessageBox.Show($"已导出 {list.Count} 条到 {path}", "导出成功");
+            MessageDialog.Show("导出成功", $"已导出 {list.Count} 条到 {path}", MessageDialogKind.Success);
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"导出失败: {ex.Message}", "错误");
+            MessageDialog.Show("错误", $"导出失败: {ex.Message}", MessageDialogKind.Error);
         }
     }
 

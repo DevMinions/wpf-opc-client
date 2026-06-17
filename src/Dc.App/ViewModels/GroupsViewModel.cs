@@ -72,7 +72,7 @@ public partial class GroupsViewModel : ObservableObject, IEmbeddableGroupPanel
     {
         if (AvailableTasks.Count == 0)
         {
-            System.Windows.MessageBox.Show("请先创建任务，分组必须挂在任务下", "提示");
+            MessageDialog.Show("提示", "请先创建任务，分组必须挂在任务下", MessageDialogKind.Warning);
             return;
         }
         var edited = _editor.Edit(AvailableTasks, null, TaskFilter);
@@ -113,10 +113,10 @@ public partial class GroupsViewModel : ObservableObject, IEmbeddableGroupPanel
         var group = SelectedGroup;
         if (group is null) return;
 
-        var confirm = System.Windows.MessageBox.Show(
+        var confirm = MessageDialog.Confirm("删除确认",
             $"确定删除分组 {group.Name} ({group.Id})？\n会同时清除该分组下的所有 Tag。",
-            "删除确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
-        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+            MessageDialogKind.Warning);
+        if (!confirm) return;
 
         await using var db = await _dbFactory.CreateDbContextAsync();
         // 查出待删 Tag 的 item，热卸载用
