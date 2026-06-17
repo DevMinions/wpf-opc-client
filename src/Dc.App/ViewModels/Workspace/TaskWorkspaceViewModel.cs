@@ -185,6 +185,11 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         var diagnostics = _orch.GetDiagnostics();
         var diagByTask = diagnostics.ToDictionary(d => d.TaskId, StringComparer.Ordinal);
 
+        // 任务列表 badge 用「已配置 Tag 数」(DB 口径,与运行状态无关)——
+        // 此前用诊断的 SubscribedTagCount,但诊断只对运行中任务存在,导致已停止但已配置 Tag 的任务
+        // 误显「未配置 Tag」。rate/s 仍取诊断(停止时自然 0)。
+        var configuredTagCounts = await _source.GetConfiguredTagCountsAsync(tasks.Select(t => t.Id).ToList());
+
         AllTasks.Clear();
         foreach (var t in tasks)
         {
@@ -195,7 +200,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
             var row = new TaskMasterRow(t.Id, name, ProtocolLabel(t.Type))
             {
                 IsRunning = running.Contains(t.Id),
-                TagCount = diagByTask.TryGetValue(t.Id, out var d) ? d.SubscribedTagCount : 0
+                TagCount = configuredTagCounts.TryGetValue(t.Id, out var c) ? c : 0
             };
             AllTasks.Add(row);
         }

@@ -44,6 +44,19 @@ public sealed class DbWorkspaceTaskSource : IWorkspaceTaskSource
         return (groups, tags);
     }
 
+    public async Task<IReadOnlyDictionary<string, int>> GetConfiguredTagCountsAsync(IReadOnlyCollection<string> taskIds)
+    {
+        if (taskIds.Count == 0) return new Dictionary<string, int>(StringComparer.Ordinal);
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        // 一次 GroupBy 取各任务已配置 Tag 数;未配置的任务不在此结果,调用方按 0 兜底。
+        var counts = await db.Tags.AsNoTracking()
+            .Where(t => taskIds.Contains(t.TaskId))
+            .GroupBy(t => t.TaskId)
+            .Select(g => new { TaskId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.TaskId, x => x.Count, StringComparer.Ordinal);
+        return counts;
+    }
+
     public async Task SaveNewTaskAsync(CollectorTask task)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
