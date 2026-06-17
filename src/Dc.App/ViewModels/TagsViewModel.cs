@@ -82,7 +82,11 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync();
-            var groups = await db.Groups.AsNoTracking().OrderBy(g => g.CreatedAt).ToListAsync();
+            // 分组按当前任务 TaskScope 过滤——否则 Tag 编辑器的所属分组下拉会列出其它任务的分组，
+            // 选中后 tag.TaskId 取自该分组的 TaskId（见 TagEditorViewModel.Build），导致 Tag 静默落到错误任务下、永不订阅。
+            var groupsQuery = db.Groups.AsNoTracking().AsQueryable();
+            if (TaskScope is not null) groupsQuery = groupsQuery.Where(g => g.TaskId == TaskScope);
+            var groups = await groupsQuery.OrderBy(g => g.CreatedAt).ToListAsync();
             AvailableGroups.Clear();
             foreach (var g in groups) AvailableGroups.Add(g);
 
