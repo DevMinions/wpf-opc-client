@@ -45,4 +45,24 @@ public class DbTaskLauncherTests
         var req = DbTaskLauncher.ToStartRequest(task);
         Assert.Equal(1, req.OpcOptions.SamplingInterval.TotalMilliseconds);
     }
+
+    [Fact]
+    public void ToStartRequest_UaUrlInServerField_TakesServerAsServerUri()
+    {
+        // 编辑器「服务器」字段存 UA URL、「节点」字段留 localhost（用户实际输入形态）。
+        // 回归：URL 必须进 ServerUri，不能把 localhost 当 discoveryUrl（曾致 UriFormatException）。
+        var task = new CollectorTask
+        {
+            Id = "t",
+            Type = (byte)OpcProtocol.Ua,
+            Server = "opc.tcp://DESKTOP-KONUSAK:53530/OPCUA/SimulationServer",
+            Node = "localhost",
+            Interval = 1000
+        };
+
+        var req = DbTaskLauncher.ToStartRequest(task);
+
+        Assert.Equal("opc.tcp://DESKTOP-KONUSAK:53530/OPCUA/SimulationServer", req.OpcOptions.ServerUri);
+        Assert.Null(req.OpcOptions.ServerProgId);
+    }
 }

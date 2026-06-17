@@ -29,19 +29,38 @@ public sealed class DbTaskLauncher
     public static TaskStartRequest ToStartRequest(CollectorTask task) =>
         ToStartRequest(task, task.Tags.Select(t => new TagDescriptor(t.Id, t.Item, t.DataType)).ToList());
 
-    public static TaskStartRequest ToStartRequest(CollectorTask task, IReadOnlyCollection<TagDescriptor> tags) => new(
-        task.Id,
-        (OpcProtocol)task.Type,
-        new OpcConnectionOptions
+    public static TaskStartRequest ToStartRequest(CollectorTask task, IReadOnlyCollection<TagDescriptor> tags)
+    {
+        var protocol = (OpcProtocol)task.Type;
+
+        // UA：opc.tcp URL 可能落在 Server（编辑器「服务器」字段——用户直觉输入处）
+        // 或 Node（历史/测试约定）。Server 是 UA URL 时取 Server，避免「localhost」被当 discoveryUrl 致 UriFormatException。
+        // DA/AE：维持原口径——Node 当 host（ServerUri），Server 当 ProgID（ServerProgId）。
+        var serverUri = task.Node;
+        var serverProgId = task.Server;
+        if (protocol == OpcProtocol.Ua && IsUaUrl(task.Server))
         {
-            ServerUri = task.Node,
-            ServerProgId = task.Server,
-            ServerClsid = task.Clsid,
-            SamplingInterval = TimeSpan.FromMilliseconds(Math.Max(task.Interval, 1)),
-            DeadbandPercent = task.Deviation
-        },
-        task.TcpAddress,
-        tags);
+            serverUri = task.Server;
+            serverProgId = null;
+        }
+
+        return new TaskStartRequest(
+            task.Id,
+            protocol,
+            new OpcConnectionOptions
+            {
+                ServerUri = serverUri,
+                ServerProgId = serverProgId,
+                ServerClsid = task.Clsid,
+                SamplingInterval = TimeSpan.FromMilliseconds(Math.Max(task.Interval, 1)),
+                DeadbandPercent = task.Deviation
+            },
+            task.TcpAddress,
+            tags);
+    }
+
+    private static bool IsUaUrl(string? s) =>
+        !string.IsNullOrWhiteSpace(s) && s!.TrimStart().StartsWith("opc.tcp", StringComparison.OrdinalIgnoreCase);
 
     // 加载所有任务，启动 supportedProtocols 内、且至少有一个 Tag 的任务。返回 (已启动, 已跳过)。
     public async Task<(int Started, int Skipped)> StartAllAsync(
