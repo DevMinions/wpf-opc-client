@@ -21,6 +21,7 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         public DateTimeOffset? LastValueAt { get; set; }
         public long ValueCount;
         public long PublishErrorCount;
+        public long PublishSuccessCount;
         public int RestartCount { get; set; }
         public ConnectionState State { get; set; } = ConnectionState.Connecting;
         public int ConsecutiveStaleRestarts { get; set; }
@@ -97,7 +98,8 @@ public sealed class TaskOrchestrator : IAsyncDisposable
                 rt.Tags.Count,
                 health?.PendingBytes ?? 0,
                 health?.DroppedFrameCount ?? 0,
-                rt.State);
+                rt.State,
+                Interlocked.Read(ref rt.PublishSuccessCount));
         }).ToArray();
     }
 
@@ -254,7 +256,8 @@ public sealed class TaskOrchestrator : IAsyncDisposable
             TagValueReceived?.Invoke(rt.TaskId, v);
             try { await rt.Publisher.PublishAsync(v, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { throw; } // 正常停止/重启，不计为发布错误
-            catch { Interlocked.Increment(ref rt.PublishErrorCount); }
+            catch { Interlocked.Increment(ref rt.PublishErrorCount); return; }
+            Interlocked.Increment(ref rt.PublishSuccessCount);
         }, ct);
 
         var heartTask = ConsumeAsync(rt.Subscriber.Heartbeats, h =>

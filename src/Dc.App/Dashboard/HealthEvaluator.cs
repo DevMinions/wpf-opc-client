@@ -56,7 +56,11 @@ public static class HealthEvaluator
             else if (d.PublishErrorCount > 0)
             {
                 severity = AlertSeverity.Warning;
-                message = $"发送错误 {d.PublishErrorCount}";
+                // 区分「从未成功发过」vs「曾成功、现中断」:前者几乎必是无下游消费者连不上
+                // (单机自测不起消费端即此态),后者才是真实发送故障。避免把「无消费者」误读成采集器坏。
+                message = d.PublishedCount == 0
+                    ? $"无下游消费者连接（发送全部失败 {d.PublishErrorCount}）"
+                    : $"发送错误 {d.PublishErrorCount}";
                 score -= ScoreErrorPenalty;
             }
 

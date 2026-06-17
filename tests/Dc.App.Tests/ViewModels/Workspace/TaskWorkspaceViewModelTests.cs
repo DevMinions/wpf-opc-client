@@ -50,6 +50,7 @@ public class TaskWorkspaceViewModelTests
         public Task LoadAsync() { LoadCount++; return Task.CompletedTask; }
         public int ImportCount;
         public Task ImportAsync() { ImportCount++; return Task.CompletedTask; }
+        public event Action? NavigateToGroupsRequested;
     }
 
     private sealed class FakeGroupPanel

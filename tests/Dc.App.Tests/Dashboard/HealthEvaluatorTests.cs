@@ -15,9 +15,12 @@ public class HealthEvaluatorTests
         long errors = 0,
         int restarts = 0,
         int tags = 0,
-        DateTimeOffset? startedAt = null) =>
+        DateTimeOffset? startedAt = null,
+        long published = 0) =>
         new(id, startedAt ?? Now.AddMinutes(-10), Now.AddSeconds(-2),
-            lastHeartbeat ?? Now.AddSeconds(-1), valueCount, errors, restarts, tags);
+            lastHeartbeat ?? Now.AddSeconds(-1), valueCount, errors, restarts, tags,
+            QueuePendingBytes: 0, DroppedFrameCount: 0, State: ConnectionState.Running,
+            PublishedCount: published);
 
     [Fact]
     public void Empty_NoTasks_HealthIs100_ZeroAlerts()
@@ -71,7 +74,8 @@ public class HealthEvaluatorTests
     [Fact]
     public void ErrorRatePresent_GeneratesWarning_Score_Minus3()
     {
-        var diag = Diag("t1", errors: 5);
+        // 曾成功发过(published>0)、现出错 → 真实发送错误
+        var diag = Diag("t1", errors: 5, published: 100);
         var snap = HealthEvaluator.Evaluate(
             previous: null,
             diagnostics: new[] { diag },
@@ -83,6 +87,24 @@ public class HealthEvaluatorTests
         var alert = Assert.Single(snap.Alerts);
         Assert.Equal(AlertSeverity.Warning, alert.Severity);
         Assert.Contains("错误", alert.Message);
+    }
+
+    [Fact]
+    public void ErrorsButNeverPublished_FlaggedAsNoConsumer()
+    {
+        // 从未成功发过任何帧 + 发送全失败 → 几乎必是无下游消费者连不上(单机自测常态)
+        var diag = Diag("t1", errors: 5, published: 0);
+        var snap = HealthEvaluator.Evaluate(
+            previous: null,
+            diagnostics: new[] { diag },
+            runningTaskIds: new[] { "t1" },
+            now: Now,
+            heartbeatTimeout: HeartbeatTimeout);
+
+        Assert.Equal(97, snap.HealthScore);
+        var alert = Assert.Single(snap.Alerts);
+        Assert.Equal(AlertSeverity.Warning, alert.Severity);
+        Assert.Contains("无下游消费者", alert.Message);
     }
 
     [Fact]
