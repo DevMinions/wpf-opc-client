@@ -29,10 +29,21 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     [ObservableProperty] private bool _isEmbedded;
     [ObservableProperty] private string? _taskScope;
 
+    /// <inheritdoc />
+    public event Action? NavigateToGroupsRequested;
+
     // 嵌入主从视图时隐藏标题 + 筛选区域，避免把右侧按钮挤出视区
     public bool ShowFullToolbar => !IsEmbedded;
     public string EmbeddedTitle => GroupFilter is null ? "Tag ▸ (未选分组)" : $"Tag ▸ {GroupFilter.Name}";
-    partial void OnIsEmbeddedChanged(bool value) => OnPropertyChanged(nameof(ShowFullToolbar));
+
+    // 无分组时无法新建 Tag——禁用「新建」并用空状态引导,而非弹阻塞 MessageBox 把用户挡在死路上。
+    // CTA 仅内嵌模式显示(有「分组」页签可跳);独立页只给文字引导。
+    public string? CreateGroupCtaText => IsEmbedded ? "去创建分组" : null;
+    partial void OnIsEmbeddedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowFullToolbar));
+        OnPropertyChanged(nameof(CreateGroupCtaText));
+    }
 
     public ObservableCollection<Tag> Tags { get; } = new();
     public ObservableCollection<Group> AvailableGroups { get; } = new();
@@ -89,6 +100,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             var groups = await groupsQuery.OrderBy(g => g.CreatedAt).ToListAsync();
             AvailableGroups.Clear();
             foreach (var g in groups) AvailableGroups.Add(g);
+            NewCommand.NotifyCanExecuteChanged(); // 分组数变化 → 「新建」可用性 + 空状态刷新
 
             var tasks = await db.Tasks.AsNoTracking().ToListAsync();
             _taskById.Clear();
@@ -112,14 +124,13 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         }
     }
 
-    [RelayCommand]
+    // 无分组时禁用(空状态引导去创建分组),双重防御。
+    private bool CanNew => AvailableGroups.Count > 0;
+
+    [RelayCommand(CanExecute = nameof(CanNew))]
     private async Task NewAsync()
     {
-        if (AvailableGroups.Count == 0)
-        {
-            System.Windows.MessageBox.Show("请先创建分组，Tag 必须挂在分组下", "提示");
-            return;
-        }
+        if (AvailableGroups.Count == 0) return;
         var edited = _editor.Edit(AvailableGroups, null, GroupFilter, taskId => _taskById.TryGetValue(taskId, out var t) ? t : null);
         if (edited is null) return;
 
@@ -292,6 +303,10 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             System.Windows.MessageBox.Show($"导出失败: {ex.Message}", "错误");
         }
     }
+
+    // 空状态 CTA:请求宿主(采集任务工作区)切到「分组」页签。独立页无宿主,事件无人订阅→按钮不显示。
+    [RelayCommand]
+    private void GoCreateGroup() => NavigateToGroupsRequested?.Invoke();
 
     partial void OnGroupFilterChanged(Group? value)
     {

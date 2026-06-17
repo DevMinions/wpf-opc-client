@@ -66,6 +66,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         Overview = overview;
         TagsPanel = tagsPanel;
         TagsPanel.IsEmbedded = true;
+        // Tag 面板无分组时,空状态 CTA 请求跳到「分组」页签创建分组。
+        TagsPanel.NavigateToGroupsRequested += () => SelectedTab = "groups";
 
         GroupsPanel = groupsPanel ?? new NullGroupPanel();
         LivePanel = livePanel ?? new NullLivePanel();
