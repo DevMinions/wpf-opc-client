@@ -67,12 +67,10 @@
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                     <ComboBox Grid.Row="2" Grid.Column="1"
                               Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
-                              ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding Group}">
+                              ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding SelectedGroupRow}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock>
-                                    <Run Text="{Binding Name}" /><Run Text=" — " /><Run Text="{Binding TaskId}" />
-                                </TextBlock>
+                                <TextBlock Text="{Binding Display}" />
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
