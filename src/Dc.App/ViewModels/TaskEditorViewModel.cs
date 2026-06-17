@@ -16,6 +16,9 @@ public partial class TaskEditorViewModel : ObservableValidator
 
     [ObservableProperty] private string _title;
 
+    // 用户可读名称(可选)。为空时列表回落 Server(UA 是整条 URL 被截断,故鼓励填短名)。
+    [ObservableProperty] private string _name = string.Empty;
+
     [ObservableProperty]
     [NotifyDataErrorInfo]
     [Required(AllowEmptyStrings = false, ErrorMessage = "服务器不能为空")]
@@ -90,6 +93,7 @@ public partial class TaskEditorViewModel : ObservableValidator
         {
             _title = "编辑任务";
             OriginalId = existing.Id;
+            _name = existing.Name ?? string.Empty;
             _server = existing.Server;
             _node = existing.Node;
             _clsid = existing.Clsid ?? string.Empty;
@@ -201,6 +205,7 @@ public partial class TaskEditorViewModel : ObservableValidator
     public CollectorTask ToEntity() => new()
     {
         Id = OriginalId ?? string.Empty,
+        Name = string.IsNullOrWhiteSpace(Name) ? null : Name.Trim(),
         Server = Server.Trim(),
         Node = Node.Trim(),
         Clsid = string.IsNullOrWhiteSpace(Clsid) ? null : Clsid.Trim(),

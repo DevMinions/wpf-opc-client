@@ -4,6 +4,8 @@ namespace Dc.Domain.Entities;
 
 public class CollectorTask : EntityBase
 {
+    // 用户可读名称(可选)。为空时列表/下拉回落 Server(DA ProgID / UA URL)。
+    public string? Name { get; set; }
     public string Server { get; set; } = string.Empty;
     public string Node { get; set; } = string.Empty;
     // DA 兜底：可选 CLSID。给值时连接 URL 拼成 opcda://host/progId/{clsid}，跳过 OPCEnum

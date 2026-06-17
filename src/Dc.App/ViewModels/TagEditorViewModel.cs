@@ -36,10 +36,13 @@ public partial class TagEditorViewModel : ObservableObject
         _browseDialog = browseDialog;
         _taskLookup = taskLookup;
 
-        // 任务名解析:有 taskLookup 才能拿到可读名;无则回退空(只显组名)。
+        // 任务名解析:优先用户可读 Name,回落 Server;无 taskLookup 则回退空(只显组名)。
         var rows = groups.Select(g =>
         {
-            var taskName = taskLookup?.Invoke(g.TaskId)?.Server;
+            var task = taskLookup?.Invoke(g.TaskId);
+            var taskName = !string.IsNullOrWhiteSpace(task?.Name) ? task!.Name
+                : !string.IsNullOrWhiteSpace(task?.Server) ? task!.Server
+                : null;
             return new GroupRow(g, taskName);
         }).ToList();
         var multiTask = rows.Select(r => r.Group.TaskId).Distinct().Count() > 1;

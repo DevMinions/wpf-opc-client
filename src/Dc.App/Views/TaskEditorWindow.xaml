@@ -55,6 +55,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="36" />
                             <RowDefinition Height="36" />
+                            <RowDefinition Height="36" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -65,45 +66,51 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="协议:"
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="名称:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <ComboBox Grid.Row="0" Grid.Column="1" AutomationProperties.AutomationId="TaskProtocol"
+                        <TextBox Grid.Row="0" Grid.Column="1" AutomationProperties.AutomationId="TaskName"
+                                 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                 controls:Placeholder.Text="可选,如「1#锅炉 UA」" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="协议:"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        <ComboBox Grid.Row="1" Grid.Column="1" AutomationProperties.AutomationId="TaskProtocol"
                                   ItemsSource="{Binding Protocols}" SelectedItem="{Binding Protocol}" />
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding ServerLabel}"
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding ServerLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="1" Grid.Column="1" AutomationProperties.AutomationId="TaskServer" Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"
+                        <TextBox Grid.Row="2" Grid.Column="1" AutomationProperties.AutomationId="TaskServer" Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"
                                  controls:Placeholder.Text="{Binding ServerPlaceholder}"
                                  ToolTip="{Binding ServerToolTip}" />
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="节点:"
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="节点:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"
                                    Visibility="{Binding ShowClassicOnlyFields, Converter={StaticResource BoolToVis}}" />
-                        <TextBox Grid.Row="2" Grid.Column="1" AutomationProperties.AutomationId="TaskNode" Text="{Binding Node, UpdateSourceTrigger=PropertyChanged}"
+                        <TextBox Grid.Row="3" Grid.Column="1" AutomationProperties.AutomationId="TaskNode" Text="{Binding Node, UpdateSourceTrigger=PropertyChanged}"
                                  controls:Placeholder.Text="主机名或 IP"
                                  Visibility="{Binding ShowClassicOnlyFields, Converter={StaticResource BoolToVis}}" />
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="采样间隔:" Margin="0,7,0,0"
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="采样间隔:" Margin="0,7,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" />
-                        <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,0,0,6">
+                        <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,6">
                             <TextBox Height="30" AutomationProperties.AutomationId="TaskInterval" Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Text="毫秒 · 必须 &gt; 0" FontSize="11" Margin="2,3,0,0"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
 
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="死区:" Margin="0,7,0,0"
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="死区:" Margin="0,7,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top"
                                    Visibility="{Binding ShowClassicOnlyFields, Converter={StaticResource BoolToVis}}" />
-                        <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,6"
+                        <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,6"
                                     Visibility="{Binding ShowClassicOnlyFields, Converter={StaticResource BoolToVis}}">
                             <TextBox Height="30" AutomationProperties.AutomationId="TaskDeviation" Text="{Binding Deviation, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Text="百分比 0 – 100" FontSize="11" Margin="2,3,0,0"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
 
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="TCP 地址:"
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="TCP 地址:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="1" AutomationProperties.AutomationId="TaskTcpAddress" Text="{Binding TcpAddress, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Grid.Row="6" Grid.Column="1" AutomationProperties.AutomationId="TaskTcpAddress" Text="{Binding TcpAddress, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
 
                     <!-- DA scan section -->

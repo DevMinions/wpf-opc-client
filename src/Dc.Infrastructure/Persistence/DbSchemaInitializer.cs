@@ -11,6 +11,7 @@ public static class DbSchemaInitializer
     {
         db.Database.EnsureCreated();
         EnsureColumn(db, "dc_tasks", "clsid", "clsid TEXT NULL");
+        EnsureColumn(db, "dc_tasks", "name", "name TEXT NULL");
         EnsureColumn(db, "dc_configs", "dc_description", "dc_description TEXT NOT NULL DEFAULT ''");
     }
 

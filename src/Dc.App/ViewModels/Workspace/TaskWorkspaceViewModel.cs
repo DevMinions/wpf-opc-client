@@ -188,7 +188,10 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         AllTasks.Clear();
         foreach (var t in tasks)
         {
-            var name = string.IsNullOrWhiteSpace(t.Server) ? t.Id : t.Server;
+            // 优先用户可读 Name;为空回落 Server(DA ProgID / UA URL),再回落 Id。
+            var name = !string.IsNullOrWhiteSpace(t.Name) ? t.Name!
+                : !string.IsNullOrWhiteSpace(t.Server) ? t.Server
+                : t.Id;
             var row = new TaskMasterRow(t.Id, name, ProtocolLabel(t.Type))
             {
                 IsRunning = running.Contains(t.Id),
