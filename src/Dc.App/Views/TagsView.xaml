@@ -73,7 +73,7 @@
                              Command="{Binding LoadCommand}" />
                 </StackPanel>
 
-                <!-- Action buttons (always shown) -->
+                <!-- Action buttons:新建/导入/导出。编辑=双击行、删除=选中行按 Del,不再占工具栏。 -->
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
                     <Button Content="新建"
                             Command="{Binding NewCommand}"
@@ -85,14 +85,6 @@
                             Margin="0,0,6,0" />
                     <Button Content="导出"
                             Command="{Binding ExportCommand}"
-                            Style="{StaticResource DcBtnGhostSm}"
-                            Margin="0,0,6,0" />
-                    <Button Content="编辑"
-                            Command="{Binding EditCommand}"
-                            Style="{StaticResource DcBtnGhostSm}"
-                            Margin="0,0,6,0" />
-                    <Button Content="删除"
-                            Command="{Binding DeleteCommand}"
                             Style="{StaticResource DcBtnGhostSm}" />
                 </StackPanel>
             </DockPanel>
