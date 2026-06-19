@@ -84,6 +84,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
                 SelectedTab = "tags";
             }
         };
+        // 分组面板无任务时,空状态 CTA 请求跳到任务列表新建任务。
+        GroupsPanel.NavigateToTasksRequested += () => SelectedTab = "overview";
         Config.Edited += async _ => await LoadAsync();
 
         FilteredTasks = CollectionViewSource.GetDefaultView(AllTasks);
@@ -193,11 +195,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         AllTasks.Clear();
         foreach (var t in tasks)
         {
-            // 优先用户可读 Name;为空回落 Server(DA ProgID / UA URL),再回落 Id。
-            var name = !string.IsNullOrWhiteSpace(t.Name) ? t.Name!
-                : !string.IsNullOrWhiteSpace(t.Server) ? t.Server
-                : t.Id;
-            var row = new TaskMasterRow(t.Id, name, ProtocolLabel(t.Type))
+            // 任务可读名:统一用 CollectorTask.DisplayName(Name → Server → Id)。
+            var row = new TaskMasterRow(t.Id, t.DisplayName, ProtocolLabel(t.Type))
             {
                 IsRunning = running.Contains(t.Id),
                 TagCount = configuredTagCounts.TryGetValue(t.Id, out var c) ? c : 0
@@ -300,6 +299,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         }
         public Dc.Domain.Entities.Group? SelectedGroup => null;
         public Task LoadAsync() => Task.CompletedTask;
+        public event Action? NavigateToTasksRequested;
     }
 
     private sealed class NullLivePanel : IEmbeddableLivePanel

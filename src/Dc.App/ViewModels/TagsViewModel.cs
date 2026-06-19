@@ -106,11 +106,9 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             var tasks = await db.Tasks.AsNoTracking().ToListAsync();
             _taskById.Clear();
             foreach (var t in tasks) _taskById[t.Id] = t;
-            // 任务名:优先 Name,回落 Server(UA URL/DA ProgID),再回落 Id——与列表口径一致。
+            // 任务名:统一用 CollectorTask.DisplayName(Name → Server → Id)。
             string TaskName(string tid) =>
-                _taskById.TryGetValue(tid, out var t) && !string.IsNullOrWhiteSpace(t.Name) ? t.Name!
-                : _taskById.TryGetValue(tid, out var t2) && !string.IsNullOrWhiteSpace(t2.Server) ? t2.Server
-                : tid;
+                _taskById.TryGetValue(tid, out var t) ? t.DisplayName : tid;
 
             var q = db.Tags.AsNoTracking().AsQueryable();
             if (TaskScope is not null) q = q.Where(t => t.TaskId == TaskScope);
@@ -210,13 +208,11 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         Tags.Remove(row);
     }
 
-    // Tag → TagRow:分组名/任务名解析与 LoadAsync 同口径(名 → Server → Id)。
+    // Tag → TagRow:分组名/任务名解析与 LoadAsync 同口径。
     private TagRow ToRow(Tag t)
     {
         var gName = AvailableGroups.FirstOrDefault(g => g.Id == t.GroupId)?.Name ?? t.GroupId;
-        var taskName = _taskById.TryGetValue(t.TaskId, out var tk) && !string.IsNullOrWhiteSpace(tk.Name) ? tk.Name!
-            : _taskById.TryGetValue(t.TaskId, out var tk2) && !string.IsNullOrWhiteSpace(tk2.Server) ? tk2.Server
-            : t.TaskId;
+        var taskName = _taskById.TryGetValue(t.TaskId, out var tk) ? tk.DisplayName : t.TaskId;
         return new TagRow(t, gName, taskName);
     }
 

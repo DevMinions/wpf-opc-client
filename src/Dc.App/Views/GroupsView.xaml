@@ -1,6 +1,7 @@
 <UserControl x:Class="Dc.App.Views.GroupsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Dc.App.Controls">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </UserControl.Resources>
@@ -50,11 +51,8 @@
                               SelectedItem="{Binding TaskFilter}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock>
-                                    <Run Text="{Binding Server}" />
-                                    <Run Text=" — " />
-                                    <Run Text="{Binding Id}" />
-                                </TextBlock>
+                                <!-- 任务可读名:Name 为空回落 Server。不显 ULID。 -->
+                                <TextBlock Text="{Binding DisplayName}" />
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
@@ -86,27 +84,41 @@
             </DockPanel>
         </Border>
 
-        <!-- Data table -->
-        <DataGrid Grid.Row="1"
-                  ItemsSource="{Binding Groups}"
-                  SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"
-                  Style="{StaticResource DcDataGrid}"
-                  RowStyle="{StaticResource DcDataGridRow}"
-                  ColumnHeaderStyle="{StaticResource DcDataGridColumnHeader}"
-                  RowHeight="36"
-                  ColumnHeaderHeight="36">
-            <DataGrid.InputBindings>
-                <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding EditCommand}" />
-                <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
-            </DataGrid.InputBindings>
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="200" />
-                <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="220" />
-                <DataGridTextColumn Header="所属任务" Binding="{Binding TaskId}" Width="200" />
-                <DataGridTextColumn Header="创建时间"
-                                    Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"
-                                    Width="160" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- Data table (wrapped in Grid for EmptyState overlay) -->
+        <Grid Grid.Row="1">
+            <!-- DataGridColumn 不在视觉树,RelativeSource/AncestorType 都取不到 DataContext。
+                 用一个 proxy FrameworkElement 桥接:它绑 VM.ShowTaskColumn,列 Visibility 绑 proxy。 -->
+            <FrameworkElement x:Name="VmProxy" DataContext="{Binding}" Visibility="Collapsed" />
+            <DataGrid ItemsSource="{Binding Groups}"
+                      SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                      Style="{StaticResource DcDataGrid}"
+                      RowStyle="{StaticResource DcDataGridRow}"
+                      ColumnHeaderStyle="{StaticResource DcDataGridColumnHeader}"
+                      RowHeight="36"
+                      ColumnHeaderHeight="36">
+                <DataGrid.InputBindings>
+                    <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding EditCommand}" />
+                    <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
+                </DataGrid.InputBindings>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="240" />
+                    <!-- 所属任务:显任务名(非 ULID)。内嵌模式(工作区已选任务)该列冗余,隐藏。 -->
+                    <DataGridTextColumn Header="所属任务" Binding="{Binding TaskName}" Width="220"
+                                        Visibility="{Binding DataContext.ShowTaskColumn, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}" />
+                    <DataGridTextColumn Header="创建时间"
+                                        Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"
+                                        Width="160" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- 无任务空状态:分组必须挂任务下,无任务时引导先建任务,而非弹阻塞框挡死。 -->
+            <controls:EmptyState
+                Icon="TagMultiple24"
+                Title="无任务,无法新建分组"
+                Hint="分组必须挂在任务下。请先创建任务,再回来新建分组。"
+                ActionText="{Binding CreateTaskCtaText}"
+                ActionCommand="{Binding GoCreateTaskCommand}"
+                Visibility="{Binding AvailableTasks.Count, Converter={StaticResource CountToVis}}" />
+        </Grid>
     </Grid>
 </UserControl>

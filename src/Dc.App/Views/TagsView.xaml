@@ -112,8 +112,7 @@
                     <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
                 </DataGrid.InputBindings>
                  <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="200" />
-                    <DataGridTextColumn Header="Item" Binding="{Binding Item}" Width="260">
+                    <DataGridTextColumn Header="Item" Binding="{Binding Item}" Width="300">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="FontFamily" Value="Consolas, Cascadia Code, monospace" />
