@@ -4,7 +4,7 @@ using Dc.App.ViewModels;
 
 namespace Dc.App.Views;
 
-public partial class ConfigEntryEditorWindow : Window
+public partial class ConfigEntryEditorWindow : ModalWindowBase
 {
     public ConfigEntryEditorWindow() => InitializeComponent();
 

@@ -4,7 +4,7 @@ using Dc.App.ViewModels;
 
 namespace Dc.App.Views;
 
-public partial class TaskEditorWindow : Window
+public partial class TaskEditorWindow : ModalWindowBase
 {
     public TaskEditorWindow() => InitializeComponent();
 

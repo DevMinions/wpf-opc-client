@@ -1,20 +1,18 @@
-<Window x:Class="Dc.App.Views.GroupEditorWindow"
+<views:ModalWindowBase x:Class="Dc.App.Views.GroupEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="{Binding Title}" Height="240" Width="440"
-        WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
-        WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent">
-    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-            BorderThickness="1" CornerRadius="12" Margin="12">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.18" Direction="270" />
-        </Border.Effect>
-        <DockPanel>
+        xmlns:views="clr-namespace:Dc.App.Views"
+        Title="{Binding Title}">
+    <Grid Background="#80000000">
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+            <Border Background="{DynamicResource ApplicationBackgroundBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="12" Width="440">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.28" Direction="270" />
+                </Border.Effect>
+                <DockPanel>
             <Border DockPanel.Dock="Top" Padding="16,14"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                 <Grid>
@@ -56,5 +54,7 @@
                 </Grid>
             </StackPanel>
         </DockPanel>
-    </Border>
-</Window>
+            </Border>
+        </Grid>
+    </Grid>
+</views:ModalWindowBase>

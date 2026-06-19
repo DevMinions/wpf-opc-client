@@ -4,7 +4,7 @@ using Dc.App.ViewModels;
 
 namespace Dc.App.Views;
 
-public partial class GroupEditorWindow : Window
+public partial class GroupEditorWindow : ModalWindowBase
 {
     public GroupEditorWindow() => InitializeComponent();
 

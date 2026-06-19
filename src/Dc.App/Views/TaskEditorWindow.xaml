@@ -1,25 +1,23 @@
-<Window x:Class="Dc.App.Views.TaskEditorWindow"
+<views:ModalWindowBase x:Class="Dc.App.Views.TaskEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:views="clr-namespace:Dc.App.Views"
         xmlns:controls="clr-namespace:Dc.App.Controls"
-        Title="{Binding Title}" Height="580" Width="520"
-        WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
-        WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent">
+        Title="{Binding Title}">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </Window.Resources>
-    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-            BorderThickness="1" CornerRadius="12"
-            Margin="12">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.18" Direction="270" />
-        </Border.Effect>
-        <DockPanel>
+    <Grid Background="#80000000">
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+            <Border Background="{DynamicResource ApplicationBackgroundBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="12"
+                    Width="520">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.28" Direction="270" />
+                </Border.Effect>
+                <DockPanel>
             <!-- Header -->
             <Border DockPanel.Dock="Top" Padding="16,14"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
@@ -155,5 +153,7 @@
                 </StackPanel>
             </ScrollViewer>
         </DockPanel>
-    </Border>
-</Window>
+            </Border>
+        </Grid>
+    </Grid>
+</views:ModalWindowBase>

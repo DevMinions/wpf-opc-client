@@ -4,7 +4,7 @@ using Dc.App.ViewModels;
 
 namespace Dc.App.Views;
 
-public partial class TagEditorWindow : Window
+public partial class TagEditorWindow : ModalWindowBase
 {
     public TagEditorWindow() => InitializeComponent();
 

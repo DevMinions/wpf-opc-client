@@ -1,17 +1,11 @@
-<Window x:Class="Dc.App.Views.MessageDialogWindow"
+<views:ModalWindowBase x:Class="Dc.App.Views.MessageDialogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
-        WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent"
-        ShowInTaskbar="False">
-    <!-- 全屏半透明遮罩:盖住 Owner 内容,杜绝背后文字透出叠加到弹窗上。
-         Width/Height 在 code-behind 按 Owner 工作区设定,弹窗居中其上。 -->
+        xmlns:views="clr-namespace:Dc.App.Views">
+    <!-- 全屏半透明遮罩:盖住 Owner 内容,杜绝背后文字透出叠加到弹窗上。尺寸+居中由 ModalWindowBase 处理。 -->
     <Grid x:Name="Root" Background="#80000000">
         <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
-            <!-- 卡片用不透明底(SolidColorBrush 系统色),不再用半透明 CardBackground,避免透字 -->
+            <!-- 卡片用不透明底,不再用半透明 CardBackground,避免透字 -->
             <Border Background="{DynamicResource ApplicationBackgroundBrush}"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1" CornerRadius="12"
@@ -55,4 +49,4 @@
             </Border>
         </Grid>
     </Grid>
-</Window>
+</views:ModalWindowBase>
