@@ -156,8 +156,12 @@ public sealed class OpcAeSubscriber : IOpcSubscriber
     }
 
     // 主动探活:GetServerStatus 成功且 Operational 才算活。COM 调用进 _comLock;任何异常(断连/RPC)即判死。
+    // _disposed 短路:Dispose 已开始就不再发起新 COM 探活,避免拖住 Dispose 的 await/清理。
+    // (挂起服务器上单次在途 COM 调用仍可能阻塞到 DCOM 超时——与原 Disconnect/Dispose 同属既有 COM 特性;
+    //  死服务器=快速 RPC 失败不挂。要彻底有界化需启用 vendor DCOMCallWatchdog,另议。)
     private bool IsServerOperational()
     {
+        if (_disposed) return false;
         try
         {
             lock (_comLock)
