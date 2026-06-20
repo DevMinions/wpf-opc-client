@@ -139,9 +139,30 @@ public sealed class OpcDaSubscriber : IOpcSubscriber
             try { await Task.Delay(_options.HeartbeatInterval, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { return; }
 
-            // 简易心跳：订阅对象还在就发；要深度探活可改成 _server.GetStatus() 调用
-            if (_subscription is not null)
+            // 活性门控:主动探活,不再"订阅对象还在就发"——那样死服务器(COM 代理未即报错)也一直发心跳,
+            // 编排器看门狗永远收到新心跳→徽章赖着「运行正常」→断线不可见(已活体复现)。
+            // GetServerStatus() 是 COM 调用:死服务器底层 RPC 抛、故障/挂起返回非 Operational → 不发心跳 →
+            // 看门狗按 HeartbeatTimeout 进 Restarting/Faulted(与 UA !KeepAliveStopped 同语义;COM 无被动 keepalive
+            // 标志故主动 ping;GetServerStatus 全 DA 版本通用,优于仅 DA3.0 的 KeepAlive 回调)。
+            if (IsServerOperational())
                 _heartbeats.Writer.TryWrite(new HeartBeat(ChannelId, DateTimeOffset.UtcNow, "OPC DA"));
+        }
+    }
+
+    // 主动探活:GetServerStatus 成功且 Operational 才算活。COM 调用进 _comLock;任何异常(断连/RPC)即判死。
+    private bool IsServerOperational()
+    {
+        try
+        {
+            lock (_comLock)
+            {
+                return _server?.GetServerStatus()?.ServerState == OpcServerState.Operational;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "OPC DA 探活失败(疑似断连)（{ChannelId}）", ChannelId);
+            return false;
         }
     }
 

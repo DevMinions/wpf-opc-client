@@ -147,8 +147,28 @@ public sealed class OpcAeSubscriber : IOpcSubscriber
             try { await Task.Delay(_options.HeartbeatInterval, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { return; }
 
-            if (_subscription is not null)
+            // 活性门控:主动探活,不再"订阅对象还在就发"——那样死服务器也一直发心跳→徽章赖着「运行正常」→
+            // 断线不可见(与 DA 同款 bug,DA 已活体复现)。AE 事件天生稀疏(没报警≠死了),更不能靠事件到达推断活性,
+            // 故主动 GetServerStatus()(虽 AE 订阅已设 KeepAlive,但那只防服务器侧"看似断",客户端仍需主动探活)。
+            if (IsServerOperational())
                 _heartbeats.Writer.TryWrite(new HeartBeat(ChannelId, DateTimeOffset.UtcNow, "OPC AE"));
+        }
+    }
+
+    // 主动探活:GetServerStatus 成功且 Operational 才算活。COM 调用进 _comLock;任何异常(断连/RPC)即判死。
+    private bool IsServerOperational()
+    {
+        try
+        {
+            lock (_comLock)
+            {
+                return _server?.GetServerStatus()?.ServerState == OpcServerState.Operational;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "OPC AE 探活失败(疑似断连)（{ChannelId}）", ChannelId);
+            return false;
         }
     }
 
