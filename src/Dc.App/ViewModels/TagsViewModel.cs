@@ -439,6 +439,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         await db.SaveChangesAsync();
 
         var running = IsTaskRunning(entity.TaskId) || IsTaskRunning(oldTaskId);
+        var scaleChanged = !Nullable.Equals(oldScale, entity.ScaleFactor) || !Nullable.Equals(oldOffset, entity.Offset);
 
         if (!wasVirtual && entity.IsVirtual)
         {
@@ -457,9 +458,10 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             // 真实 → 真实(Item/Task 变):先卸旧再挂新。
             await TryHotRemoveAsync(oldTaskId, oldItem);
             await TryHotAddAsync(entity);
+            if (running && scaleChanged)
+                MessageDialog.Show("提示", "缩放/偏移已保存,重启任务后生效。", MessageDialogKind.Info);
         }
-        else if (!entity.IsVirtual && running
-                 && (!Nullable.Equals(oldScale, entity.ScaleFactor) || !Nullable.Equals(oldOffset, entity.Offset)))
+        else if (!entity.IsVirtual && running && scaleChanged)
         {
             // 真实 Tag 仅缩放/偏移变更:运行中 transform 用启动快照,提示重启生效。
             MessageDialog.Show("提示", "缩放/偏移已保存,重启任务后生效。", MessageDialogKind.Info);
