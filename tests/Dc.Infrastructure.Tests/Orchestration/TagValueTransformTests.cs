@@ -183,4 +183,39 @@ public class TagValueTransformTests
         Assert.Single(o); // 仅真值 A
         Assert.Equal("A", o[0].Item);
     }
+
+    [Fact]
+    public async Task Concurrent_Apply_And_OnTagsRemoved_DoesNotThrow()
+    {
+        // 两个输入的公式；一个线程持续 Apply，另一个线程 OnTagsRemoved 输入 Tag。
+        // 无锁时会以 InvalidOperationException（集合被修改）抛出；加锁后应平稳完成。
+        var t = new TagValueTransform(new TransformConfig(
+            new Dictionary<string, ScaleConfig> { ["t1"] = new ScaleConfig(null, null), ["t2"] = new ScaleConfig(null, null) },
+            new Dictionary<string, string> { ["t1"] = "A", ["t2"] = "B" },
+            new[] { new FormulaConfig("f1", "OUT", "A + B",
+                new[] { new FormulaInputConfig("A", "t1"), new FormulaInputConfig("B", "t2") }) }));
+
+        var cts = new CancellationTokenSource();
+        var applyTask = Task.Run(() =>
+        {
+            while (!cts.IsCancellationRequested)
+            {
+                t.Apply(new TagValue("A", 1.0, 0xC0, DateTimeOffset.UtcNow));
+                t.Apply(new TagValue("B", 2.0, 0xC0, DateTimeOffset.UtcNow));
+            }
+        });
+        var removeTask = Task.Run(() =>
+        {
+            while (!cts.IsCancellationRequested)
+            {
+                t.OnTagsRemoved(new[] { new TagDescriptor("t2", "B", 6) });
+                t.OnTagsAdded(new[] { new TagDescriptor("t2", "B", 6) });
+            }
+        });
+
+        await Task.Delay(300); // 让两线程交错跑一会
+        cts.Cancel();
+        await applyTask.WaitAsync(TimeSpan.FromSeconds(5));
+        await removeTask.WaitAsync(TimeSpan.FromSeconds(5));
+    }
 }

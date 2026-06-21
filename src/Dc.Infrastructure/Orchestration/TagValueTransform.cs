@@ -12,6 +12,7 @@ public sealed class TagValueTransform : ITagValueTransform
     private readonly IReadOnlyList<FormulaConfig> _formulas;
     private readonly Dictionary<string, FormulaRuntime> _formulaById;
     private readonly Dictionary<string, List<(string formulaId, string alias)>> _inputsByTagId; // 真实 TagId → 引用它的公式
+    private readonly object _lock = new();
 
     public TagValueTransform(TransformConfig config)
     {
@@ -41,21 +42,24 @@ public sealed class TagValueTransform : ITagValueTransform
 
     public IReadOnlyList<TagValue> Apply(TagValue raw)
     {
-        // 解析真实 TagId
-        if (!_tagIdByItem.TryGetValue(raw.Item, out var tagId))
+        lock (_lock)
         {
-            return new[] { raw }; // 未知 Item（热加未登记）→ 透传
+            // 解析真实 TagId
+            if (!_tagIdByItem.TryGetValue(raw.Item, out var tagId))
+            {
+                return new[] { raw }; // 未知 Item（热加未登记）→ 透传
+            }
+
+            // 1) 缩放产出工程量
+            var engineering = ApplyScale(raw, tagId);
+
+            var outputs = new List<TagValue> { engineering };
+
+            // 2) 公式求值（Task 6 接续）
+            EvaluateFormulas(engineering, tagId, outputs);
+
+            return outputs;
         }
-
-        // 1) 缩放产出工程量
-        var engineering = ApplyScale(raw, tagId);
-
-        var outputs = new List<TagValue> { engineering };
-
-        // 2) 公式求值（Task 6 接续）
-        EvaluateFormulas(engineering, tagId, outputs);
-
-        return outputs;
     }
 
     private TagValue ApplyScale(TagValue raw, string tagId)
@@ -179,28 +183,34 @@ public sealed class TagValueTransform : ITagValueTransform
 
     public void OnTagsAdded(IEnumerable<TagDescriptor> tags)
     {
-        foreach (var t in tags)
+        lock (_lock)
         {
-            _tagIdByItem[t.Item] = t.Id;
-            _itemByTagId[t.Id] = t.Item;
-            // 热加 Tag 不带缩放/公式信息：不登记 ScaleByTagId，默认不缩放。
+            foreach (var t in tags)
+            {
+                _tagIdByItem[t.Item] = t.Id;
+                _itemByTagId[t.Id] = t.Item;
+                // 热加 Tag 不带缩放/公式信息：不登记 ScaleByTagId，默认不缩放。
+            }
         }
     }
 
     public void OnTagsRemoved(IEnumerable<TagDescriptor> tags)
     {
-        foreach (var t in tags)
+        lock (_lock)
         {
-            _tagIdByItem.Remove(t.Item);
-            _itemByTagId.Remove(t.Id);
-
-            // 被删 Tag 是某公式输入 → 该公式 Failed，停止产出
-            if (_inputsByTagId.TryGetValue(t.Id, out var refs))
+            foreach (var t in tags)
             {
-                foreach (var (formulaId, _) in refs)
+                _tagIdByItem.Remove(t.Item);
+                _itemByTagId.Remove(t.Id);
+
+                // 被删 Tag 是某公式输入 → 该公式 Failed，停止产出
+                if (_inputsByTagId.TryGetValue(t.Id, out var refs))
                 {
-                    if (_formulaById.TryGetValue(formulaId, out var rt))
-                        rt.IsFailed = true;
+                    foreach (var (formulaId, _) in refs)
+                    {
+                        if (_formulaById.TryGetValue(formulaId, out var rt))
+                            rt.IsFailed = true;
+                    }
                 }
             }
         }
