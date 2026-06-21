@@ -143,6 +143,7 @@ public static class ServiceRegistration
         services.AddSingleton<ITagExcelService, ClosedXmlTagExcelService>();
         services.AddSingleton<IFilePicker, WpfFilePicker>();
         services.AddSingleton<IBrowseDialog, WpfBrowseDialog>();
+        services.AddSingleton<IFormulaValidator, FormulaValidator>();
         services.AddSingleton<IConfigBackupService, JsonConfigBackupService>();
 
         // === Shell + Theme + Navigation（S1 新增） ===

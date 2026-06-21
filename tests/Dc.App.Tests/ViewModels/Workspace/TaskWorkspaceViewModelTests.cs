@@ -64,6 +64,7 @@ public class TaskWorkspaceViewModelTests
         public int LoadCount;
         public Task LoadAsync() { LoadCount++; return Task.CompletedTask; }
         public void SimulateSelect(Group g) => SelectedGroup = g;
+        public event Action? NavigateToTasksRequested;
     }
 
     private sealed class FakeLivePanel : IEmbeddableLivePanel
