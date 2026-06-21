@@ -7,8 +7,11 @@ public interface IWorkspaceTaskSource
 {
     Task<IReadOnlyList<CollectorTask>> LoadTasksAsync();
 
-    /// <summary>Load a single task with its tag descriptors for starting.</summary>
-    Task<(CollectorTask? Task, IReadOnlyList<TagDescriptor> Tags)> GetTaskWithTagsAsync(string taskId);
+    /// <summary>
+    /// 加载单个任务用于启动：真实 Tag 描述符（虚拟 Tag 已过滤，不进订阅器）+ 该任务的公式定义
+    /// （供 DbTaskLauncher 组装 TransformConfig，缩放/公式在 WPF 启动路径同样生效）。
+    /// </summary>
+    Task<(CollectorTask? Task, IReadOnlyList<TagDescriptor> Tags, IReadOnlyList<Formula> Formulas)> GetTaskWithTagsAsync(string taskId);
 
     /// <summary>Persist a new task created via the editor dialog.</summary>
     Task SaveNewTaskAsync(CollectorTask task);

@@ -18,11 +18,11 @@ public class TaskWorkspaceViewModelTests
         public Task<IReadOnlyList<CollectorTask>> LoadTasksAsync()
             => Task.FromResult<IReadOnlyList<CollectorTask>>(Tasks);
 
-        public Task<(CollectorTask? Task, IReadOnlyList<TagDescriptor> Tags)> GetTaskWithTagsAsync(string taskId)
+        public Task<(CollectorTask? Task, IReadOnlyList<TagDescriptor> Tags, IReadOnlyList<Formula> Formulas)> GetTaskWithTagsAsync(string taskId)
         {
             var t = Tasks.FirstOrDefault(x => x.Id == taskId);
-            return Task.FromResult<(CollectorTask?, IReadOnlyList<TagDescriptor>)>(
-                (t, Array.Empty<TagDescriptor>()));
+            return Task.FromResult<(CollectorTask?, IReadOnlyList<TagDescriptor>, IReadOnlyList<Formula>)>(
+                (t, Array.Empty<TagDescriptor>(), Array.Empty<Formula>()));
         }
 
         public Task SaveNewTaskAsync(CollectorTask task)

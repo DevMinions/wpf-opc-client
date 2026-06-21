@@ -18,7 +18,7 @@ public sealed class DbWorkspaceTaskSource : IWorkspaceTaskSource
         return await db.Tasks.AsNoTracking().OrderBy(t => t.CreatedAt).ToListAsync();
     }
 
-    public async Task<(CollectorTask? Task, IReadOnlyList<TagDescriptor> Tags)> GetTaskWithTagsAsync(string taskId)
+    public async Task<(CollectorTask? Task, IReadOnlyList<TagDescriptor> Tags, IReadOnlyList<Formula> Formulas)> GetTaskWithTagsAsync(string taskId)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
         var task = await db.Tasks
@@ -27,13 +27,22 @@ public sealed class DbWorkspaceTaskSource : IWorkspaceTaskSource
             .FirstOrDefaultAsync(t => t.Id == taskId);
 
         if (task is null)
-            return (null, Array.Empty<TagDescriptor>());
+            return (null, Array.Empty<TagDescriptor>(), Array.Empty<Formula>());
 
+        // 真实 Tag 描述符：虚拟 Tag 不进订阅器（虚拟值由 transform 产出）。
         var descriptors = task.Tags
+            .Where(t => !t.IsVirtual)
             .Select(t => new TagDescriptor(t.Id, t.Item, t.DataType))
             .ToList();
 
-        return (task, descriptors);
+        // 该任务的公式定义（含输入映射），供 DbTaskLauncher 组装 TransformConfig。
+        var formulas = await db.Formulas
+            .AsNoTracking()
+            .Include(f => f.Inputs)
+            .Where(f => f.TaskId == taskId)
+            .ToListAsync();
+
+        return (task, descriptors, formulas);
     }
 
     public async Task<(int Groups, int Tags)> GetCountsAsync(string taskId)

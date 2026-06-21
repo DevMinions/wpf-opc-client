@@ -238,11 +238,12 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     public async Task StartSelectedAsync()
     {
         if (SelectedTask is null || _orchestrator is null) return;
-        var (task, tags) = await _source.GetTaskWithTagsAsync(SelectedTask.TaskId);
+        var (task, _, formulas) = await _source.GetTaskWithTagsAsync(SelectedTask.TaskId);
         if (task is null) return;
 
-        // 映射口径与无头 Cli 共用（DbTaskLauncher 单一来源），tags 为本处单独加载的。
-        var req = DbTaskLauncher.ToStartRequest(task, tags);
+        // 映射口径与无头 Cli 共用（DbTaskLauncher 单一来源）：用带公式的重载，
+        // 内部 MapRealTags 过滤虚拟 Tag 不进订阅器 + BuildTransformConfig 让缩放/公式生效。
+        var req = DbTaskLauncher.ToStartRequest(task, formulas);
 
         await _orchestrator.StartAsync(req);
         await LoadAsync();
