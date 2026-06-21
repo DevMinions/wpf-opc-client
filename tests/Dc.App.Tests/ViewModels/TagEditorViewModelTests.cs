@@ -71,4 +71,15 @@ public class TagEditorViewModelTests
         Assert.Null(result.Formula);
         Assert.Empty(result.Inputs);
     }
+
+    [Theory]
+    [InlineData("T * 1.8 + 32", new[] { "T" })]
+    [InlineData("T * 1.8 + P / (T + 273.15)", new[] { "T", "P" })]          // 去重保序
+    [InlineData("SQRT(T) + SIN(P) + PI + E", new[] { "T", "P" })]           // 排除函数+常量
+    [InlineData("AVG(A, B, C) + SUM(X, Y)", new[] { "A", "B", "C", "X", "Y" })]
+    [InlineData("123 + 4.5", new string[0])]                                 // 纯数字无变量
+    public void ExtractAliases_ReturnsDedupedOrdered_ExcludingBuiltins(string expr, string[] expected)
+    {
+        Assert.Equal(expected, TagEditorViewModel.ExtractAliases(expr));
+    }
 }

@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dc.App.Services;
 using Dc.Domain.Entities;
 using Dc.Infrastructure.Orchestration;
+using Group = Dc.Domain.Entities.Group;
 
 namespace Dc.App.ViewModels;
 
@@ -77,6 +79,31 @@ public partial class TagEditorViewModel : ObservableObject
     }
 
     public bool CanBrowse => _browseDialog is not null;
+
+    // 与 Infrastructure FormulaBuiltins 内容一致(那里 internal static,App 引不到)。
+    // 语义正确性最终由 IFormulaValidator.Validate(内部用真实 FormulaBuiltins)兜底。
+    private static readonly HashSet<string> BuiltinNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "SQRT","ABS","SIN","COS","TAN","ASIN","ACOS","ATAN","EXP","LOG","LOG10",
+        "FLOOR","CEILING","POW","MIN","MAX","ROUND","IF","AVG","SUM","PI","E"
+    };
+
+    /// <summary>
+    /// 扫描表达式标识符,排除内置函数/常量,去重保序(首次出现顺序)。
+    /// 仅用于生成输入映射行 UI;最终校验由 IFormulaValidator.Validate 兜底。
+    /// </summary>
+    public static IReadOnlyList<string> ExtractAliases(string expression)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var ordered = new List<string>();
+        foreach (Match m in Regex.Matches(expression ?? string.Empty, @"[A-Za-z_][A-Za-z0-9_]*"))
+        {
+            var name = m.Value;
+            if (BuiltinNames.Contains(name)) continue;
+            if (seen.Add(name)) ordered.Add(name);
+        }
+        return ordered;
+    }
 
     [RelayCommand]
     private void Browse()
