@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Dc.App.ViewModels;
 using Dc.Domain.Entities;
 using Dc.Infrastructure.Orchestration;
@@ -138,6 +139,45 @@ public class TagEditorViewModelTests
         Assert.Same(realT, vm.InputBindings[0].SelectedTag);   // 保留已选
         Assert.Equal("P", vm.InputBindings[1].Alias);
         Assert.Null(vm.InputBindings[1].SelectedTag);           // 新增空
+    }
+
+    [Fact]
+    public void Edit_ExistingVirtualTag_PreselectsInputsFromFormula()
+    {
+        var g = Grp("g1", "温度组");
+        var realT = RealTag("rt1", "Random");
+        var existing = new Tag { Id = "vt1", Item = "Sum", IsVirtual = true, GroupId = "g1", TaskId = "t1" };
+        var formula = new Formula
+        {
+            Id = "f1", Name = "Sum", Expression = "T * 2", OutputTagId = "vt1", TaskId = "t1",
+            Inputs = new List<FormulaInput> { new() { Id = "fi1", FormulaId = "f1", Alias = "T", SourceTagId = "rt1" } }
+        };
+        var vm = new TagEditorViewModel(new[] { g }, existing, defaultGroup: g,
+            taskTags: new[] { realT, existing },
+            existingFormulas: new[] { formula });
+
+        Assert.True(vm.IsVirtual);
+        Assert.Equal("Sum", vm.FormulaName);
+        Assert.Equal("T * 2", vm.Expression);
+        Assert.Single(vm.InputBindings);
+        Assert.Equal("T", vm.InputBindings[0].Alias);
+        Assert.NotNull(vm.InputBindings[0].SelectedTag);
+        Assert.Equal("rt1", vm.InputBindings[0].SelectedTag!.Id);
+    }
+
+    [Fact]
+    public void ToggleIsVirtual_AfterExpression_RebuildsInputBindings()
+    {
+        var g = Grp("g1", "温度组");
+        var realT = RealTag("rt1", "Random");
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+            taskTags: new[] { realT });
+        // Set expression BEFORE toggling virtual on
+        vm.Expression = "T * 2";
+        Assert.Empty(vm.InputBindings);   // not virtual yet → no rows
+        vm.IsVirtual = true;
+        Assert.Single(vm.InputBindings);
+        Assert.Equal("T", vm.InputBindings[0].Alias);
     }
 
     private static IFormulaValidator Validator() => new FormulaValidator();

@@ -85,22 +85,37 @@ public partial class TagEditorViewModel : ObservableObject
         }
         _selectedGroupRow = selected;
 
+        Formula? existingVirtualFormula = null;
         // 编辑已存在虚拟 Tag:回填公式字段并预选输入。
         if (existing is not null && existing.IsVirtual && _existingFormulas is not null)
         {
-            var f = _existingFormulas.FirstOrDefault(x => x.OutputTagId == existing.Id);
-            if (f is not null)
+            existingVirtualFormula = _existingFormulas.FirstOrDefault(x => x.OutputTagId == existing.Id);
+            if (existingVirtualFormula is not null)
             {
                 _isVirtual = true;
-                _formulaName = f.Name;
-                _expression = f.Expression;
-                _outputUnit = f.OutputUnit ?? string.Empty;
+                _formulaName = existingVirtualFormula.Name;
+                _expression = existingVirtualFormula.Expression;
+                _outputUnit = existingVirtualFormula.OutputUnit ?? string.Empty;
             }
         }
 
         ShowGroupSelector = selected is null;
         RefreshAvailableInputTags();
-        if (_isVirtual) RebuildInputBindings();
+        if (existingVirtualFormula is not null)
+        {
+            foreach (var input in existingVirtualFormula.Inputs)
+            {
+                var row = new InputBindingRow(input.Alias)
+                {
+                    SelectedTag = AvailableInputTags.FirstOrDefault(t => t.Id == input.SourceTagId)
+                };
+                InputBindings.Add(row);
+            }
+        }
+        else if (_isVirtual)
+        {
+            RebuildInputBindings();
+        }
     }
 
     public bool CanBrowse => _browseDialog is not null;
@@ -150,6 +165,12 @@ public partial class TagEditorViewModel : ObservableObject
         // 分组定 → TaskId 定 → 刷新可选输入 Tag(同任务真实,排除自身虚拟)。
         OnPropertyChanged(nameof(Group));
         RefreshAvailableInputTags();
+    }
+
+    partial void OnIsVirtualChanged(bool value)
+    {
+        if (value) RebuildInputBindings();
+        else InputBindings.Clear();
     }
 
     partial void OnExpressionChanged(string value)
