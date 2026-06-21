@@ -80,6 +80,10 @@ public partial class TagEditorViewModel : ObservableObject
             OriginalId = existing.Id;
             _item = existing.Item;
             _dataType = OpcDataTypeOption.FromCode(existing.DataType);
+            _scaleFactor = existing.ScaleFactor.HasValue
+                ? existing.ScaleFactor.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
+            _offset = existing.Offset.HasValue
+                ? existing.Offset.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
             selected = rows.FirstOrDefault(r => r.Group.Id == existing.GroupId);
             _title = selected is null ? "编辑 Tag" : $"编辑 Tag · 分组：{selected.Group.Name}";
         }
@@ -243,17 +247,6 @@ public partial class TagEditorViewModel : ObservableObject
 
         return errors;
     }
-
-    public Tag ToEntity() => new()
-    {
-        Id = OriginalId ?? string.Empty,
-        Item = Item.Trim(),
-        DataType = DataType.Code,
-        GroupId = Group!.Id,
-        TaskId = Group!.TaskId,
-        ScaleFactor = ParseDouble(ScaleFactor),
-        Offset = ParseDouble(Offset)
-    };
 
     public TagEditResult ToResult()
     {

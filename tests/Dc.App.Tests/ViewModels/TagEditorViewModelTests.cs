@@ -20,7 +20,30 @@ public class TagEditorViewModelTests
         Assert.Contains("新建 Tag", vm.Title);
         Assert.Contains("温度组", vm.Title);
         vm.Item = "tag.a";
-        Assert.Equal("g1", vm.ToEntity().GroupId);
+        Assert.Equal("g1", vm.ToResult().Tag.GroupId);
+    }
+
+    [Fact]
+    public void Edit_ExistingScaledRealTag_RestoresScaleFields()
+    {
+        var g = Grp("g1", "温度组");
+        var existing = new Tag
+        {
+            Id = "tag1",
+            Item = "x",
+            DataType = 4,
+            GroupId = "g1",
+            TaskId = "t1",
+            ScaleFactor = 0.1,
+            Offset = -5
+        };
+        var vm = new TagEditorViewModel(new[] { g }, existing, defaultGroup: null);
+
+        Assert.Equal("0.1", vm.ScaleFactor);
+        Assert.Equal("-5", vm.Offset);
+        var result = vm.ToResult();
+        Assert.Equal(0.1, result.Tag.ScaleFactor);
+        Assert.Equal(-5, result.Tag.Offset);
     }
 
     [Fact]

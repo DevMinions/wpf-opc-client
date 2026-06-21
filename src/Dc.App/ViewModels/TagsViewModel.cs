@@ -148,9 +148,10 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     private async Task EditAsync()
     {
         if (SelectedTag is null) return;
-        var result = await EditTagAsync(existing: SelectedTag.Tag);
+        var existing = SelectedTag.Tag;
+        var result = await EditTagAsync(existing: existing);
         if (result is null) return;
-        await PersistEditAsync(SelectedTag.Tag, result);
+        await PersistEditAsync(existing, result);
     }
 
     [RelayCommand(CanExecute = nameof(HasSelection))]
@@ -317,13 +318,20 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     // 占位:Task 7 替换为真实实现。签名固定,供 NewAsync/EditAsync 调用。
     private async Task<TagEditResult?> EditTagAsync(Tag? existing)
     {
-        var taskTags = TaskScope is null ? null : await LoadTaskTagsAsync(TaskScope);
+        // 任务上下文:优先当前工作台 TaskScope;独立页(无 TaskScope)编辑现有 Tag 时用其 TaskId。
+        // 独立页新建虚拟测点无任务上下文 → AvailableInputTags 为空,虚拟创建受限(已知限制)。
+        string? taskId = TaskScope ?? existing?.TaskId;
+        IReadOnlyCollection<Tag>? taskTags = null;
         IReadOnlyCollection<Formula>? existingFormulas = null;
-        if (existing is not null && existing.IsVirtual && TaskScope is not null)
-            existingFormulas = await LoadTaskFormulasAsync(TaskScope);
+        if (taskId is not null)
+        {
+            taskTags = await LoadTaskTagsAsync(taskId);
+            if (existing is not null && existing.IsVirtual)
+                existingFormulas = await LoadTaskFormulasAsync(taskId);
+        }
 
         return _editor.Edit(AvailableGroups, existing, GroupFilter,
-            taskId => _taskById.TryGetValue(taskId, out var t) ? t : null,
+            taskIdLookup => _taskById.TryGetValue(taskIdLookup, out var t) ? t : null,
             taskTags, existingFormulas);
     }
 
@@ -395,6 +403,8 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
 
         var oldItem = entity.Item;
         var oldTaskId = entity.TaskId;
+        var oldScale = entity.ScaleFactor;
+        var oldOffset = entity.Offset;
         var wasVirtual = entity.IsVirtual;
 
         entity.Item = result.Tag.Item;
@@ -447,6 +457,12 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             // 真实 → 真实(Item/Task 变):先卸旧再挂新。
             await TryHotRemoveAsync(oldTaskId, oldItem);
             await TryHotAddAsync(entity);
+        }
+        else if (!entity.IsVirtual && running
+                 && (!Nullable.Equals(oldScale, entity.ScaleFactor) || !Nullable.Equals(oldOffset, entity.Offset)))
+        {
+            // 真实 Tag 仅缩放/偏移变更:运行中 transform 用启动快照,提示重启生效。
+            MessageDialog.Show("提示", "缩放/偏移已保存,重启任务后生效。", MessageDialogKind.Info);
         }
         else if (entity.IsVirtual && running)
         {
