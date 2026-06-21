@@ -63,6 +63,14 @@ public class TagValueTransformTests
     }
 
     [Fact]
+    public void Apply_NaN_Result_WithBadRawQuality_StaysBad()
+    {
+        var cfg = BuildScaleOnly(new() { ["t1"] = new(1.0, 0) }, new() { ["t1"] = "A" });
+        var outp = cfg.Apply(V("A", double.NaN, 0x00));
+        Assert.Equal(0x00, outp[0].Quality);
+    }
+
+    [Fact]
     public void Apply_UnknownItem_PassesThrough()
     {
         var cfg = BuildScaleOnly(new() { ["t1"] = new(2.0, 0) }, new() { ["t1"] = "A" });
@@ -89,6 +97,18 @@ public class TagValueTransformTests
         var outp = t.Apply(V("A", 10.0, 0xC0)); // Good → 就绪 + 立即算
         Assert.Equal(2, outp.Count);
         Assert.Equal("A", outp[0].Item);
+        Assert.Equal("OUT", outp[1].Item);
+        Assert.Equal(20.0, outp[1].Value);
+        Assert.Equal(0xC0, outp[1].Quality);
+    }
+
+    [Fact]
+    public void Formula_Ready_AfterGoodSubstatusInput_ProducesVirtual()
+    {
+        var t = BuildWithFormula(new() { ["t1"] = new(null, null) }, new() { ["t1"] = "A" },
+            Formula("f1", "OUT", "A * 2", ("A", "t1")));
+        var outp = t.Apply(V("A", 10.0, 0xC8)); // Good with substatus bits → 就绪 + 立即算
+        Assert.Equal(2, outp.Count);
         Assert.Equal("OUT", outp[1].Item);
         Assert.Equal(20.0, outp[1].Value);
         Assert.Equal(0xC0, outp[1].Quality);

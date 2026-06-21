@@ -104,6 +104,24 @@ public class TaskOrchestratorTests
     }
 
     [Fact]
+    public async Task StartAsync_InvalidFormula_ThrowsWithoutAllocatingSubscriberOrPublisher()
+    {
+        await using var orch = BuildWithTransformFactory(out var daFactory, out var pubFactory);
+
+        var cfg = new TransformConfig(
+            new Dictionary<string, ScaleConfig> { ["t1"] = new(null, null) },
+            new Dictionary<string, string> { ["t1"] = "A" },
+            new[] { new FormulaConfig("f1", "OUT", "A +", new[] { new FormulaInputConfig("A", "t1") }) });
+
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            orch.StartAsync(RequestWithTransform("t1", cfg, new TagDescriptor("t1", "A", 5))));
+
+        Assert.Empty(daFactory.Created);
+        Assert.Empty(pubFactory.Created);
+        Assert.DoesNotContain("t1", orch.RunningTaskIds);
+    }
+
+    [Fact]
     public async Task StartAsync_VirtualTagNotInSubscriberList()
     {
         await using var orch = BuildWithTransformFactory(out var daFactory, out var pubFactory);

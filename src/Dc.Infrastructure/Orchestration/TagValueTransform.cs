@@ -79,7 +79,8 @@ public sealed class TagValueTransform : ITagValueTransform
         var q = raw.Quality;
         if (double.IsNaN(scaled) || double.IsInfinity(scaled))
         {
-            q = 0x40; // Uncertain
+            // 取原质量与 Uncertain 的较差者：Bad(0x00) 保持 Bad，不误升为 Uncertain
+            q = ((raw.Quality & 0xC0) == 0x00) ? raw.Quality : (ushort)0x40;
         }
         return raw with { Value = scaled, Quality = q };
     }
@@ -124,7 +125,7 @@ public sealed class TagValueTransform : ITagValueTransform
             if (TryToDouble(engineering.Value, out var num))
             {
                 var prevSeenGood = rt.Inputs.GetValueOrDefault(alias).seenGood;
-                var seenGood = engineering.Quality == 0xC0 || prevSeenGood;
+                var seenGood = (engineering.Quality & 0xC0) == 0xC0 || prevSeenGood;
                 rt.Inputs[alias] = (num, engineering.Quality, seenGood);
             }
             else
@@ -228,31 +229,11 @@ public sealed class TagValueTransform : ITagValueTransform
         {
             Config = c;
             var interp = new Interpreter();
-            RegisterBuiltins(interp);
+            FormulaBuiltins.Register(interp);
             var parameters = c.Inputs
                 .Select(i => new Parameter(i.Alias, typeof(double)))
                 .ToArray();
             Lambda = interp.Parse(c.Expression, parameters);
-        }
-
-        private static void RegisterBuiltins(Interpreter interp)
-        {
-            interp.SetFunction("SQRT", new Func<double, double>(Math.Sqrt));
-            interp.SetFunction("ABS", new Func<double, double>(Math.Abs));
-            interp.SetFunction("SIN", new Func<double, double>(Math.Sin));
-            interp.SetFunction("COS", new Func<double, double>(Math.Cos));
-            interp.SetFunction("TAN", new Func<double, double>(Math.Tan));
-            interp.SetFunction("EXP", new Func<double, double>(Math.Exp));
-            interp.SetFunction("LOG", new Func<double, double>(Math.Log));
-            interp.SetFunction("LOG10", new Func<double, double>(Math.Log10));
-            interp.SetFunction("FLOOR", new Func<double, double>(Math.Floor));
-            interp.SetFunction("CEILING", new Func<double, double>(Math.Ceiling));
-            interp.SetFunction("POW", new Func<double, double, double>(Math.Pow));
-            interp.SetFunction("MIN", new Func<double, double, double>(Math.Min));
-            interp.SetFunction("MAX", new Func<double, double, double>(Math.Max));
-            interp.SetFunction("ROUND", new Func<double, double, double>((v, d) => Math.Round(v, (int)d)));
-            interp.SetVariable("PI", Math.PI);
-            interp.SetVariable("E", Math.E);
         }
     }
 }

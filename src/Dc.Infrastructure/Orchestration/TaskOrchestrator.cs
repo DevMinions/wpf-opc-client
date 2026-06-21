@@ -190,13 +190,14 @@ public sealed class TaskOrchestrator : IAsyncDisposable
 
     private async Task StartUnlockedAsync(TaskStartRequest request, IOpcSubscriberFactory factory, CancellationToken ct)
     {
-        var subscriber = factory.Create(request.TaskId, request.OpcOptions);
-        var publisher = _publisherFactory.Create(request.PublisherAddress);
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostCts.Token);
         ITagValueTransform transform =
             (request.TransformConfig is not null && _transformFactory is not null)
                 ? _transformFactory.Create(request.TaskId, request.TransformConfig)
                 : NoOpTransform.Instance;
+
+        var subscriber = factory.Create(request.TaskId, request.OpcOptions);
+        var publisher = _publisherFactory.Create(request.PublisherAddress);
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostCts.Token);
 
         var runtime = new TaskRuntime
         {

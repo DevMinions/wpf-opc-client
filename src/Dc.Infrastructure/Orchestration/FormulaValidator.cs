@@ -4,9 +4,9 @@ namespace Dc.Infrastructure.Orchestration;
 
 public sealed class FormulaValidator : IFormulaValidator
 {
-    // 可数值化的数据类型码集合。调用方约定：Double=6, Float=5, Int32=3/4, Int16=1/2, Bool=0。
-    // 不在此集合（如 String）→ 拒绝作为公式输入。
-    private static readonly HashSet<int> NumericTypeCodes = new() { 0, 1, 2, 3, 4, 5, 6 };
+    // 可数值化的数据类型码集合。沿用 OpcDataTypeOption：0=默认, 11=Boolean, 2/3/16/17/18/19/20/21=整数, 4/5=浮点。
+    // 排除：8=String, 7=DateTime。
+    private static readonly HashSet<int> NumericTypeCodes = new() { 0, 11, 2, 3, 4, 5, 16, 17, 18, 19, 20, 21 };
 
     public bool Validate(string expression, IReadOnlyDictionary<string, int> aliasToDataType, out string? error)
     {
@@ -28,6 +28,7 @@ public sealed class FormulaValidator : IFormulaValidator
         try
         {
             var interp = new Interpreter();
+            FormulaBuiltins.Register(interp);
             var parameters = aliasToDataType
                 .Select(kv => new Parameter(kv.Key, typeof(double)))
                 .ToArray();
