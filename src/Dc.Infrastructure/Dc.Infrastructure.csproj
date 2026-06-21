@@ -10,6 +10,7 @@
     <PackageReference Include="Ulid" />
     <PackageReference Include="MessagePack" />
     <PackageReference Include="ClosedXML" />
+    <PackageReference Include="DynamicExpresso.Core" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Dc.Infrastructure.Tests" />
