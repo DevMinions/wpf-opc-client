@@ -160,12 +160,35 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         if (row is null) return;
         var tag = row.Tag;
 
+        // 引用完整性(Q5):真实 Tag 被公式引用 → 拦截。
+        await using var checkDb = await _dbFactory.CreateDbContextAsync();
+        var referencingFormulas = await checkDb.FormulaInputs
+            .Where(i => i.SourceTagId == tag.Id)
+            .Join(checkDb.Formulas, i => i.FormulaId, f => f.Id, (i, f) => f.Name)
+            .Distinct().ToListAsync();
+        if (referencingFormulas.Count > 0)
+        {
+            MessageDialog.Show("无法删除",
+                $"该测点被公式 {string.Join(", ", referencingFormulas)} 引用,请先修改公式或删除对应虚拟测点。",
+                MessageDialogKind.Warning);
+            return;
+        }
+
         var confirm = MessageDialog.Confirm("删除确认", $"确定删除 Tag {tag.Item}？", MessageDialogKind.Warning);
         if (!confirm) return;
 
         await using var db = await _dbFactory.CreateDbContextAsync();
+        // 虚拟 Tag:级联删其 Formula+Inputs。
+        if (tag.IsVirtual)
+        {
+            var ownFormulas = await db.Formulas.Include(f => f.Inputs)
+                .Where(f => f.OutputTagId == tag.Id).ToListAsync();
+            if (ownFormulas.Count > 0) db.Formulas.RemoveRange(ownFormulas);
+        }
         await db.Tags.Where(t => t.Id == tag.Id).ExecuteDeleteAsync();
-        await TryHotRemoveAsync(tag.TaskId, tag.Item);
+        await db.SaveChangesAsync();
+
+        if (!tag.IsVirtual) await TryHotRemoveAsync(tag.TaskId, tag.Item);
         Tags.Remove(row);
     }
 
@@ -319,8 +342,112 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             .ToListAsync();
     }
 
-    private async Task PersistNewAsync(TagEditResult result) => throw new NotImplementedException();
-    private async Task PersistEditAsync(Tag existing, TagEditResult result) => throw new NotImplementedException();
+    private async Task PersistNewAsync(TagEditResult result)
+    {
+        var tag = result.Tag;
+        tag.Id = UlidGenerator.NewId();
+        Formula? formula = null;
+        if (result.Formula is not null)
+        {
+            formula = result.Formula;
+            formula.Id = UlidGenerator.NewId();
+            formula.OutputTagId = tag.Id;
+            foreach (var inp in result.Inputs)
+            {
+                inp.Id = UlidGenerator.NewId();
+                inp.FormulaId = formula.Id;
+                formula.Inputs.Add(inp);
+            }
+        }
+
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        try
+        {
+            db.Tags.Add(tag);
+            if (formula is not null) db.Formulas.Add(formula); // EF 级联加 Inputs
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            MessageDialog.Show("错误", $"保存失败:{ex.InnerException?.Message ?? ex.Message}", MessageDialogKind.Error);
+            return;
+        }
+
+        Tags.Add(ToRow(tag));
+
+        // 热同步:真实 Tag 走现有路径;虚拟 Tag 不订阅(Q8),运行中提示重启。
+        if (tag.IsVirtual)
+        {
+            if (IsTaskRunning(tag.TaskId))
+                MessageDialog.Show("提示", "虚拟测点已保存,重启任务后生效。", MessageDialogKind.Info);
+        }
+        else
+        {
+            await TryHotAddAsync(tag);
+        }
+    }
+
+    private async Task PersistEditAsync(Tag existing, TagEditResult result)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var entity = await db.Tags.FirstOrDefaultAsync(t => t.Id == existing.Id);
+        if (entity is null) return;
+
+        var oldItem = entity.Item;
+        var oldTaskId = entity.TaskId;
+        var wasVirtual = entity.IsVirtual;
+
+        entity.Item = result.Tag.Item;
+        entity.DataType = result.Tag.DataType;
+        entity.GroupId = result.Tag.GroupId;
+        entity.TaskId = result.Tag.TaskId;
+        entity.IsVirtual = result.Tag.IsVirtual;
+        entity.ScaleFactor = result.Tag.ScaleFactor;
+        entity.Offset = result.Tag.Offset;
+
+        // 公式变更:删旧(若曾虚拟),加新(若现虚拟)。
+        if (wasVirtual)
+        {
+            var oldFormulas = await db.Formulas.Include(f => f.Inputs)
+                .Where(f => f.OutputTagId == entity.Id).ToListAsync();
+            if (oldFormulas.Count > 0) db.Formulas.RemoveRange(oldFormulas); // 级联删 Inputs
+        }
+        if (result.Formula is not null)
+        {
+            var f = result.Formula;
+            f.Id = UlidGenerator.NewId();
+            f.OutputTagId = entity.Id;
+            foreach (var inp in result.Inputs)
+            {
+                inp.Id = UlidGenerator.NewId();
+                inp.FormulaId = f.Id;
+                f.Inputs.Add(inp);
+            }
+            db.Formulas.Add(f);
+        }
+
+        await db.SaveChangesAsync();
+
+        // 热同步:真实 Tag 的 Item/Task 变更走现有路径;虚拟/公式变更不热同步。
+        var running = IsTaskRunning(entity.TaskId) || IsTaskRunning(oldTaskId);
+        if (!entity.IsVirtual && (oldItem != entity.Item || oldTaskId != entity.TaskId))
+        {
+            await TryHotRemoveAsync(oldTaskId, oldItem);
+            await TryHotAddAsync(entity);
+        }
+        else if (entity.IsVirtual && running)
+        {
+            MessageDialog.Show("提示", "虚拟测点/公式已保存,重启任务后生效。", MessageDialogKind.Info);
+        }
+
+        var idx = Tags.IndexOf(SelectedTag);
+        if (idx >= 0)
+        {
+            var row = ToRow(entity);
+            Tags[idx] = row;
+            SelectedTag = row;
+        }
+    }
 
     private bool HasSelection() => SelectedTag is not null;
 
