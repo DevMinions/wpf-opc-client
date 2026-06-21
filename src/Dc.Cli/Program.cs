@@ -67,11 +67,13 @@ try
         HeartbeatTimeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("Orchestrator:HeartbeatTimeoutSeconds", 120)),
         FaultThreshold = builder.Configuration.GetValue("Orchestrator:FaultThreshold", 3)
     });
+    builder.Services.AddSingleton<ITagValueTransformFactory, TagValueTransformFactory>();
     builder.Services.AddSingleton(sp => new TaskOrchestrator(
         sp.GetServices<IOpcSubscriberFactory>(),
         sp.GetRequiredService<IPublisherFactory>(),
         sp.GetRequiredService<OrchestratorOptions>(),
-        sp.GetService<ILogger<TaskOrchestrator>>()));
+        sp.GetService<ILogger<TaskOrchestrator>>(),
+        sp.GetService<ITagValueTransformFactory>()));
 
     // ── 诊断可观测（Metrics + 结构化日志），由 Host 自动启停 ──
     builder.Services.AddSingleton(sp => new DiagnosticsReporter(
