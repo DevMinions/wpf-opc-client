@@ -65,4 +65,72 @@ public class DbTaskLauncherTests
         Assert.Equal("opc.tcp://DESKTOP-KONUSAK:53530/OPCUA/SimulationServer", req.OpcOptions.ServerUri);
         Assert.Null(req.OpcOptions.ServerProgId);
     }
+
+    [Fact]
+    public void ToStartRequest_ExcludesVirtualTags_FromSubscriber()
+    {
+        var real = new Tag { Id = "r1", Item = "A", DataType = 6, IsVirtual = false };
+        var virt = new Tag { Id = "v1", Item = "OUT", DataType = 6, IsVirtual = true };
+        var task = TaskWithTags(real, virt);
+
+        var req = DbTaskLauncher.ToStartRequest(task);
+
+        Assert.Single(req.Tags);
+        Assert.Equal("A", req.Tags.Single().Item);
+    }
+
+    [Fact]
+    public void ToStartRequest_BuildsTransformConfig_WithFormulas()
+    {
+        var real = new Tag { Id = "r1", Item = "A", DataType = 6, IsVirtual = false, ScaleFactor = 0.1 };
+        var virt = new Tag { Id = "v1", Item = "OUT", DataType = 6, IsVirtual = true };
+        var task = TaskWithTags(real, virt);
+        var formula = new Formula
+        {
+            Id = "f1",
+            Name = "OUT",
+            Expression = "A*2",
+            OutputTagId = "v1",
+            TaskId = "t1",
+            Inputs = new()
+            {
+                new FormulaInput { Id = "fi1", FormulaId = "f1", Alias = "A", SourceTagId = "r1" }
+            }
+        };
+
+        var req = DbTaskLauncher.ToStartRequest(task, new[] { formula });
+
+        Assert.NotNull(req.TransformConfig);
+        Assert.Single(req.TransformConfig!.Formulas);
+        Assert.Equal("OUT", req.TransformConfig.Formulas[0].OutputItem);
+        Assert.Equal(0.1, req.TransformConfig.ScaleByTagId["r1"].ScaleFactor);
+    }
+
+    [Fact]
+    public void ToStartRequest_NoFormulas_NullTransformConfig()
+    {
+        var real = new Tag { Id = "r1", Item = "A", DataType = 6, IsVirtual = false };
+        var task = TaskWithTags(real);
+
+        var req = DbTaskLauncher.ToStartRequest(task);
+
+        Assert.Null(req.TransformConfig);
+    }
+
+    private static CollectorTask TaskWithTags(params Tag[] tags)
+    {
+        var task = new CollectorTask
+        {
+            Id = "t1",
+            Type = (byte)OpcProtocol.Ua,
+            Node = "opc.tcp://localhost:4840",
+            TcpAddress = "127.0.0.1:5000"
+        };
+        task.Tags = tags.ToList();
+        foreach (var tag in tags)
+        {
+            tag.TaskId = task.Id;
+        }
+        return task;
+    }
 }
