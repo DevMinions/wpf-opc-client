@@ -139,57 +139,18 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     private async Task NewAsync()
     {
         if (AvailableGroups.Count == 0) return;
-        var edited = _editor.Edit(AvailableGroups, null, GroupFilter, taskId => _taskById.TryGetValue(taskId, out var t) ? t : null);
-        if (edited is null) return;
-
-        edited.Id = UlidGenerator.NewId();
-        await using var db = await _dbFactory.CreateDbContextAsync();
-        try
-        {
-            db.Tags.Add(edited);
-            await db.SaveChangesAsync();
-            Tags.Add(ToRow(edited));
-            await TryHotAddAsync(edited);
-        }
-        catch (DbUpdateException ex)
-        {
-            MessageDialog.Show("错误", $"保存失败（可能 Item 已存在）：{ex.InnerException?.Message ?? ex.Message}", MessageDialogKind.Error);
-        }
+        var result = await EditTagAsync(existing: null);
+        if (result is null) return;
+        await PersistNewAsync(result);
     }
 
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private async Task EditAsync()
     {
         if (SelectedTag is null) return;
-        var edited = _editor.Edit(AvailableGroups, SelectedTag.Tag, null, taskId => _taskById.TryGetValue(taskId, out var t) ? t : null);
-        if (edited is null) return;
-
-        await using var db = await _dbFactory.CreateDbContextAsync();
-        var entity = await db.Tags.FirstOrDefaultAsync(t => t.Id == edited.Id);
-        if (entity is null) return;
-
-        var oldItem = entity.Item;
-        var oldTaskId = entity.TaskId;
-        entity.Item = edited.Item;
-        entity.DataType = edited.DataType;
-        entity.GroupId = edited.GroupId;
-        entity.TaskId = edited.TaskId;
-        await db.SaveChangesAsync();
-
-        // 热同步：先按旧 item/task 卸载，再按新挂载
-        if (oldItem != entity.Item || oldTaskId != entity.TaskId)
-        {
-            await TryHotRemoveAsync(oldTaskId, oldItem);
-            await TryHotAddAsync(entity);
-        }
-
-        var idx = Tags.IndexOf(SelectedTag);
-        if (idx >= 0)
-        {
-            var row = ToRow(entity);
-            Tags[idx] = row;
-            SelectedTag = row; // 替换后重选，保持高亮一致
-        }
+        var result = await EditTagAsync(existing: SelectedTag.Tag);
+        if (result is null) return;
+        await PersistEditAsync(SelectedTag.Tag, result);
     }
 
     [RelayCommand(CanExecute = nameof(HasSelection))]
@@ -329,6 +290,37 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         OnPropertyChanged(nameof(EmbeddedTitle));
         _ = LoadAsync();
     }
+
+    // 占位:Task 7 替换为真实实现。签名固定,供 NewAsync/EditAsync 调用。
+    private async Task<TagEditResult?> EditTagAsync(Tag? existing)
+    {
+        var taskTags = TaskScope is null ? null : await LoadTaskTagsAsync(TaskScope);
+        IReadOnlyCollection<Formula>? existingFormulas = null;
+        if (existing is not null && existing.IsVirtual && TaskScope is not null)
+            existingFormulas = await LoadTaskFormulasAsync(TaskScope);
+
+        return _editor.Edit(AvailableGroups, existing, GroupFilter,
+            taskId => _taskById.TryGetValue(taskId, out var t) ? t : null,
+            taskTags, existingFormulas);
+    }
+
+    private async Task<IReadOnlyCollection<Tag>> LoadTaskTagsAsync(string taskId)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        return await db.Tags.AsNoTracking().Where(t => t.TaskId == taskId).ToListAsync();
+    }
+
+    private async Task<IReadOnlyCollection<Formula>> LoadTaskFormulasAsync(string taskId)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        return await db.Formulas.AsNoTracking()
+            .Include(f => f.Inputs)
+            .Where(f => f.TaskId == taskId)
+            .ToListAsync();
+    }
+
+    private async Task PersistNewAsync(TagEditResult result) => throw new NotImplementedException();
+    private async Task PersistEditAsync(Tag existing, TagEditResult result) => throw new NotImplementedException();
 
     private bool HasSelection() => SelectedTag is not null;
 

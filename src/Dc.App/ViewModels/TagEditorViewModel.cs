@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dc.App.Services;
 using Dc.Domain.Entities;
+using Dc.Infrastructure.Orchestration;
 
 namespace Dc.App.ViewModels;
 
@@ -10,6 +11,9 @@ public partial class TagEditorViewModel : ObservableObject
 {
     private readonly IBrowseDialog? _browseDialog;
     private readonly Func<string, CollectorTask?>? _taskLookup;
+    private readonly IReadOnlyCollection<Tag>? _taskTags;
+    private readonly IReadOnlyCollection<Formula>? _existingFormulas;
+    private readonly IFormulaValidator? _formulaValidator;
 
     [ObservableProperty] private string _title;
     [ObservableProperty] private string _item = string.Empty;
@@ -31,8 +35,14 @@ public partial class TagEditorViewModel : ObservableObject
         Tag? existing,
         Group? defaultGroup = null,
         IBrowseDialog? browseDialog = null,
-        Func<string, CollectorTask?>? taskLookup = null)
+        Func<string, CollectorTask?>? taskLookup = null,
+        IReadOnlyCollection<Tag>? taskTags = null,
+        IReadOnlyCollection<Formula>? existingFormulas = null,
+        IFormulaValidator? formulaValidator = null)
     {
+        _taskTags = taskTags;
+        _existingFormulas = existingFormulas;
+        _formulaValidator = formulaValidator;
         _browseDialog = browseDialog;
         _taskLookup = taskLookup;
 
@@ -99,6 +109,9 @@ public partial class TagEditorViewModel : ObservableObject
         GroupId = Group!.Id,
         TaskId = Group!.TaskId
     };
+
+    // 真实 Tag 结果(本 task 占位);虚拟分支在 Task 4 补全。
+    public TagEditResult ToResult() => new(ToEntity(), null, Array.Empty<FormulaInput>());
 }
 
 /// <summary>

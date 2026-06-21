@@ -56,4 +56,19 @@ public class TagEditorViewModelTests
         Assert.Null(vm.Group);
         Assert.Equal("编辑 Tag", vm.Title);
     }
+
+    [Fact]
+    public void ToResult_RealTag_NoFormula()
+    {
+        var g = Grp("g1", "温度组");
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g);
+        vm.Item = "ns=3;i=1002";
+        var result = vm.ToResult();
+
+        Assert.NotNull(result);
+        Assert.Equal("ns=3;i=1002", result.Tag.Item);
+        Assert.Equal("g1", result.Tag.GroupId);
+        Assert.Null(result.Formula);
+        Assert.Empty(result.Inputs);
+    }
 }
