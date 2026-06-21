@@ -87,4 +87,53 @@ public class OrchestratorEndToEndTests
         Assert.All(received, r => Assert.Equal("evt-1", r.TaskId));
         Assert.Equal(new[] { "item-0", "item-1", "item-2" }, received.Select(r => r.Value.Item));
     }
+
+    [Fact]
+    public async Task EndToEnd_ScaleAndFormula_PublishesEngineeringAndVirtual()
+    {
+        var daFactory = new FakeOpcSubscriberFactory(OpcProtocol.Da);
+        var pubFactory = new FakePublisherFactory();
+        await using var orch = new TaskOrchestrator(
+            new[] { (IOpcSubscriberFactory)daFactory },
+            pubFactory,
+            transformFactory: new TagValueTransformFactory());
+
+        var cfg = new TransformConfig(
+            new Dictionary<string, ScaleConfig>
+            {
+                ["t1"] = new(0.1, 0),
+                ["t2"] = new(1.0, 0)
+            },
+            new Dictionary<string, string> { ["t1"] = "A", ["t2"] = "B" },
+            new[]
+            {
+                new FormulaConfig("f1", "OUT", "A + B",
+                    new[] { new FormulaInputConfig("A", "t1"), new FormulaInputConfig("B", "t2") })
+            });
+
+        await orch.StartAsync(new TaskStartRequest(
+            "e2e-scale-formula",
+            OpcProtocol.Da,
+            new OpcConnectionOptions { ServerUri = "opc.tcp://localhost:4840" },
+            "127.0.0.1:5000",
+            new[] { new TagDescriptor("t1", "A", 6), new TagDescriptor("t2", "B", 6) },
+            cfg));
+
+        var sub = daFactory.Created.First();
+        var pub = pubFactory.Created.First().Publisher;
+
+        sub.EmitValue(new TagValue("A", 100.0, 0xC0, DateTimeOffset.UtcNow));
+        sub.EmitValue(new TagValue("B", 5.0, 0xC0, DateTimeOffset.UtcNow));
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (!pub.Published.OfType<TagValue>().Any(v => v.Item == "OUT") && DateTime.UtcNow < deadline)
+            await Task.Delay(10);
+
+        var published = pub.Published.OfType<TagValue>().ToArray();
+        Assert.Contains(published, v => v.Item == "A" && (double)v.Value! == 10.0);
+
+        var virt = published.Last(v => v.Item == "OUT");
+        Assert.Equal(15.0, virt.Value);
+        Assert.Equal((ushort)0xC0, virt.Quality);
+    }
 }
