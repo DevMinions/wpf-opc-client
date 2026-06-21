@@ -428,15 +428,29 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
 
         await db.SaveChangesAsync();
 
-        // 热同步:真实 Tag 的 Item/Task 变更走现有路径;虚拟/公式变更不热同步。
         var running = IsTaskRunning(entity.TaskId) || IsTaskRunning(oldTaskId);
-        if (!entity.IsVirtual && (oldItem != entity.Item || oldTaskId != entity.TaskId))
+
+        if (!wasVirtual && entity.IsVirtual)
         {
+            // 真实 → 虚拟:卸载旧真实订阅;虚拟不订阅,运行中提示重启。
+            await TryHotRemoveAsync(oldTaskId, oldItem);
+            if (running) MessageDialog.Show("提示", "虚拟测点/公式已保存,重启任务后生效。", MessageDialogKind.Info);
+        }
+        else if (wasVirtual && !entity.IsVirtual)
+        {
+            // 虚拟 → 真实:旧虚拟未订阅无需卸载;热加新真实订阅;运行中提示重启(公式已移除)。
+            await TryHotAddAsync(entity);
+            if (running) MessageDialog.Show("提示", "虚拟测点/公式已保存,重启任务后生效。", MessageDialogKind.Info);
+        }
+        else if (!entity.IsVirtual && (oldItem != entity.Item || oldTaskId != entity.TaskId))
+        {
+            // 真实 → 真实(Item/Task 变):先卸旧再挂新。
             await TryHotRemoveAsync(oldTaskId, oldItem);
             await TryHotAddAsync(entity);
         }
         else if (entity.IsVirtual && running)
         {
+            // 虚拟 → 虚拟(公式变):不热同步,提示重启。
             MessageDialog.Show("提示", "虚拟测点/公式已保存,重启任务后生效。", MessageDialogKind.Info);
         }
 
