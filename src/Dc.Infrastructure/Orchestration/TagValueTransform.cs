@@ -189,11 +189,20 @@ public sealed class TagValueTransform : ITagValueTransform
 
     public void OnTagsRemoved(IEnumerable<TagDescriptor> tags)
     {
-        // Task 7 实现（标记依赖公式 Failed）。
         foreach (var t in tags)
         {
             _tagIdByItem.Remove(t.Item);
             _itemByTagId.Remove(t.Id);
+
+            // 被删 Tag 是某公式输入 → 该公式 Failed，停止产出
+            if (_inputsByTagId.TryGetValue(t.Id, out var refs))
+            {
+                foreach (var (formulaId, _) in refs)
+                {
+                    if (_formulaById.TryGetValue(formulaId, out var rt))
+                        rt.IsFailed = true;
+                }
+            }
         }
     }
 

@@ -163,4 +163,24 @@ public class TagValueTransformTests
         Assert.Equal(2, o3.Count);
         Assert.Equal(0.5, o3[1].Value);
     }
+
+    [Fact]
+    public void OnTagsRemoved_MarksDependentFormulaFailed_StopsOutput()
+    {
+        var t = BuildWithFormula(
+            new() { ["t1"] = new(null, null), ["t2"] = new(null, null) },
+            new() { ["t1"] = "A", ["t2"] = "B" },
+            Formula("f1", "OUT", "A + B", ("A", "t1"), ("B", "t2")));
+
+        t.Apply(V("A", 1.0, 0xC0));
+        t.Apply(V("B", 2.0, 0xC0)); // 就绪，产出 OUT=3
+
+        // 热删 B
+        t.OnTagsRemoved(new[] { new TagDescriptor("t2", "B", 6) });
+
+        // 再来 A 值，公式应 Failed 不再产出
+        var o = t.Apply(V("A", 5.0, 0xC0));
+        Assert.Single(o); // 仅真值 A
+        Assert.Equal("A", o[0].Item);
+    }
 }
