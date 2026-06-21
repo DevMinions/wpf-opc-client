@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,6 +21,15 @@ public partial class TagEditorViewModel : ObservableObject
     [ObservableProperty] private string _title;
     [ObservableProperty] private string _item = string.Empty;
     [ObservableProperty] private OpcDataTypeOption _dataType = OpcDataTypeOption.FromCode(0);
+    [ObservableProperty] private bool _isVirtual;
+    [ObservableProperty] private string _scaleFactor = string.Empty;
+    [ObservableProperty] private string _offset = string.Empty;
+    [ObservableProperty] private string _formulaName = string.Empty;
+    [ObservableProperty] private string _expression = string.Empty;
+    [ObservableProperty] private string _outputUnit = string.Empty;
+
+    public ObservableCollection<InputBindingRow> InputBindings { get; } = new();
+    public ObservableCollection<Tag> AvailableInputTags { get; } = new();
 
     // 下拉项包装：Group 实体 + 人类可读 Display。此前 ItemTemplate 直接绑 {TaskId}(26 位 ULID),
     // 折叠态显示「组名 — 01KVAS6GHVSDC5B62ZTXXY596Z」。现 Display 用任务显示名;同任务下只显组名。
@@ -75,7 +85,22 @@ public partial class TagEditorViewModel : ObservableObject
         }
         _selectedGroupRow = selected;
 
+        // 编辑已存在虚拟 Tag:回填公式字段并预选输入。
+        if (existing is not null && existing.IsVirtual && _existingFormulas is not null)
+        {
+            var f = _existingFormulas.FirstOrDefault(x => x.OutputTagId == existing.Id);
+            if (f is not null)
+            {
+                _isVirtual = true;
+                _formulaName = f.Name;
+                _expression = f.Expression;
+                _outputUnit = f.OutputUnit ?? string.Empty;
+            }
+        }
+
         ShowGroupSelector = selected is null;
+        RefreshAvailableInputTags();
+        if (_isVirtual) RebuildInputBindings();
     }
 
     public bool CanBrowse => _browseDialog is not null;
@@ -120,11 +145,81 @@ public partial class TagEditorViewModel : ObservableObject
         if (!string.IsNullOrWhiteSpace(nodeId)) Item = nodeId;
     }
 
+    partial void OnSelectedGroupRowChanged(GroupRow? value)
+    {
+        // 分组定 → TaskId 定 → 刷新可选输入 Tag(同任务真实,排除自身虚拟)。
+        OnPropertyChanged(nameof(Group));
+        RefreshAvailableInputTags();
+    }
+
+    partial void OnExpressionChanged(string value)
+    {
+        if (IsVirtual) RebuildInputBindings();
+    }
+
+    private void RefreshAvailableInputTags()
+    {
+        AvailableInputTags.Clear();
+        if (_taskTags is null || Group is null) return;
+        foreach (var t in _taskTags.Where(t => !t.IsVirtual && t.Id != OriginalId))
+            AvailableInputTags.Add(t);
+    }
+
+    // 表达式变化:保留仍存在别名的已选 Tag,移除消失别名,追加新别名(null)。
+    private void RebuildInputBindings()
+    {
+        var aliases = ExtractAliases(Expression);
+        var prevByAlias = InputBindings.ToDictionary(r => r.Alias, r => r.SelectedTag, StringComparer.OrdinalIgnoreCase);
+        InputBindings.Clear();
+        foreach (var alias in aliases)
+        {
+            var row = new InputBindingRow(alias);
+            if (prevByAlias.TryGetValue(alias, out var sel)) row.SelectedTag = sel;
+            InputBindings.Add(row);
+        }
+    }
+
     public IReadOnlyList<string> Validate()
     {
         var errors = new List<string>();
-        if (string.IsNullOrWhiteSpace(Item)) errors.Add("Item 不能为空");
         if (Group is null) errors.Add("必须选择所属分组");
+
+        if (!IsVirtual)
+        {
+            if (string.IsNullOrWhiteSpace(Item)) errors.Add("Item 不能为空");
+            if (!string.IsNullOrWhiteSpace(ScaleFactor)
+                && !double.TryParse(ScaleFactor.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+                errors.Add("缩放系数必须是数字");
+            if (!string.IsNullOrWhiteSpace(Offset)
+                && !double.TryParse(Offset.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+                errors.Add("偏移量必须是数字");
+            return errors;
+        }
+
+        // 虚拟模式
+        if (string.IsNullOrWhiteSpace(FormulaName)) errors.Add("公式名不能为空");
+        else if (_taskTags is not null)
+        {
+            // 任务内唯一(排除自身):比对其余虚拟 Tag 的 Item(虚拟 Tag Item=公式名)
+            var dup = _taskTags.Any(t => t.Id != OriginalId
+                && t.IsVirtual
+                && string.Equals(t.Item, FormulaName.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (dup) errors.Add("公式名在任务内已存在");
+        }
+        if (string.IsNullOrWhiteSpace(Expression)) errors.Add("表达式不能为空");
+
+        // 每个提取出的变量必须选了 Tag
+        foreach (var row in InputBindings.Where(r => r.SelectedTag is null))
+            errors.Add($"变量 {row.Alias} 未选择输入测点");
+
+        // 类型可数值化 + 表达式语法
+        var aliasToDataType = InputBindings
+            .Where(r => r.SelectedTag is not null)
+            .ToDictionary(r => r.Alias, r => r.SelectedTag!.DataType);
+        if (_formulaValidator is not null
+            && !_formulaValidator.Validate(Expression, aliasToDataType, out var ferr))
+            errors.Add(ferr!);
+
         return errors;
     }
 
@@ -134,11 +229,52 @@ public partial class TagEditorViewModel : ObservableObject
         Item = Item.Trim(),
         DataType = DataType.Code,
         GroupId = Group!.Id,
-        TaskId = Group!.TaskId
+        TaskId = Group!.TaskId,
+        ScaleFactor = ParseDouble(ScaleFactor),
+        Offset = ParseDouble(Offset)
     };
 
-    // 真实 Tag 结果(本 task 占位);虚拟分支在 Task 4 补全。
-    public TagEditResult ToResult() => new(ToEntity(), null, Array.Empty<FormulaInput>());
+    public TagEditResult ToResult()
+    {
+        var tag = new Tag
+        {
+            Id = OriginalId ?? string.Empty,
+            Item = IsVirtual ? FormulaName.Trim() : Item.Trim(),
+            DataType = DataType.Code,
+            GroupId = Group!.Id,
+            TaskId = Group!.TaskId,
+            IsVirtual = IsVirtual,
+            ScaleFactor = IsVirtual ? null : ParseDouble(ScaleFactor),
+            Offset = IsVirtual ? null : ParseDouble(Offset)
+        };
+
+        if (!IsVirtual)
+            return new TagEditResult(tag, null, Array.Empty<FormulaInput>());
+
+        var formula = new Formula
+        {
+            Id = string.Empty, // 调用方生成
+            Name = FormulaName.Trim(),
+            Expression = Expression,
+            OutputTagId = tag.Id, // 调用方在持久化时回填真实 Id
+            OutputUnit = string.IsNullOrWhiteSpace(OutputUnit) ? null : OutputUnit.Trim(),
+            TaskId = Group!.TaskId
+        };
+        var inputs = InputBindings
+            .Where(r => r.SelectedTag is not null)
+            .Select(r => new FormulaInput
+            {
+                Id = string.Empty,
+                FormulaId = string.Empty, // 调用方回填
+                Alias = r.Alias,
+                SourceTagId = r.SelectedTag!.Id
+            })
+            .ToList();
+        return new TagEditResult(tag, formula, inputs);
+    }
+
+    private static double? ParseDouble(string s)
+        => double.TryParse(s?.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : null;
 }
 
 /// <summary>
@@ -164,4 +300,15 @@ public sealed class GroupRow
             ? $"{Group.Name} — {_taskName}"
             : Group.Name;
     }
+}
+
+/// <summary>
+/// 输入映射行:从表达式提取的别名(只读)+ 用户选的同任务真实 Tag。
+/// </summary>
+public sealed partial class InputBindingRow : ObservableObject
+{
+    public string Alias { get; }
+    [ObservableProperty] private Tag? _selectedTag;
+
+    public InputBindingRow(string alias) => Alias = alias;
 }

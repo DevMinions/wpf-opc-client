@@ -1,5 +1,6 @@
 using Dc.App.ViewModels;
 using Dc.Domain.Entities;
+using Dc.Infrastructure.Orchestration;
 
 namespace Dc.App.Tests.ViewModels;
 
@@ -81,5 +82,152 @@ public class TagEditorViewModelTests
     public void ExtractAliases_ReturnsDedupedOrdered_ExcludingBuiltins(string expr, string[] expected)
     {
         Assert.Equal(expected, TagEditorViewModel.ExtractAliases(expr));
+    }
+
+    private static Tag RealTag(string id, string item, string taskId = "t1", int dataType = 5)
+        => new() { Id = id, Item = item, DataType = dataType, TaskId = taskId, IsVirtual = false };
+
+    [Fact]
+    public void Virtual_ExpressionExtractsInputs_AndToResultBuildsFormula()
+    {
+        var g = Grp("g1", "温度组");
+        var realT = RealTag("rt1", "Random");
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+            taskTags: new[] { realT });
+
+        vm.IsVirtual = true;
+        vm.FormulaName = "Sum";
+        vm.Expression = "T * 2";
+        // 提取出 T 行
+        Assert.Single(vm.InputBindings);
+        Assert.Equal("T", vm.InputBindings[0].Alias);
+        Assert.Null(vm.InputBindings[0].SelectedTag);
+
+        // 选 T
+        vm.InputBindings[0].SelectedTag = realT;
+        var result = vm.ToResult();
+
+        Assert.True(result.Tag.IsVirtual);
+        Assert.Equal("Sum", result.Tag.Item);
+        Assert.NotNull(result.Formula);
+        Assert.Equal("T * 2", result.Formula!.Expression);
+        Assert.Equal("Sum", result.Formula.Name);
+        Assert.Equal(result.Tag.Id, result.Formula.OutputTagId);
+        Assert.Equal("t1", result.Formula.TaskId);
+        Assert.Single(result.Inputs);
+        Assert.Equal("T", result.Inputs[0].Alias);
+        Assert.Equal("rt1", result.Inputs[0].SourceTagId);
+    }
+
+    [Fact]
+    public void Virtual_ExpressionChange_PreservesSelectedKeepsNewNull()
+    {
+        var g = Grp("g1", "温度组");
+        var realT = RealTag("rt1", "Random");
+        var realP = RealTag("rt2", "Counter");
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+            taskTags: new[] { realT, realP });
+
+        vm.IsVirtual = true;
+        vm.Expression = "T";
+        vm.InputBindings[0].SelectedTag = realT;
+
+        vm.Expression = "T + P";
+        Assert.Equal(2, vm.InputBindings.Count);
+        Assert.Equal("T", vm.InputBindings[0].Alias);
+        Assert.Same(realT, vm.InputBindings[0].SelectedTag);   // 保留已选
+        Assert.Equal("P", vm.InputBindings[1].Alias);
+        Assert.Null(vm.InputBindings[1].SelectedTag);           // 新增空
+    }
+
+    private static IFormulaValidator Validator() => new FormulaValidator();
+
+    [Fact]
+    public void Validate_RealTag_BadScaleNumber_HasError()
+    {
+        var g = Grp("g1", "温度组");
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+            formulaValidator: Validator());
+        vm.Item = "x";
+        vm.ScaleFactor = "abc";
+        Assert.Contains(vm.Validate(), e => e.Contains("缩放"));
+    }
+
+    [Fact]
+    public void Validate_RealTag_EmptyScale_NullScale()
+    {
+        var g = Grp("g1", "温度组");
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g);
+        vm.Item = "x";
+        Assert.Null(vm.ToResult().Tag.ScaleFactor);
+    }
+
+    [Fact]
+    public void Validate_Virtual_MissingName_HasError()
+    {
+        var g = Grp("g1", "温度组");
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+            taskTags: new[] { RealTag("rt1", "Random") },
+            formulaValidator: Validator());
+        vm.IsVirtual = true;
+        vm.Expression = "T";
+        Assert.Contains(vm.Validate(), e => e.Contains("公式名"));
+    }
+
+    [Fact]
+    public void Validate_Virtual_DuplicateName_HasError()
+    {
+        var g = Grp("g1", "温度组");
+        var existingVirtual = new Tag { Id = "rv1", Item = "Sum", IsVirtual = true, TaskId = "t1" };
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+            taskTags: new[] { existingVirtual, RealTag("rt1", "Random") },
+            formulaValidator: Validator());
+        vm.IsVirtual = true;
+        vm.FormulaName = "Sum";   // 与已有虚拟同名
+        vm.Expression = "T";
+        vm.InputBindings[0].SelectedTag = RealTag("rt1", "Random");
+        Assert.Contains(vm.Validate(), e => e.Contains("已存在"));
+    }
+
+    [Fact]
+    public void Validate_Virtual_UnselectedInput_HasError()
+    {
+        var g = Grp("g1", "温度组");
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+            taskTags: new[] { RealTag("rt1", "Random") },
+            formulaValidator: Validator());
+        vm.IsVirtual = true;
+        vm.FormulaName = "Doubled";
+        vm.Expression = "T";   // T 行未选
+        Assert.Contains(vm.Validate(), e => e.Contains("未选择输入"));
+    }
+
+    [Fact]
+    public void Validate_Virtual_StringInputTag_HasError()
+    {
+        var g = Grp("g1", "温度组");
+        var strTag = RealTag("rs1", "Name", dataType: 8); // String
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+            taskTags: new[] { strTag },
+            formulaValidator: Validator());
+        vm.IsVirtual = true;
+        vm.FormulaName = "Doubled";
+        vm.Expression = "T";
+        vm.InputBindings[0].SelectedTag = strTag;
+        Assert.Contains(vm.Validate(), e => e.Contains("数值化"));
+    }
+
+    [Fact]
+    public void Validate_Virtual_Valid_NoErrors()
+    {
+        var g = Grp("g1", "温度组");
+        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+            taskTags: new[] { RealTag("rt1", "Random") },
+            formulaValidator: Validator());
+        vm.IsVirtual = true;
+        vm.FormulaName = "Doubled";
+        vm.Expression = "T * 2";
+        vm.InputBindings[0].SelectedTag = RealTag("rt1", "Random");
+        Assert.Empty(vm.Validate());
     }
 }
