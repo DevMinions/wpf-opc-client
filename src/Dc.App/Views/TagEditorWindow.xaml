@@ -52,6 +52,7 @@
                             <Button DockPanel.Dock="Right" Content="浏览…" Width="64" Margin="6,0,0,0"
                                     Command="{Binding BrowseCommand}" IsEnabled="{Binding CanBrowse}" />
                             <TextBox controls:Placeholder.Text="opc 节点 ItemId"
+                                     AutomationProperties.Name="Item"
                                      Text="{Binding Item, UpdateSourceTrigger=PropertyChanged}" />
                         </DockPanel>
                     </Grid>
@@ -65,10 +66,12 @@
                         <TextBlock Grid.Column="0" Text="缩放系数:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <TextBox Grid.Column="1" controls:Placeholder.Text="留空=不缩放"
+                                 AutomationProperties.Name="缩放系数"
                                  Text="{Binding ScaleFactor, UpdateSourceTrigger=PropertyChanged}" />
                         <TextBlock Grid.Column="2" Text="偏移量:" Margin="12,0,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <TextBox Grid.Column="3" controls:Placeholder.Text="留空=不缩放"
+                                 AutomationProperties.Name="偏移量"
                                  Text="{Binding Offset, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Grid Margin="0,0,0,4">
@@ -79,6 +82,7 @@
                         <TextBlock Grid.Column="0" Text="数据类型:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <ComboBox Grid.Column="1"
+                                  AutomationProperties.Name="数据类型"
                                   ItemsSource="{Binding DataTypeOptions}" SelectedItem="{Binding DataType}" />
                     </Grid>
                 </StackPanel>
@@ -93,6 +97,7 @@
                         <TextBlock Grid.Column="0" Text="名称:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <TextBox Grid.Column="1" controls:Placeholder.Text="任务内唯一,作为虚拟测点标识"
+                                 AutomationProperties.Name="公式名称"
                                  Text="{Binding FormulaName, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Grid Margin="0,0,0,8">
@@ -104,6 +109,7 @@
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" Margin="0,6,0,0" />
                         <TextBox Grid.Column="1" MinHeight="56" AcceptsReturn="True" TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
+                                 AutomationProperties.Name="表达式"
                                  controls:Placeholder.Text="如 T * 1.8 + 32"
                                  Text="{Binding Expression, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
@@ -115,6 +121,7 @@
                         <TextBlock Grid.Column="0" Text="输出单位:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <TextBox Grid.Column="1" controls:Placeholder.Text="可选"
+                                 AutomationProperties.Name="输出单位"
                                  Text="{Binding OutputUnit, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <TextBlock Text="输入映射:" Margin="0,4,0,4"
@@ -130,6 +137,7 @@
                                     <TextBlock Grid.Column="0" Text="{Binding Alias}" VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     <ComboBox Grid.Column="1" Margin="6,0,0,0"
+                                              AutomationProperties.Name="{Binding Alias}"
                                               ItemsSource="{Binding DataContext.AvailableInputTags, RelativeSource={RelativeSource AncestorType=views:TagEditorWindow}}"
                                               SelectedItem="{Binding SelectedTag}">
                                         <ComboBox.ItemTemplate>
@@ -154,6 +162,7 @@
                                Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                     <ComboBox Grid.Column="1"
+                              AutomationProperties.Name="所属分组"
                               Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
                               ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding SelectedGroupRow}">
                         <ComboBox.ItemTemplate>
