@@ -1,9 +1,10 @@
 using System.Windows;
+using Dc.App.Services;
 using Dc.App.ViewModels;
 
 namespace Dc.App.Views;
 
-public partial class ConfigEntryEditorWindow : Window
+public partial class ConfigEntryEditorWindow : ModalWindowBase
 {
     public ConfigEntryEditorWindow() => InitializeComponent();
 
@@ -13,7 +14,7 @@ public partial class ConfigEntryEditorWindow : Window
         var errors = vm.Validate();
         if (errors.Count > 0)
         {
-            MessageBox.Show(string.Join("\n", errors), "输入错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageDialog.Show(this, "输入错误", string.Join("\n", errors), MessageDialogKind.Warning);
             return;
         }
         DialogResult = true;

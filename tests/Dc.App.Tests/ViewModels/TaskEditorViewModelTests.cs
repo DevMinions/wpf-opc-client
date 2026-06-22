@@ -108,13 +108,13 @@ public class TaskEditorViewModelTests
     }
 
     [Fact]
-    public void NodeLabel_And_Placeholder_TrackProtocol()
+    public void ServerLabel_And_Placeholder_TrackProtocol()
     {
         var vm = new TaskEditorViewModel();          // Ua
-        Assert.Equal("服务器地址:", vm.NodeLabel);
-        Assert.Contains("opc.tcp", vm.NodePlaceholder);
+        Assert.Equal("服务器:", vm.ServerLabel);
+        Assert.Contains("opc.tcp", vm.ServerPlaceholder);
         vm.Protocol = OpcProtocol.Da;
-        Assert.Equal("节点:", vm.NodeLabel);
-        Assert.DoesNotContain("opc.tcp", vm.NodePlaceholder);
+        Assert.Equal("ProgID:", vm.ServerLabel);
+        Assert.DoesNotContain("opc.tcp", vm.ServerPlaceholder);
     }
 }

@@ -72,6 +72,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         Overview = overview;
         TagsPanel = tagsPanel;
         TagsPanel.IsEmbedded = true;
+        // Tag 面板无分组时,空状态 CTA 请求跳到「分组」页签创建分组。
+        TagsPanel.NavigateToGroupsRequested += () => SelectedTab = "groups";
 
         GroupsPanel = groupsPanel ?? new NullGroupPanel();
         LivePanel = livePanel ?? new NullLivePanel();
@@ -88,6 +90,9 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
                 SelectedTab = "tags";
             }
         };
+        // 分组面板无任务时,空状态 CTA 请求跳到任务列表新建任务。
+        GroupsPanel.NavigateToTasksRequested += () => SelectedTab = "overview";
+        // 任务编辑持久化走 VM(main 的任务 CRUD);PersistEditedAsync 内部已 LoadAsync 刷新列表。
         Config.Edited += async edited => await PersistEditedAsync(edited);
 
         FilteredTasks = CollectionViewSource.GetDefaultView(AllTasks);
@@ -189,14 +194,19 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         var diagnostics = _orch.GetDiagnostics();
         var diagByTask = diagnostics.ToDictionary(d => d.TaskId, StringComparer.Ordinal);
 
+        // 任务列表 badge 用「已配置 Tag 数」(DB 口径,与运行状态无关)——
+        // 此前用诊断的 SubscribedTagCount,但诊断只对运行中任务存在,导致已停止但已配置 Tag 的任务
+        // 误显「未配置 Tag」。rate/s 仍取诊断(停止时自然 0)。
+        var configuredTagCounts = await _source.GetConfiguredTagCountsAsync(tasks.Select(t => t.Id).ToList());
+
         AllTasks.Clear();
         foreach (var t in tasks)
         {
-            var name = string.IsNullOrWhiteSpace(t.Server) ? t.Id : t.Server;
-            var row = new TaskMasterRow(t.Id, name, ProtocolLabel(t.Type))
+            // 任务可读名:统一用 CollectorTask.DisplayName(Name → Server → Id)。
+            var row = new TaskMasterRow(t.Id, t.DisplayName, ProtocolLabel(t.Type))
             {
                 IsRunning = running.Contains(t.Id),
-                TagCount = diagByTask.TryGetValue(t.Id, out var d) ? d.SubscribedTagCount : 0
+                TagCount = configuredTagCounts.TryGetValue(t.Id, out var c) ? c : 0
             };
             AllTasks.Add(row);
         }
@@ -235,11 +245,12 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     public async Task StartSelectedAsync()
     {
         if (SelectedTask is null || _orchestrator is null) return;
-        var (task, tags) = await _source.GetTaskWithTagsAsync(SelectedTask.TaskId);
+        var (task, _, formulas) = await _source.GetTaskWithTagsAsync(SelectedTask.TaskId);
         if (task is null) return;
 
-        // 映射口径与无头 Cli 共用（DbTaskLauncher 单一来源），tags 为本处单独加载的。
-        var req = DbTaskLauncher.ToStartRequest(task, tags);
+        // 映射口径与无头 Cli 共用（DbTaskLauncher 单一来源）：用带公式的重载，
+        // 内部 MapRealTags 过滤虚拟 Tag 不进订阅器 + BuildTransformConfig 让缩放/公式生效。
+        var req = DbTaskLauncher.ToStartRequest(task, formulas);
 
         try
         {
@@ -340,6 +351,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         }
         public Dc.Domain.Entities.Group? SelectedGroup => null;
         public Task LoadAsync() => Task.CompletedTask;
+        public event Action? NavigateToTasksRequested;
     }
 
     private sealed class NullLivePanel : IEmbeddableLivePanel

@@ -283,18 +283,6 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         StatusMessage = "已断开";
     }
 
-    [RelayCommand(CanExecute = nameof(CanCopy))]
-    private void AddTag()
-    {
-        if (SelectedNode is null) return;
-        try
-        {
-            System.Windows.Clipboard.SetText(SelectedNode.Node.Id);
-            StatusMessage = $"NodeId 已复制到剪贴板，请在 Tag 管理中新建并粘贴 Item: {SelectedNode.Node.Id}";
-        }
-        catch (Exception ex) { StatusMessage = $"操作失败: {ex.Message}"; }
-    }
-
     partial void OnSelectedNodeChanged(BrowseNodeRowViewModel? value)
     {
         DrillDownCommand.NotifyCanExecuteChanged();

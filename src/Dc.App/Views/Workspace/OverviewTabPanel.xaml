@@ -12,7 +12,7 @@
                 <TextBlock Text="累计消息" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>
             <Border Style="{StaticResource DcCard}" Margin="3,0,3,6"><StackPanel>
                 <TextBlock Text="{Binding SubscribedTags}" FontSize="20" FontWeight="SemiBold" />
-                <TextBlock Text="订阅 Tag" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>
+                <TextBlock Text="运行订阅" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>
             <Border Style="{StaticResource DcCard}" Margin="6,0,0,6"><StackPanel>
                 <TextBlock Text="{Binding ErrorCount}" FontSize="20" FontWeight="SemiBold" />
                 <TextBlock Text="发送错误" FontSize="11" Style="{StaticResource DcMuted}" /></StackPanel></Border>

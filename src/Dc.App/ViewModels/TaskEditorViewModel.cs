@@ -16,6 +16,9 @@ public partial class TaskEditorViewModel : ObservableValidator
 
     [ObservableProperty] private string _title;
 
+    // 用户可读名称(可选)。为空时列表回落 Server(UA 是整条 URL 被截断,故鼓励填短名)。
+    [ObservableProperty] private string _name = string.Empty;
+
     [ObservableProperty]
     [NotifyDataErrorInfo]
     [Required(AllowEmptyStrings = false, ErrorMessage = "服务器不能为空")]
@@ -57,9 +60,17 @@ public partial class TaskEditorViewModel : ObservableValidator
     public bool IsDaProtocol => Protocol == OpcProtocol.Da;
     // DA 和 AE 都走 classic OPC（DCOM/COM），扫描发现 + CLSID 兜底 UI 两者共用
     public bool IsClassicOpcProtocol => Protocol == OpcProtocol.Da || Protocol == OpcProtocol.Ae;
-    // UA 下节点即服务器地址，显示标签和占位符随协议切换
-    public string NodeLabel => IsUaProtocol ? "服务器地址:" : "节点:";
-    public string NodePlaceholder => IsUaProtocol ? "opc.tcp://host:port/path" : "主机名或 IP";
+
+    // 「服务器」字段一词多义：classic OPC 填 ProgID，UA 填 opc.tcp:// URL。按协议切换标签/占位/提示，
+    // 避免一个 placeholder 自己写「DA: ProgID / UA: opc.tcp://…」让用户两边猜。
+    public string ServerLabel => IsClassicOpcProtocol ? "ProgID:" : "服务器:";
+    public string ServerPlaceholder => IsClassicOpcProtocol ? "如 SampleCompany.DaSample" : "opc.tcp://host:port";
+    public string ServerToolTip => IsClassicOpcProtocol
+        ? "OPC ProgID — DA 例: SampleCompany.DaSample；AE 例: SampleCompany.AeSample"
+        : "UA 端点 URL，须以 opc.tcp:// 开头";
+    // UA 不读 Node（启动时用 Server 字段的 opc.tcp URL，见 DbTaskLauncher.ToStartRequest），
+    // 死区对 UA 订阅协议错配——两者仅 classic OPC 需要，UA 时隐藏。
+    public bool ShowClassicOnlyFields => IsClassicOpcProtocol;
     public string? OriginalId { get; }
 
     // Ua 优先（默认协议），与浏览节点默认一致
@@ -85,6 +96,7 @@ public partial class TaskEditorViewModel : ObservableValidator
         {
             _title = "编辑任务";
             OriginalId = existing.Id;
+            _name = existing.Name ?? string.Empty;
             _server = existing.Server;
             _node = existing.Node;
             _clsid = existing.Clsid ?? string.Empty;
@@ -111,9 +123,13 @@ public partial class TaskEditorViewModel : ObservableValidator
         OnPropertyChanged(nameof(IsUaProtocol));
         OnPropertyChanged(nameof(IsDaProtocol));
         OnPropertyChanged(nameof(IsClassicOpcProtocol));
-        OnPropertyChanged(nameof(NodeLabel));
-        OnPropertyChanged(nameof(NodePlaceholder));
-        if (IsUaProtocol) Server = Node;
+        OnPropertyChanged(nameof(ServerLabel));
+        OnPropertyChanged(nameof(ServerPlaceholder));
+        OnPropertyChanged(nameof(ServerToolTip));
+        OnPropertyChanged(nameof(ShowClassicOnlyFields));
+        // 切协议后服务器可能不再符合新协议的格式（如 UA 切 DA 后 opc.tcp:// 串无意义），
+        // 重跑校验刷新 CanSave/红框。
+        ValidateAllProperties();
     }
 
     // 与 BrowseViewModel 同套逻辑：用 LocalPath 防 {} 被编码成 %7B/%7D，再按 '/' 拆出 progId 与 clsid
@@ -176,20 +192,30 @@ public partial class TaskEditorViewModel : ObservableValidator
         }
     }
 
-    // 保存时点的兜底校验：单一来源 = 字段上的校验特性（避免规则两处维护）。
+    // 保存时点的兜底校验：字段校验特性 + 协议相关的 opc.tcp 前缀检查（属性特性无法表达条件校验）。
     public IReadOnlyList<string> Validate()
     {
         ValidateAllProperties();
-        return GetErrors()
+        var errors = GetErrors()
             .Select(e => e.ErrorMessage ?? string.Empty)
             .Where(m => m.Length > 0)
             .Distinct()
             .ToList();
+
+        // UA 服务器须为 opc.tcp:// 端点 URL；classic OPC 此字段是 ProgID，不校验前缀。
+        if (Protocol == OpcProtocol.Ua
+            && !string.IsNullOrWhiteSpace(Server)
+            && !Server.TrimStart().StartsWith("opc.tcp://", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add("UA 服务器须以 opc.tcp:// 开头");
+        }
+        return errors;
     }
 
     public CollectorTask ToEntity() => new()
     {
         Id = OriginalId ?? string.Empty,
+        Name = string.IsNullOrWhiteSpace(Name) ? null : Name.Trim(),
         Server = Server.Trim(),
         Node = Node.Trim(),
         Clsid = string.IsNullOrWhiteSpace(Clsid) ? null : Clsid.Trim(),

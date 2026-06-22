@@ -16,11 +16,13 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         public required CancellationTokenSource Cts { get; set; }
         public required Task PipelineTask { get; set; }
         public required Dictionary<string, TagDescriptor> Tags { get; init; }
+        public required ITagValueTransform Transform { get; init; }
         public DateTimeOffset LastHeartbeat { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset StartedAt { get; init; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? LastValueAt { get; set; }
         public long ValueCount;
         public long PublishErrorCount;
+        public long PublishSuccessCount;
         public int RestartCount { get; set; }
         public ConnectionState State { get; set; } = ConnectionState.Connecting;
         public int ConsecutiveStaleRestarts { get; set; }
@@ -31,6 +33,7 @@ public sealed class TaskOrchestrator : IAsyncDisposable
     private readonly IPublisherFactory _publisherFactory;
     private readonly OrchestratorOptions _options;
     private readonly ILogger<TaskOrchestrator>? _logger;
+    private readonly ITagValueTransformFactory? _transformFactory;
     private readonly ConcurrentDictionary<string, TaskRuntime> _running = new();
     private readonly SemaphoreSlim _mutationLock = new(1, 1);
     private readonly CancellationTokenSource _hostCts = new();
@@ -47,12 +50,14 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         IEnumerable<IOpcSubscriberFactory> factories,
         IPublisherFactory publisherFactory,
         OrchestratorOptions? options = null,
-        ILogger<TaskOrchestrator>? logger = null)
+        ILogger<TaskOrchestrator>? logger = null,
+        ITagValueTransformFactory? transformFactory = null)
     {
         _factories = factories.ToDictionary(f => f.Protocol);
         _publisherFactory = publisherFactory;
         _options = options ?? new OrchestratorOptions();
         _logger = logger;
+        _transformFactory = transformFactory;
         _watchdogTask = Task.Run(WatchdogLoopAsync);
     }
 
@@ -97,7 +102,8 @@ public sealed class TaskOrchestrator : IAsyncDisposable
                 rt.Tags.Count,
                 health?.PendingBytes ?? 0,
                 health?.DroppedFrameCount ?? 0,
-                rt.State);
+                rt.State,
+                Interlocked.Read(ref rt.PublishSuccessCount));
         }).ToArray();
     }
 
@@ -152,6 +158,7 @@ public sealed class TaskOrchestrator : IAsyncDisposable
             if (added.Length == 0) return true;
             await rt.Subscriber.SubscribeAsync(added, ct).ConfigureAwait(false);
             foreach (var t in added) rt.Tags[t.Item] = t;
+            rt.Transform.OnTagsAdded(added);
             return true;
         }
         finally
@@ -169,7 +176,9 @@ public sealed class TaskOrchestrator : IAsyncDisposable
             if (!_running.TryGetValue(taskId, out var rt)) return false;
             var present = tagItems.Where(rt.Tags.ContainsKey).ToArray();
             if (present.Length == 0) return true;
+            var presentDescs = present.Select(i => rt.Tags[i]).ToArray();
             await rt.Subscriber.UnsubscribeAsync(present, ct).ConfigureAwait(false);
+            rt.Transform.OnTagsRemoved(presentDescs);
             foreach (var item in present) rt.Tags.Remove(item);
             return true;
         }
@@ -181,6 +190,11 @@ public sealed class TaskOrchestrator : IAsyncDisposable
 
     private async Task StartUnlockedAsync(TaskStartRequest request, IOpcSubscriberFactory factory, CancellationToken ct)
     {
+        ITagValueTransform transform =
+            (request.TransformConfig is not null && _transformFactory is not null)
+                ? _transformFactory.Create(request.TaskId, request.TransformConfig)
+                : NoOpTransform.Instance;
+
         var subscriber = factory.Create(request.TaskId, request.OpcOptions);
         var publisher = _publisherFactory.Create(request.PublisherAddress);
         var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostCts.Token);
@@ -194,6 +208,7 @@ public sealed class TaskOrchestrator : IAsyncDisposable
             Cts = cts,
             PipelineTask = Task.CompletedTask,
             Tags = request.Tags.ToDictionary(t => t.Item),
+            Transform = transform,
             State = ConnectionState.Connecting
         };
         _running[request.TaskId] = runtime; // 先入运行集 → GetDiagnostics 立即可见「连接中」
@@ -251,10 +266,15 @@ public sealed class TaskOrchestrator : IAsyncDisposable
         {
             Interlocked.Increment(ref rt.ValueCount);
             rt.LastValueAt = DateTimeOffset.UtcNow;
-            TagValueReceived?.Invoke(rt.TaskId, v);
-            try { await rt.Publisher.PublishAsync(v, ct).ConfigureAwait(false); }
-            catch (OperationCanceledException) { throw; } // 正常停止/重启，不计为发布错误
-            catch { Interlocked.Increment(ref rt.PublishErrorCount); }
+            var outputs = rt.Transform.Apply(v);
+            foreach (var o in outputs)
+            {
+                TagValueReceived?.Invoke(rt.TaskId, o);
+                try { await rt.Publisher.PublishAsync(o, ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { throw; } // 正常停止/重启，不计为发布错误
+                catch { Interlocked.Increment(ref rt.PublishErrorCount); continue; }
+                Interlocked.Increment(ref rt.PublishSuccessCount);
+            }
         }, ct);
 
         var heartTask = ConsumeAsync(rt.Subscriber.Heartbeats, h =>

@@ -11,6 +11,8 @@ public class DcDbContext : DbContext
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<CollectorTask> Tasks => Set<CollectorTask>();
     public DbSet<ConfigEntry> Configs => Set<ConfigEntry>();
+    public DbSet<Formula> Formulas => Set<Formula>();
+    public DbSet<FormulaInput> FormulaInputs => Set<FormulaInput>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,6 +38,21 @@ public class DcDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasMany(x => x.Groups).WithOne().HasForeignKey(g => g.TaskId).OnDelete(DeleteBehavior.NoAction);
             e.HasMany(x => x.Tags).WithOne().HasForeignKey(t => t.TaskId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<Formula>(e =>
+        {
+            e.ToTable("dc_formulas");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.TaskId, x.Name }).IsUnique().HasDatabaseName("udx_formula_name");
+            e.HasMany(x => x.Inputs).WithOne().HasForeignKey(i => i.FormulaId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FormulaInput>(e =>
+        {
+            e.ToTable("dc_formula_inputs");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.FormulaId, x.Alias }).IsUnique().HasDatabaseName("udx_formula_input_alias");
         });
 
         modelBuilder.Entity<ConfigEntry>(e =>

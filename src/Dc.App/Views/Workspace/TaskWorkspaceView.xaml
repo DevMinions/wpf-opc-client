@@ -119,9 +119,39 @@
                                 <TextBlock Text="{Binding Name}" FontSize="13"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                             </StackPanel>
-                             <TextBlock FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="16,2,0,0">
-                                 <Run Text="{Binding Protocol, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TagCount, Mode=OneWay}" /><Run Text=" tag" /><Run Text=" · " /><Run Text="{Binding RatePerSecond, Mode=OneWay, StringFormat={}{0:F0}}" /><Run Text="/s" />
-                             </TextBlock>
+                             <StackPanel Orientation="Horizontal" Margin="16,2,0,0">
+                                 <TextBlock FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                                     <Run Text="{Binding Protocol, Mode=OneWay}" /><Run Text=" · " />
+                                 </TextBlock>
+                                 <!-- TagCount>0:显「N tag」。速率留给概览 tab 的 sparkline(列表 rate 从未赋值,是死值)。 -->
+                                 <TextBlock FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                                     <Run Text="{Binding TagCount, Mode=OneWay}" /><Run Text=" tag" />
+                                     <TextBlock.Style>
+                                         <Style TargetType="TextBlock">
+                                             <Setter Property="Visibility" Value="Visible" />
+                                             <Style.Triggers>
+                                                 <DataTrigger Binding="{Binding TagCount}" Value="0">
+                                                     <Setter Property="Visibility" Value="Collapsed" />
+                                                 </DataTrigger>
+                                             </Style.Triggers>
+                                         </Style>
+                                     </TextBlock.Style>
+                                 </TextBlock>
+                                 <!-- TagCount==0:显示「未配置 Tag」警示,避免「0/s」被误读为采集器坏 -->
+                                 <TextBlock FontSize="10" Text="未配置 Tag" Margin="0,0,0,0"
+                                            Foreground="{DynamicResource SystemFillColorCautionBrush}">
+                                     <TextBlock.Style>
+                                         <Style TargetType="TextBlock">
+                                             <Setter Property="Visibility" Value="Collapsed" />
+                                             <Style.Triggers>
+                                                 <DataTrigger Binding="{Binding TagCount}" Value="0">
+                                                     <Setter Property="Visibility" Value="Visible" />
+                                                 </DataTrigger>
+                                             </Style.Triggers>
+                                         </Style>
+                                     </TextBlock.Style>
+                                 </TextBlock>
+                             </StackPanel>
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

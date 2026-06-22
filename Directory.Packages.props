@@ -18,6 +18,7 @@
     <PackageVersion Include="H.NotifyIcon.Wpf" Version="2.2.0" />
     <PackageVersion Include="WPF-UI" Version="3.0.5" />
     <PackageVersion Include="ClosedXML" Version="0.104.2" />
+    <PackageVersion Include="DynamicExpresso.Core" Version="2.17.2" />
     <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.5.374.158" />
     <PackageVersion Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.5.374.158" />
     <PackageVersion Include="EFCore.NamingConventions" Version="8.0.3" />

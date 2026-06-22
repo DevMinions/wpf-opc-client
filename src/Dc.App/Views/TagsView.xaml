@@ -73,7 +73,7 @@
                              Command="{Binding LoadCommand}" />
                 </StackPanel>
 
-                <!-- Action buttons (always shown) -->
+                <!-- Action buttons:新建/导入/导出。编辑=双击行、删除=选中行按 Del,不再占工具栏。 -->
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
                     <Button Content="新建"
                             Command="{Binding NewCommand}"
@@ -85,48 +85,49 @@
                             Margin="0,0,6,0" />
                     <Button Content="导出"
                             Command="{Binding ExportCommand}"
-                            Style="{StaticResource DcBtnGhostSm}"
-                            Margin="0,0,6,0" />
-                    <Button Content="编辑"
-                            Command="{Binding EditCommand}"
-                            Style="{StaticResource DcBtnGhostSm}"
-                            Margin="0,0,6,0" />
-                    <Button Content="删除"
-                            Command="{Binding DeleteCommand}"
                             Style="{StaticResource DcBtnGhostSm}" />
                 </StackPanel>
             </DockPanel>
         </Border>
 
-        <!-- Data table -->
-        <DataGrid Grid.Row="1"
-                  ItemsSource="{Binding Tags}"
-                  SelectedItem="{Binding SelectedTag, Mode=TwoWay}"
-                  Style="{StaticResource DcDataGrid}"
-                  RowStyle="{StaticResource DcDataGridRow}"
-                  ColumnHeaderStyle="{StaticResource DcDataGridColumnHeader}"
-                  RowHeight="36"
-                  ColumnHeaderHeight="36">
-            <DataGrid.InputBindings>
-                <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding EditCommand}" />
-                <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
-            </DataGrid.InputBindings>
-             <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="200" />
-                <DataGridTextColumn Header="Item" Binding="{Binding Item}" Width="260">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="FontFamily" Value="Consolas, Cascadia Code, monospace" />
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-                <DataGridTextColumn Header="数据类型" Binding="{Binding DataType}" Width="80" />
-                <DataGridTextColumn Header="分组" Binding="{Binding GroupId}" Width="180" />
-                <DataGridTextColumn Header="任务" Binding="{Binding TaskId}" Width="180" />
-                <DataGridTextColumn Header="创建时间"
-                                    Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"
-                                    Width="160" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- Data table (wrapped in Grid for EmptyState overlay) -->
+        <Grid Grid.Row="1">
+            <DataGrid ItemsSource="{Binding Tags}"
+                      SelectedItem="{Binding SelectedTag, Mode=TwoWay}"
+                      Style="{StaticResource DcDataGrid}"
+                      RowStyle="{StaticResource DcDataGridRow}"
+                      ColumnHeaderStyle="{StaticResource DcDataGridColumnHeader}"
+                      RowHeight="36"
+                      ColumnHeaderHeight="36">
+                <DataGrid.InputBindings>
+                    <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding EditCommand}" />
+                    <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
+                </DataGrid.InputBindings>
+                 <DataGrid.Columns>
+                    <DataGridTextColumn Header="Item" Binding="{Binding Item}" Width="300">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontFamily" Value="Consolas, Cascadia Code, monospace" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="数据类型" Binding="{Binding DataType}" Width="80" />
+                    <DataGridTextColumn Header="分组" Binding="{Binding GroupName}" Width="180" />
+                    <DataGridTextColumn Header="任务" Binding="{Binding TaskName}" Width="180" />
+                    <DataGridTextColumn Header="创建时间"
+                                        Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"
+                                        Width="160" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- 无分组空状态:Tag 必须挂分组下,无分组时引导先创建分组,而非让「新建」弹阻塞框挡死。 -->
+            <controls:EmptyState
+                Icon="TagMultiple24"
+                Title="无分组,无法新建 Tag"
+                Hint="Tag 必须挂在分组下。请先创建分组,再回来新建 Tag。"
+                ActionText="{Binding CreateGroupCtaText}"
+                ActionCommand="{Binding GoCreateGroupCommand}"
+                Visibility="{Binding AvailableGroups.Count, Converter={StaticResource CountToVis}}" />
+        </Grid>
     </Grid>
 </UserControl>

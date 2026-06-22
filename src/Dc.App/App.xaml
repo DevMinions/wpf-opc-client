@@ -19,6 +19,7 @@
             </ResourceDictionary.MergedDictionaries>
 
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <conv:InverseBooleanToVisibilityConverter x:Key="BoolToVisInverse" />
             <conv:CountToVisibilityConverter x:Key="CountToVis" />
 
             <DataTemplate DataType="{x:Type vmDash:DashboardViewModel}">

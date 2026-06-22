@@ -148,4 +148,38 @@ public class DcDbContextTests : IDisposable
 
         await Assert.ThrowsAsync<DbUpdateException>(() => _db.SaveChangesAsync());
     }
+
+    [Fact]
+    public async Task Formula_And_Inputs_Roundtrip()
+    {
+        var tag = new Tag { Id = "tag1", Item = "ns=2;s=T", DataType = 6, TaskId = "t1", GroupId = "g1", IsVirtual = false, ScaleFactor = 0.1, Offset = -5 };
+        _db.Tags.Add(tag);
+
+        var virt = new Tag { Id = "vtag1", Item = "补偿流量", DataType = 6, TaskId = "t1", GroupId = "g1", IsVirtual = true };
+        _db.Tags.Add(virt);
+
+        var f = new Formula { Id = "f1", Name = "补偿流量", Expression = "T * 1.8 + 32", OutputTagId = "vtag1", OutputUnit = "F", TaskId = "t1" };
+        f.Inputs = new List<FormulaInput>
+        {
+            new() { Id = "fi1", FormulaId = "f1", Alias = "T", SourceTagId = "tag1" }
+        };
+        _db.Formulas.Add(f);
+        await _db.SaveChangesAsync();
+
+        await using var db2 = new DcDbContext(DcDbContextFactory.CreateOptions(_dbPath));
+        var loaded = await db2.Formulas.Include(x => x.Inputs).SingleAsync(x => x.Id == "f1");
+        Assert.Equal("T * 1.8 + 32", loaded.Expression);
+        Assert.Equal("vtag1", loaded.OutputTagId);
+        Assert.Single(loaded.Inputs);
+        Assert.Equal("T", loaded.Inputs[0].Alias);
+        Assert.Equal("tag1", loaded.Inputs[0].SourceTagId);
+
+        var tagBack = await db2.Tags.SingleAsync(x => x.Id == "tag1");
+        Assert.Equal(0.1, tagBack.ScaleFactor);
+        Assert.Equal(-5, tagBack.Offset);
+        Assert.False(tagBack.IsVirtual);
+
+        var virtBack = await db2.Tags.SingleAsync(x => x.Id == "vtag1");
+        Assert.True(virtBack.IsVirtual);
+    }
 }

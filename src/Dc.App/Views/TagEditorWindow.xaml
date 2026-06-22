@@ -1,22 +1,20 @@
-<Window x:Class="Dc.App.Views.TagEditorWindow"
+<views:ModalWindowBase x:Class="Dc.App.Views.TagEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:views="clr-namespace:Dc.App.Views"
         xmlns:controls="clr-namespace:Dc.App.Controls"
-        Title="{Binding Title}" Height="300" Width="460"
-        WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
-        WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent">
-    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-            BorderThickness="1" CornerRadius="12"
-            Margin="12">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.18" Direction="270" />
-        </Border.Effect>
-        <DockPanel>
+        Title="{Binding Title}">
+    <Grid Background="#80000000">
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+            <Border Background="{DynamicResource ApplicationBackgroundBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="12"
+                    Width="520">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.28" Direction="270" />
+                </Border.Effect>
+                <DockPanel>
             <Border DockPanel.Dock="Top" Padding="16,14"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="0,0,0,1">
@@ -37,47 +35,146 @@
                 </StackPanel>
             </Border>
             <StackPanel Margin="20,18">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
+                <!-- 虚拟开关(所有模式可见) -->
+                <CheckBox Content="虚拟测点(公式计算)" Margin="0,0,0,12"
+                          IsChecked="{Binding IsVirtual}" />
+
+                <!-- 真实面板:缩放字段 -->
+                <StackPanel Visibility="{Binding IsVirtual, Converter={StaticResource BoolToVisInverse}}">
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Item:"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        <DockPanel Grid.Column="1">
+                            <Button DockPanel.Dock="Right" Content="浏览…" Width="64" Margin="6,0,0,0"
+                                    Command="{Binding BrowseCommand}" IsEnabled="{Binding CanBrowse}" />
+                            <TextBox controls:Placeholder.Text="opc 节点 ItemId"
+                                     AutomationProperties.Name="Item"
+                                     Text="{Binding Item, UpdateSourceTrigger=PropertyChanged}" />
+                        </DockPanel>
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="缩放系数:"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" controls:Placeholder.Text="留空=不缩放"
+                                 AutomationProperties.Name="缩放系数"
+                                 Text="{Binding ScaleFactor, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Grid.Column="2" Text="偏移量:" Margin="12,0,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="3" controls:Placeholder.Text="留空=不缩放"
+                                 AutomationProperties.Name="偏移量"
+                                 Text="{Binding Offset, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="数据类型:"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="1"
+                                  AutomationProperties.Name="数据类型"
+                                  ItemsSource="{Binding DataTypeOptions}" SelectedItem="{Binding DataType}" />
+                    </Grid>
+                </StackPanel>
+
+                <!-- 虚拟面板:公式字段 + 输入映射 -->
+                <StackPanel Visibility="{Binding IsVirtual, Converter={StaticResource BoolToVis}}">
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="名称:"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" controls:Placeholder.Text="任务内唯一,作为虚拟测点标识"
+                                 AutomationProperties.Name="公式名称"
+                                 Text="{Binding FormulaName, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="表达式:"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" Margin="0,6,0,0" />
+                        <TextBox Grid.Column="1" MinHeight="56" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 AutomationProperties.Name="表达式"
+                                 controls:Placeholder.Text="如 T * 1.8 + 32"
+                                 Text="{Binding Expression, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="输出单位:"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" controls:Placeholder.Text="可选"
+                                 AutomationProperties.Name="输出单位"
+                                 Text="{Binding OutputUnit, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+                    <TextBlock Text="输入映射:" Margin="0,4,0,4"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ItemsControl ItemsSource="{Binding InputBindings}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Alias}" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <ComboBox Grid.Column="1" Margin="6,0,0,0"
+                                              AutomationProperties.Name="{Binding Alias}"
+                                              ItemsSource="{Binding DataContext.AvailableInputTags, RelativeSource={RelativeSource AncestorType=views:TagEditorWindow}}"
+                                              SelectedItem="{Binding SelectedTag}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Item}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- 分组选择器(两种模式共享) -->
+                <Grid Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="96" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Item:"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                    <DockPanel Grid.Row="0" Grid.Column="1">
-                        <Button DockPanel.Dock="Right" Content="浏览…" Width="64" Margin="6,0,0,0"
-                                Command="{Binding BrowseCommand}" IsEnabled="{Binding CanBrowse}" />
-                        <TextBox controls:Placeholder.Text="opc 节点 ItemId"
-                                 Text="{Binding Item, UpdateSourceTrigger=PropertyChanged}" />
-                    </DockPanel>
-
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="数据类型:"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                    <ComboBox Grid.Row="1" Grid.Column="1"
-                              ItemsSource="{Binding DataTypeOptions}" SelectedItem="{Binding DataType}" />
-
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="所属分组:"
+                    <TextBlock Grid.Column="0" Text="所属分组:"
                                Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                    <ComboBox Grid.Row="2" Grid.Column="1"
+                    <ComboBox Grid.Column="1"
+                              AutomationProperties.Name="所属分组"
                               Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
-                              ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding Group}">
+                              ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding SelectedGroupRow}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock>
-                                    <Run Text="{Binding Name}" /><Run Text=" — " /><Run Text="{Binding TaskId}" />
-                                </TextBlock>
+                                <TextBlock Text="{Binding Display}" />
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
                 </Grid>
             </StackPanel>
         </DockPanel>
-    </Border>
-</Window>
+            </Border>
+        </Grid>
+    </Grid>
+</views:ModalWindowBase>

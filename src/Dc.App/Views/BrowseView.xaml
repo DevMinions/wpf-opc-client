@@ -297,15 +297,12 @@
                     <TextBlock Text="{Binding SelectedNodeValue}"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
 
-                    <!-- Action buttons -->
+                    <!-- Action buttons: 仅保留「复制 NodeId」。新建 Tag 的入口在 Tag 编辑器的「浏览…」按钮,
+                         那里会预填 Item 并真正落库;此处再加一个只复制 NodeId 的「加入 Tag」属重复误导。 -->
                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                         <Button Content="复制 NodeId"
                                 Command="{Binding CopyNodeIdCommand}"
-                                Style="{StaticResource DcBtnPrimarySm}"
-                                Margin="0,0,8,0" />
-                        <Button Content="加入 Tag"
-                                Command="{Binding AddTagCommand}"
-                                Style="{StaticResource DcBtnGhostSm}" />
+                                Style="{StaticResource DcBtnPrimarySm}" />
                     </StackPanel>
                 </StackPanel>
             </Border>

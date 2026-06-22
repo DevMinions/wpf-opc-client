@@ -27,6 +27,27 @@ public class TaskOrchestratorTests
             tags.Length == 0 ? Array.Empty<TagDescriptor>() : tags);
     }
 
+    private static TaskStartRequest RequestWithTransform(
+        string taskId, TransformConfig cfg, params TagDescriptor[] tags) =>
+        new(taskId, OpcProtocol.Da,
+            new OpcConnectionOptions { ServerUri = "opc.tcp://localhost:4840" },
+            "127.0.0.1:5000",
+            tags.Length == 0 ? Array.Empty<TagDescriptor>() : tags,
+            cfg);
+
+    private static TaskOrchestrator BuildWithTransformFactory(
+        out FakeOpcSubscriberFactory daFactory, out FakePublisherFactory pubFactory)
+    {
+        daFactory = new FakeOpcSubscriberFactory(OpcProtocol.Da);
+        pubFactory = new FakePublisherFactory();
+        return new TaskOrchestrator(
+            new[] { (IOpcSubscriberFactory)daFactory },
+            pubFactory,
+            options: null,
+            logger: null,
+            transformFactory: new TagValueTransformFactory());
+    }
+
     [Fact]
     public async Task StartAsync_CreatesSubscriberAndPublisher_SubscribesAllTags()
     {
@@ -60,6 +81,96 @@ public class TaskOrchestratorTests
 
         await WaitForAsync(() => pub.Published.Count >= 1);
         Assert.Equal(v, pub.Published.First());
+    }
+
+    [Fact]
+    public async Task StartAsync_WithScale_PublishesEngineeringValue()
+    {
+        await using var orch = BuildWithTransformFactory(out var daFactory, out var pubFactory);
+
+        var cfg = new TransformConfig(
+            new Dictionary<string, ScaleConfig> { ["t1"] = new(0.1, 0) },
+            new Dictionary<string, string> { ["t1"] = "A" },
+            Array.Empty<FormulaConfig>());
+        await orch.StartAsync(RequestWithTransform("t1", cfg, new TagDescriptor("t1", "A", 6)));
+        var sub = daFactory.Created.First();
+        var pub = pubFactory.Created.First().Publisher;
+
+        sub.EmitValue(new TagValue("A", 255.0, 0xC0, DateTimeOffset.UtcNow));
+
+        await WaitForAsync(() => pub.Published.Count >= 1);
+        var published = Assert.IsType<TagValue>(pub.Published.First());
+        Assert.Equal(25.5, published.Value);
+    }
+
+    [Fact]
+    public async Task StartAsync_InvalidFormula_ThrowsWithoutAllocatingSubscriberOrPublisher()
+    {
+        await using var orch = BuildWithTransformFactory(out var daFactory, out var pubFactory);
+
+        var cfg = new TransformConfig(
+            new Dictionary<string, ScaleConfig> { ["t1"] = new(null, null) },
+            new Dictionary<string, string> { ["t1"] = "A" },
+            new[] { new FormulaConfig("f1", "OUT", "A +", new[] { new FormulaInputConfig("A", "t1") }) });
+
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            orch.StartAsync(RequestWithTransform("t1", cfg, new TagDescriptor("t1", "A", 5))));
+
+        Assert.Empty(daFactory.Created);
+        Assert.Empty(pubFactory.Created);
+        Assert.DoesNotContain("t1", orch.RunningTaskIds);
+    }
+
+    [Fact]
+    public async Task StartAsync_VirtualTagNotInSubscriberList()
+    {
+        await using var orch = BuildWithTransformFactory(out var daFactory, out var pubFactory);
+
+        var cfg = new TransformConfig(
+            new Dictionary<string, ScaleConfig> { ["t1"] = new(null, null) },
+            new Dictionary<string, string> { ["t1"] = "A" },
+            new[] { new FormulaConfig("f1", "OUT", "A*2", new[] { new FormulaInputConfig("A", "t1") }) });
+        await orch.StartAsync(RequestWithTransform("t1", cfg, new TagDescriptor("t1", "A", 6)));
+        var sub = daFactory.Created.First();
+        var pub = pubFactory.Created.First().Publisher;
+
+        Assert.Single(sub.Subscribed);
+        Assert.Equal("A", sub.Subscribed[0].Item);
+
+        sub.EmitValue(new TagValue("A", 10.0, 0xC0, DateTimeOffset.UtcNow));
+        await WaitForAsync(() => pub.Published.Count >= 2);
+        var published = pub.Published.OfType<TagValue>().ToArray();
+        Assert.Contains(published, v => v.Item == "A" && (double)v.Value! == 10.0);
+        Assert.Contains(published, v => v.Item == "OUT" && (double)v.Value! == 20.0);
+    }
+
+    [Fact]
+    public async Task RemoveTagsAsync_StopsVirtualOutput_WhenInputRemoved()
+    {
+        await using var orch = BuildWithTransformFactory(out var daFactory, out var pubFactory);
+
+        var cfg = new TransformConfig(
+            new Dictionary<string, ScaleConfig> { ["t1"] = new(null, null), ["t2"] = new(null, null) },
+            new Dictionary<string, string> { ["t1"] = "A", ["t2"] = "B" },
+            new[] { new FormulaConfig("f1", "OUT", "A+B",
+                new[] { new FormulaInputConfig("A", "t1"), new FormulaInputConfig("B", "t2") }) });
+        await orch.StartAsync(RequestWithTransform("t1", cfg,
+            new TagDescriptor("t1", "A", 6), new TagDescriptor("t2", "B", 6)));
+        var sub = daFactory.Created.First();
+        var pub = pubFactory.Created.First().Publisher;
+
+        sub.EmitValue(new TagValue("A", 1.0, 0xC0, DateTimeOffset.UtcNow));
+        sub.EmitValue(new TagValue("B", 2.0, 0xC0, DateTimeOffset.UtcNow));
+        await WaitForAsync(() => pub.Published.OfType<TagValue>().Any(v => v.Item == "OUT"));
+
+        var outCountBefore = pub.Published.OfType<TagValue>().Count(v => v.Item == "OUT");
+
+        await orch.RemoveTagsAsync("t1", new[] { "B" });
+
+        sub.EmitValue(new TagValue("A", 5.0, 0xC0, DateTimeOffset.UtcNow));
+        await Task.Delay(100);
+        var outCountAfter = pub.Published.OfType<TagValue>().Count(v => v.Item == "OUT");
+        Assert.Equal(outCountBefore, outCountAfter);
     }
 
     [Fact]

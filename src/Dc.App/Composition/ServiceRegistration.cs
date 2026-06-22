@@ -66,11 +66,13 @@ public static class ServiceRegistration
             };
         });
 
+        services.AddSingleton<ITagValueTransformFactory, TagValueTransformFactory>();
         services.AddSingleton<TaskOrchestrator>(sp => new TaskOrchestrator(
             sp.GetServices<IOpcSubscriberFactory>(),
             sp.GetRequiredService<IPublisherFactory>(),
             sp.GetRequiredService<OrchestratorOptions>(),
-            sp.GetService<Microsoft.Extensions.Logging.ILogger<TaskOrchestrator>>()));
+            sp.GetService<Microsoft.Extensions.Logging.ILogger<TaskOrchestrator>>(),
+            sp.GetService<ITagValueTransformFactory>()));
 
         // 诊断可观测：System.Diagnostics.Metrics 仪表（dotnet-counters/OTel 可抓）+ 周期结构化日志。
         // 作为 IHostedService 由 Generic Host 自动启停。
@@ -146,6 +148,7 @@ public static class ServiceRegistration
         services.AddSingleton<ITagExcelService, ClosedXmlTagExcelService>();
         services.AddSingleton<IFilePicker, WpfFilePicker>();
         services.AddSingleton<IBrowseDialog, WpfBrowseDialog>();
+        services.AddSingleton<IFormulaValidator, FormulaValidator>();
         services.AddSingleton<IConfigBackupService, JsonConfigBackupService>();
 
         // === Shell + Theme + Navigation（S1 新增） ===

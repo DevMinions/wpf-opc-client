@@ -7,4 +7,5 @@ public sealed record TaskStartRequest(
     OpcProtocol Protocol,
     OpcConnectionOptions OpcOptions,
     string PublisherAddress,
-    IReadOnlyCollection<TagDescriptor> Tags);
+    IReadOnlyCollection<TagDescriptor> Tags,
+    TransformConfig? TransformConfig = null);
