@@ -10,7 +10,9 @@ public class TaskStoreTests
 {
     private static DbContextOptions<DcDbContext> Options(string path) =>
         new DbContextOptionsBuilder<DcDbContext>()
-            .UseSqlite(new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = false }.ToString())
+            // Pooling=false: 临时库测试用,连接 Dispose 即彻底关闭释放文件句柄;
+            // 否则 Windows 上池化连接保留句柄,finally 的 File.Delete 会抛 IOException(Linux unlink 不受影响)。
+            .UseSqlite(new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = false, Pooling = false }.ToString())
             .UseSnakeCaseNamingConvention()
             .Options;
 
