@@ -162,7 +162,7 @@
                             <TextBlock Text="配置备份"
                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                        FontSize="13" />
-                            <TextBlock Text="导出/导入全部任务·分组·Tag·配置"
+                            <TextBlock Text="导出/导入全部任务·Tag·配置"
                                        Style="{StaticResource DcMuted}"
                                        FontSize="11"
                                        Margin="0,2,0,0" />
