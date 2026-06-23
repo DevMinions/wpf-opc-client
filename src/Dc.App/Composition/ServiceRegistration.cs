@@ -236,7 +236,14 @@ public static class ServiceRegistration
             _ => System.Windows.Application.Current?.Dispatcher
                  ?? System.Windows.Threading.Dispatcher.CurrentDispatcher);
         services.AddSingleton<GroupsViewModel>();
-        services.AddSingleton<TagsViewModel>();
+        services.AddSingleton<TagsViewModel>(sp => new TagsViewModel(
+            sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
+            sp.GetRequiredService<ITagEditorDialog>(),
+            sp.GetRequiredService<ITagExcelService>(),
+            sp.GetRequiredService<IFilePicker>(),
+            sp.GetRequiredService<TaskOrchestrator>(),
+            // 空状态「浏览节点添加 Tag」CTA → 切到浏览页(发现→批量加 Tag 主路径)
+            navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>().NavigateCommand.Execute(key)));
         services.AddSingleton<LiveDataViewModel>(sp => new LiveDataViewModel(
             sp.GetRequiredService<TaskOrchestrator>(),
             System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher,

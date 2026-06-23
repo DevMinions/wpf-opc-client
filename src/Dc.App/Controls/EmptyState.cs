@@ -55,4 +55,21 @@ public sealed class EmptyState : Control
         get => (ICommand?)GetValue(ActionCommandProperty);
         set => SetValue(ActionCommandProperty, value);
     }
+
+    // 可选次操作（幽灵按钮）。SecondaryActionText 为空时不显示。
+    public static readonly DependencyProperty SecondaryActionTextProperty = DependencyProperty.Register(
+        nameof(SecondaryActionText), typeof(string), typeof(EmptyState), new PropertyMetadata(null));
+    public string? SecondaryActionText
+    {
+        get => (string?)GetValue(SecondaryActionTextProperty);
+        set => SetValue(SecondaryActionTextProperty, value);
+    }
+
+    public static readonly DependencyProperty SecondaryActionCommandProperty = DependencyProperty.Register(
+        nameof(SecondaryActionCommand), typeof(ICommand), typeof(EmptyState), new PropertyMetadata(null));
+    public ICommand? SecondaryActionCommand
+    {
+        get => (ICommand?)GetValue(SecondaryActionCommandProperty);
+        set => SetValue(SecondaryActionCommandProperty, value);
+    }
 }

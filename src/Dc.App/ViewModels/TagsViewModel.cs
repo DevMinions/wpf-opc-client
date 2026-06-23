@@ -20,6 +20,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     private readonly ITagExcelService _excel;
     private readonly IFilePicker _filePicker;
     private readonly TaskOrchestrator _orchestrator;
+    private readonly Action<string>? _navigate; // 导航到其它页(空状态「浏览节点」CTA → "browse")
 
     [ObservableProperty] private string _title = "Tag 管理";
     [ObservableProperty] private bool _isLoading;
@@ -55,15 +56,21 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         ITagEditorDialog editor,
         ITagExcelService excel,
         IFilePicker filePicker,
-        TaskOrchestrator orchestrator)
+        TaskOrchestrator orchestrator,
+        Action<string>? navigate = null)
     {
         _dbFactory = dbFactory;
         _editor = editor;
         _excel = excel;
         _filePicker = filePicker;
         _orchestrator = orchestrator;
+        _navigate = navigate;
         _ = LoadAsync();
     }
+
+    // 空状态主 CTA:跳到「浏览节点」(发现→批量加 Tag 主路径)。
+    [RelayCommand]
+    private void BrowseNodes() => _navigate?.Invoke("browse");
 
     private bool IsTaskRunning(string taskId) =>
         _orchestrator.RunningTaskIds.Contains(taskId);

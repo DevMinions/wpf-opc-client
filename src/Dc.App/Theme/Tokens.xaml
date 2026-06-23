@@ -421,6 +421,23 @@
                                 </Style>
                             </Button.Style>
                         </Button>
+                        <Button Content="{TemplateBinding SecondaryActionText}"
+                                Command="{TemplateBinding SecondaryActionCommand}"
+                                Margin="0,8,0,0" HorizontalAlignment="Center"
+                                MinWidth="120">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource DcBtnGhost}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SecondaryActionText, RelativeSource={RelativeSource AncestorType={x:Type controls:EmptyState}}}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SecondaryActionText, RelativeSource={RelativeSource AncestorType={x:Type controls:EmptyState}}}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
                     </StackPanel>
                 </ControlTemplate>
             </Setter.Value>

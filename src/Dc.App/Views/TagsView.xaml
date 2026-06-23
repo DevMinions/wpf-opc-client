@@ -119,13 +119,15 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <!-- 空状态对准「这个任务还没有 Tag」(而非旧的「无分组」):直接给「新建 Tag」入口。 -->
+            <!-- 空状态对准「这个任务还没有 Tag」:主 CTA 走发现主路径「浏览节点」,次 CTA 手动新建。 -->
             <controls:EmptyState
                 Icon="TagMultiple24"
                 Title="这个任务还没有 Tag"
-                Hint="点「新建」添加采集点位;后续也可在「浏览节点」里勾选多个点位一键批量加入。"
-                ActionText="新建 Tag"
-                ActionCommand="{Binding NewCommand}"
+                Hint="到「浏览节点」勾选多个点位一键批量加入,或手动新建单个采集点位。"
+                ActionText="浏览节点添加 Tag"
+                ActionCommand="{Binding BrowseNodesCommand}"
+                SecondaryActionText="手动新建"
+                SecondaryActionCommand="{Binding NewCommand}"
                 Visibility="{Binding Tags.Count, Converter={StaticResource CountToVis}}" />
         </Grid>
     </Grid>
