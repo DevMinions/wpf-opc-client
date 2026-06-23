@@ -32,8 +32,10 @@
                                VerticalAlignment="Center"
                                Margin="0,0,6,0" />
                     <ComboBox Width="220"
-                              ItemsSource="{Binding AvailableTaskIds}"
-                              SelectedItem="{Binding TaskFilter}"
+                              ItemsSource="{Binding AvailableTasks}"
+                              DisplayMemberPath="Display"
+                              SelectedValuePath="Id"
+                              SelectedValue="{Binding TaskFilter}"
                               VerticalAlignment="Center" />
                     <Button Content="清除"
                                 Margin="6,0,0,0"

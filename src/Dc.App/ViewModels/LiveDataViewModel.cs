@@ -82,7 +82,8 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     private volatile LiveFlushStats _statsSnapshot = new(0, 0, 0, 0, 0);
 
     public ObservableCollection<LiveDataRowViewModel> Rows { get; } = new();
-    public ObservableCollection<string> AvailableTaskIds { get; } = new();
+    // 任务筛选下拉项:Id + 可读名(Display)。下拉显名、按 Id 过滤(TaskFilter 仍是 id,RowsView 不变)。
+    public ObservableCollection<TaskPick> AvailableTasks { get; } = new();
     public ICollectionView RowsView { get; }
 
     private bool _running;
@@ -140,8 +141,14 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
         try
         {
             _taskNames = await TaskNames.LoadAsync(_dbFactory);
-            // 回填已存在行的可读名(行可能先于名字加载就创建)。Start 在 UI 线程,await 续回 UI 线程,改 Rows 安全。
+            // 回填已存在行的可读名(行可能先于名字加载就创建)。Start 在 UI 线程,await 续回 UI 线程,改集合安全。
             foreach (var row in Rows) row.TaskName = ResolveTaskName(row.TaskId);
+            // 同步刷新任务筛选下拉的显示名(此前以 id 兜底加入)
+            for (var i = 0; i < AvailableTasks.Count; i++)
+            {
+                var name = ResolveTaskName(AvailableTasks[i].Id);
+                if (AvailableTasks[i].Display != name) AvailableTasks[i] = new TaskPick(AvailableTasks[i].Id, name);
+            }
         }
         catch { /* 名字解析失败不影响数据流,列回退显示 id */ }
     }
@@ -239,7 +246,8 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
 
     private void Apply(string taskId, TagValue v, int rawCount)
     {
-        if (!AvailableTaskIds.Contains(taskId)) AvailableTaskIds.Add(taskId);
+        if (AvailableTasks.All(t => t.Id != taskId))
+            AvailableTasks.Add(new TaskPick(taskId, ResolveTaskName(taskId)));
 
         var key = $"{taskId}::{v.Item}";
         if (!_rowIndex.TryGetValue(key, out var row))
@@ -269,7 +277,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
         _searchDebounce?.Stop(); // 清空后避免挂起的防抖回调刷新已清集合
         _rowIndex.Clear();
         Rows.Clear();
-        AvailableTaskIds.Clear();
+        AvailableTasks.Clear();
         RowCount = 0;
 
         // 重置 flush 统计累计器，避免清空后陈旧统计（ring 数组无需清零，count=0 即 n=0）
