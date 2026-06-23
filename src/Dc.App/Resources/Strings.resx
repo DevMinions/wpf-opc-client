@@ -78,6 +78,7 @@
   <data name="Health_AllNormal" xml:space="preserve"><value>● 全部正常</value></data>
   <data name="Health_Warnings" xml:space="preserve"><value>● {0} 告警</value></data>
   <data name="Shell_TitleBarFormat" xml:space="preserve"><value>Dc · OPC 数采  ›  {0}</value></data>
+  <data name="Shell_WindowTitle" xml:space="preserve"><value>Dc · OPC 数据采集</value></data>
   <data name="Shell_StatusTheme" xml:space="preserve"><value>主题 · </value></data>
   <data name="Shell_StatusDb" xml:space="preserve"><value>    ·    DB · </value></data>
   <data name="Tray_Show" xml:space="preserve"><value>显示主窗口</value></data>
@@ -110,6 +111,7 @@
   <data name="Workspace_StatusRunning" xml:space="preserve"><value>运行中</value></data>
   <data name="Workspace_StatusAlert" xml:space="preserve"><value>告警</value></data>
   <data name="Workspace_StatusStopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="Workspace_SelectTask" xml:space="preserve"><value>选择一个任务</value></data>
   <data name="Workspace_BtnStart" xml:space="preserve"><value>▶ 启动</value></data>
   <data name="Workspace_BtnStop" xml:space="preserve"><value>■ 停止</value></data>
   <data name="Workspace_BtnRestart" xml:space="preserve"><value>⟳ 重启</value></data>
@@ -141,6 +143,7 @@
 
   <data name="Browse_Title" xml:space="preserve"><value>浏览节点</value></data>
   <data name="Browse_Subtitle" xml:space="preserve"><value>连接 OPC 服务器，浏览地址空间，勾选节点一键「加为 Tag」（或复制 NodeId）</value></data>
+  <data name="Browse_CheckA11y" xml:space="preserve"><value>勾选 {0}</value></data>
   <data name="Browse_Connect" xml:space="preserve"><value>连接</value></data>
   <data name="Browse_Disconnect" xml:space="preserve"><value>断开</value></data>
   <data name="Browse_ProgIdTooltip" xml:space="preserve"><value>OPC ProgID — DA 例: SampleCompany.DaSample；AE 例: SampleCompany.AeSample</value></data>
@@ -186,6 +189,8 @@
   <data name="LiveData_ColUpdateCount" xml:space="preserve"><value>更新数</value></data>
   <data name="LiveData_EmptyTitle" xml:space="preserve"><value>暂无实时数据</value></data>
   <data name="LiveData_EmptyHint" xml:space="preserve"><value>运行采集任务后，这里实时显示订阅值</value></data>
+  <data name="LiveData_Pause" xml:space="preserve"><value>⏸ 暂停</value></data>
+  <data name="LiveData_Resume" xml:space="preserve"><value>▶ 继续</value></data>
 
   <data name="Diagnostics_Subtitle" xml:space="preserve"><value>每任务运行时诊断 · 1 秒刷新</value></data>
   <data name="Diagnostics_ActiveTasks" xml:space="preserve"><value>活跃任务</value></data>
@@ -199,6 +204,10 @@
   <data name="Diagnostics_ColTask" xml:space="preserve"><value>任务</value></data>
   <data name="Diagnostics_ColState" xml:space="preserve"><value>状态</value></data>
   <data name="Diagnostics_Recovered" xml:space="preserve"><value>✓ 已恢复</value></data>
+  <data name="Diagnostics_StateRunning" xml:space="preserve"><value>运行正常</value></data>
+  <data name="Diagnostics_StateConnecting" xml:space="preserve"><value>连接中</value></data>
+  <data name="Diagnostics_StateRestarting" xml:space="preserve"><value>重启中</value></data>
+  <data name="Diagnostics_StateFaulted" xml:space="preserve"><value>故障</value></data>
   <data name="Diagnostics_ColStarted" xml:space="preserve"><value>启动</value></data>
   <data name="Diagnostics_ColUptime" xml:space="preserve"><value>运行时长</value></data>
   <data name="Diagnostics_ColValueCount" xml:space="preserve"><value>累计值</value></data>

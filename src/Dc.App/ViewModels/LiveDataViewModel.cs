@@ -70,6 +70,11 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
 
     partial void OnShowNavigateCtaChanged(bool value) => OnPropertyChanged(nameof(NavigateCtaText));
 
+    // 暂停/继续按钮文案(含 ⏸/▶ 图标,留在 resx 值里)。随 IsPaused 与语言切换实时刷。
+    public string PauseResumeText => Paused ? _loc["LiveData_Resume"] : _loc["LiveData_Pause"];
+
+    partial void OnPausedChanged(bool value) => OnPropertyChanged(nameof(PauseResumeText));
+
     private long _updatesAccum;
     private DateTimeOffset _lastRateAt = DateTimeOffset.UtcNow;
 
@@ -109,6 +114,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
             {
                 Title = _loc["Nav_LiveData"];
                 OnPropertyChanged(nameof(NavigateCtaText));
+                OnPropertyChanged(nameof(PauseResumeText));
             };
 
         RowsView = CollectionViewSource.GetDefaultView(Rows);

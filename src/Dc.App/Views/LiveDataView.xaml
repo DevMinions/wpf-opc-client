@@ -59,21 +59,12 @@
                                Style="{StaticResource DcMuted}">
                         <Run Text="{Binding RowCount, Mode=OneWay}" /><Run Text="{loc:Loc LiveData_RowsSuffix}" /><Run Text="{Binding UpdatesPerSecond, Mode=OneWay, StringFormat=F0}" /><Run Text="/s" />
                     </TextBlock>
+                    <!-- 暂停/继续:文案(含 ⏸/▶ 图标)由 VM.PauseResumeText 提供,随 IsPaused + 语言实时刷 -->
                     <ToggleButton IsChecked="{Binding Paused}"
+                                  Content="{Binding PauseResumeText}"
                                   Padding="12,5"
                                   Margin="0,0,8,0"
-                                  VerticalAlignment="Center">
-                        <ToggleButton.Style>
-                            <Style TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
-                                <Setter Property="Content" Value="⏸ 暂停" />
-                                <Style.Triggers>
-                                    <Trigger Property="IsChecked" Value="True">
-                                        <Setter Property="Content" Value="▶ 继续" />
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ToggleButton.Style>
-                    </ToggleButton>
+                                  VerticalAlignment="Center" />
                     <Button Content="{loc:Loc Common_Clear}"
                                 Command="{Binding ClearCommand}"
                                 Style="{StaticResource DcBtnGhostSm}"

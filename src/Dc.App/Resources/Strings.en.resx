@@ -78,6 +78,7 @@
   <data name="Health_AllNormal" xml:space="preserve"><value>● All normal</value></data>
   <data name="Health_Warnings" xml:space="preserve"><value>● {0} alert(s)</value></data>
   <data name="Shell_TitleBarFormat" xml:space="preserve"><value>Dc · OPC DAQ  ›  {0}</value></data>
+  <data name="Shell_WindowTitle" xml:space="preserve"><value>Dc · OPC Data Collector</value></data>
   <data name="Shell_StatusTheme" xml:space="preserve"><value>Theme · </value></data>
   <data name="Shell_StatusDb" xml:space="preserve"><value>    ·    DB · </value></data>
   <data name="Tray_Show" xml:space="preserve"><value>Show window</value></data>
@@ -110,6 +111,7 @@
   <data name="Workspace_StatusRunning" xml:space="preserve"><value>Running</value></data>
   <data name="Workspace_StatusAlert" xml:space="preserve"><value>Alert</value></data>
   <data name="Workspace_StatusStopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="Workspace_SelectTask" xml:space="preserve"><value>Select a task</value></data>
   <data name="Workspace_BtnStart" xml:space="preserve"><value>▶ Start</value></data>
   <data name="Workspace_BtnStop" xml:space="preserve"><value>■ Stop</value></data>
   <data name="Workspace_BtnRestart" xml:space="preserve"><value>⟳ Restart</value></data>
@@ -141,6 +143,7 @@
 
   <data name="Browse_Title" xml:space="preserve"><value>Browse Nodes</value></data>
   <data name="Browse_Subtitle" xml:space="preserve"><value>Connect to an OPC server, browse the address space, and add selected nodes as Tags (or copy the NodeId)</value></data>
+  <data name="Browse_CheckA11y" xml:space="preserve"><value>Check {0}</value></data>
   <data name="Browse_Connect" xml:space="preserve"><value>Connect</value></data>
   <data name="Browse_Disconnect" xml:space="preserve"><value>Disconnect</value></data>
   <data name="Browse_ProgIdTooltip" xml:space="preserve"><value>OPC ProgID — DA e.g.: SampleCompany.DaSample; AE e.g.: SampleCompany.AeSample</value></data>
@@ -186,6 +189,8 @@
   <data name="LiveData_ColUpdateCount" xml:space="preserve"><value>Updates</value></data>
   <data name="LiveData_EmptyTitle" xml:space="preserve"><value>No live data yet</value></data>
   <data name="LiveData_EmptyHint" xml:space="preserve"><value>Subscribed values appear here in real time once a collection task is running</value></data>
+  <data name="LiveData_Pause" xml:space="preserve"><value>⏸ Pause</value></data>
+  <data name="LiveData_Resume" xml:space="preserve"><value>▶ Resume</value></data>
 
   <data name="Diagnostics_Subtitle" xml:space="preserve"><value>Per-task runtime diagnostics · refreshed every 1s</value></data>
   <data name="Diagnostics_ActiveTasks" xml:space="preserve"><value>Active Tasks</value></data>
@@ -199,6 +204,10 @@
   <data name="Diagnostics_ColTask" xml:space="preserve"><value>Task</value></data>
   <data name="Diagnostics_ColState" xml:space="preserve"><value>State</value></data>
   <data name="Diagnostics_Recovered" xml:space="preserve"><value>✓ Recovered</value></data>
+  <data name="Diagnostics_StateRunning" xml:space="preserve"><value>Running</value></data>
+  <data name="Diagnostics_StateConnecting" xml:space="preserve"><value>Connecting</value></data>
+  <data name="Diagnostics_StateRestarting" xml:space="preserve"><value>Restarting</value></data>
+  <data name="Diagnostics_StateFaulted" xml:space="preserve"><value>Faulted</value></data>
   <data name="Diagnostics_ColStarted" xml:space="preserve"><value>Started</value></data>
   <data name="Diagnostics_ColUptime" xml:space="preserve"><value>Uptime</value></data>
   <data name="Diagnostics_ColValueCount" xml:space="preserve"><value>Values</value></data>

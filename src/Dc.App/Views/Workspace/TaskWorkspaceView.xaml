@@ -5,9 +5,11 @@
              xmlns:ws="clr-namespace:Dc.App.ViewModels.Workspace"
              xmlns:wsv="clr-namespace:Dc.App.Views.Workspace"
              xmlns:conv="clr-namespace:Dc.App.Views.Converters"
+             xmlns:i18n="clr-namespace:Dc.App.Services.I18n"
              xmlns:loc="clr-namespace:Dc.App.Markup">
     <UserControl.Resources>
         <conv:EnumMatchConverter x:Key="EnumMatch" />
+        <conv:LocalizedStateConverter x:Key="LocState" />
     </UserControl.Resources>
     <Grid Margin="22,18">
         <Grid.ColumnDefinitions>
@@ -185,9 +187,36 @@
                             </Style>
                         </Ellipse.Style>
                     </Ellipse>
-                    <TextBlock Text="{Binding SelectedTask.Name, FallbackValue='选择一个任务'}"
+                    <!-- 选中任务名;未选中时显示本地化提示(FallbackValue 不能放 Binding,故用两段互斥可见的 TextBlock) -->
+                    <TextBlock Text="{Binding SelectedTask.Name}"
                                FontSize="17" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedTask}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Text="{loc:Loc Workspace_SelectTask}"
+                               FontSize="17" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               Visibility="Collapsed">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedTask}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                      <Border Margin="10,0,0,0" CornerRadius="999" Padding="9,2">
                          <Border.Style>
                              <Style TargetType="Border">
@@ -208,18 +237,23 @@
                              </Style>
                          </Border.Style>
                          <TextBlock FontSize="11">
+                             <!-- 状态文案本地化(随语言实时刷):StatusKey 选 Workspace_Status{Running|Alert|Stopped}。
+                                  颜色仍由下方 DataTrigger 驱动(保留原视觉)。 -->
+                             <TextBlock.Text>
+                                 <MultiBinding Converter="{StaticResource LocState}" ConverterParameter="Workspace_Status">
+                                     <Binding Path="SelectedTask.StatusKey" />
+                                     <Binding Path="[culture]" Source="{x:Static i18n:LocalizationManager.Instance}" />
+                                 </MultiBinding>
+                             </TextBlock.Text>
                              <TextBlock.Style>
                                  <Style TargetType="TextBlock">
                                      <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
-                                     <Setter Property="Text" Value="运行中" />
                                      <Style.Triggers>
                                          <DataTrigger Binding="{Binding SelectedTask.HasAlert}" Value="True">
                                              <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
-                                             <Setter Property="Text" Value="告警" />
                                          </DataTrigger>
                                          <DataTrigger Binding="{Binding SelectedTask.IsRunning}" Value="False">
                                              <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
-                                             <Setter Property="Text" Value="已停止" />
                                          </DataTrigger>
                                      </Style.Triggers>
                                  </Style>

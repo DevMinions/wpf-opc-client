@@ -3,9 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:controls="clr-namespace:Dc.App.Controls"
+             xmlns:lconv="clr-namespace:Dc.App.Views.Converters"
+             xmlns:i18n="clr-namespace:Dc.App.Services.I18n"
              xmlns:loc="clr-namespace:Dc.App.Markup">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <lconv:LocalizedFormatConverter x:Key="LocFormat" />
         <!-- 代理:让不在可视树的 DataGridColumn 也能绑 VM 的 ShowBulkAdd(对话框单点取用时隐藏多选列) -->
         <controls:BindingProxy x:Key="VmProxy" Data="{Binding}" />
     </UserControl.Resources>
@@ -230,8 +233,15 @@
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                   Visibility="{Binding IsItem, Converter={StaticResource BoolToVis}}"
-                                                  AutomationProperties.Name="{Binding Node.DisplayName, StringFormat=勾选 {0}}"
-                                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <!-- 无障碍名本地化(StringFormat 不能放 Binding,故用 MultiBinding+转换器;随语言实时刷) -->
+                                            <AutomationProperties.Name>
+                                                <MultiBinding Converter="{StaticResource LocFormat}" ConverterParameter="Browse_CheckA11y">
+                                                    <Binding Path="Node.DisplayName" />
+                                                    <Binding Path="[culture]" Source="{x:Static i18n:LocalizationManager.Instance}" />
+                                                </MultiBinding>
+                                            </AutomationProperties.Name>
+                                        </CheckBox>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
