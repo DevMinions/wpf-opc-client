@@ -303,22 +303,9 @@ public class TaskWorkspaceViewModelTests
         Assert.True(d.Config.HasTask);
     }
 
-    [Fact]
-    public async Task SelectingGroupInGroupPanel_JumpsToTagsTabWithFilter()
-    {
-        var (d, vm) = BuildFull();
-        d.Src.Tasks = new() { Task1("t1") };
-        await vm.LoadAsync();
-        vm.SelectedTask = vm.AllTasks[0];
-        var grp = new Group { Id = "g1", Name = "炉膛", TaskId = "t1" };
-        d.Group.SimulateSelect(grp);
-        Assert.Equal("tags", vm.SelectedTab);
-        Assert.Same(grp, d.Tag.GroupFilter);
-        Assert.Same(d.Tag, vm.CurrentTabContent);
-    }
+    // 分组层已对用户隐藏:不再有「分组」页签,也无「选分组→跳 Tag 页」行为(原测试已删)。
 
     [Theory]
-    [InlineData("groups")]
     [InlineData("livedata")]
     [InlineData("diagnostics")]
     [InlineData("config")]
@@ -331,8 +318,7 @@ public class TaskWorkspaceViewModelTests
         vm.SelectedTab = tab;
         object expected = tab switch
         {
-            "groups"      => (object)d.Group,
-            "livedata"    => d.Live,
+            "livedata"    => (object)d.Live,
             "diagnostics" => d.Diag,
             "config"      => d.Config,
             _             => d.Overview

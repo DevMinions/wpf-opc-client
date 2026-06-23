@@ -290,26 +290,6 @@
                     <RadioButton Content="概览" Style="{StaticResource DcTabRadio}"
                                  IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=overview, Mode=TwoWay}" />
                     <RadioButton Style="{StaticResource DcTabRadio}"
-                                 IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=groups, Mode=TwoWay}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="分组" VerticalAlignment="Center" />
-                            <Border Margin="6,0,0,0" CornerRadius="999" Padding="6,0" VerticalAlignment="Center"
-                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedGroupCount}" Value="0">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <TextBlock Text="{Binding SelectedGroupCount}" FontSize="10"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            </Border>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton Style="{StaticResource DcTabRadio}"
                                  IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=tags, Mode=TwoWay}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="Tag" VerticalAlignment="Center" />

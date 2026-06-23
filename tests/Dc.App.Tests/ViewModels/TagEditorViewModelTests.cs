@@ -11,16 +11,15 @@ public class TagEditorViewModelTests
         => new() { Id = id, Name = name, TaskId = taskId };
 
     [Fact]
-    public void Create_WithDefaultGroup_HidesSelector_TitleHasGroup_LocksGroup()
+    public void Create_WithDefaultGroup_HidesSelector_TitlePlain_LocksGroup()
     {
         var g = Grp("g1", "温度组");
         var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g);
 
-        Assert.False(vm.ShowGroupSelector);
-        Assert.Contains("新建 Tag", vm.Title);
-        Assert.Contains("温度组", vm.Title);
+        Assert.False(vm.ShowGroupSelector);            // 分组层隐藏:不显示选择器
+        Assert.Equal("新建 Tag", vm.Title);            // 标题不再带分组名
         vm.Item = "tag.a";
-        Assert.Equal("g1", vm.ToResult().Tag.GroupId);
+        Assert.Equal("g1", vm.ToResult().Tag.GroupId); // 仍锁定到默认分组
     }
 
     [Fact]
@@ -58,15 +57,14 @@ public class TagEditorViewModelTests
     }
 
     [Fact]
-    public void Edit_HidesSelector_TitleHasGroup()
+    public void Edit_HidesSelector_TitlePlain()
     {
         var g = Grp("g1", "温度组");
         var existing = new Tag { Id = "tag1", Item = "x", DataType = 4, GroupId = "g1", TaskId = "t1" };
         var vm = new TagEditorViewModel(new[] { g }, existing, defaultGroup: null);
 
         Assert.False(vm.ShowGroupSelector);
-        Assert.Contains("编辑 Tag", vm.Title);
-        Assert.Contains("温度组", vm.Title);
+        Assert.Equal("编辑 Tag", vm.Title);
     }
 
     [Fact]
