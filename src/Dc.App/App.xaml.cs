@@ -94,6 +94,10 @@ public partial class App : Application
             var themeSvc = _host.Services.GetRequiredService<Dc.App.Services.Theme.IThemeService>();
             themeSvc.Initialize();
 
+            // 初始化语言(读 appsettings.json:Language → 设 CurrentUICulture)。必须在 window.Show() 前,首屏即正确语言。
+            var langSvc = _host.Services.GetRequiredService<Dc.App.Services.I18n.ILanguageService>();
+            langSvc.Initialize();
+
             var window = Services.GetRequiredService<Dc.App.Views.Shell.ShellWindow>();
             // 非模态 toast 浮层接线：必须在第一次可能弹 toast 前（Show 前最稳）把 ShellWindow 的
             // SnackbarPresenter 注入 ISnackbarService，否则后续 ShowError 无承载控件。

@@ -159,6 +159,14 @@ public static class ServiceRegistration
                               Dc.App.Services.Theme.SystemEventsThemeWatcher>();
         services.AddSingleton<Dc.App.Services.Theme.IThemeService, Dc.App.Services.Theme.ThemeService>();
 
+        // === Language / i18n ===
+        services.AddSingleton<Dc.App.Services.I18n.ILanguageApplier, Dc.App.Services.I18n.CultureLanguageApplier>();
+        services.AddSingleton<Dc.App.Services.I18n.ILanguagePreferenceWriter>(_ =>
+            new Dc.App.Services.I18n.JsonLanguagePreferenceWriter(
+                System.IO.Path.Combine(AppContext.BaseDirectory, "appsettings.json")));
+        services.AddSingleton<Dc.App.Services.I18n.ILanguageService, Dc.App.Services.I18n.LanguageService>();
+        services.AddSingleton<Dc.App.Services.I18n.ILocalizer, Dc.App.Services.I18n.ResourceLocalizer>();
+
         services.AddSingleton<Dc.App.Navigation.INavigationService>(sp =>
             new Dc.App.Navigation.NavigationService(
                 sp,
