@@ -273,6 +273,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         edited.Id = Dc.Infrastructure.Persistence.UlidGenerator.NewId();
         await _source.SaveNewTaskAsync(edited);
         await LoadAsync();
+        // 新建后自动选中该任务,免去用户在列表里再找一遍。
+        SelectedTask = AllTasks.FirstOrDefault(r => r.TaskId == edited.Id);
     }
 
     private async Task PersistEditedAsync(Dc.Domain.Entities.CollectorTask edited)
