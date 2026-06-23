@@ -62,11 +62,14 @@ docker logs -f dc-collector
 | OPC DA 订阅 + 浏览 + IP 扫描 | Technosoftware DaAeHdaClient（COM/DCOM,需 Windows） |
 | OPC AE 订阅 + Area/Source 浏览 | 同上 |
 | 实时数据视图 | 事件驱动 + 三态质量码着色（Good/Uncertain/Bad） |
+| 虚拟测点（公式计算） | 一个 Tag 可定义为基于同任务其它 Tag 的**公式**（DynamicExpresso 引擎,如 `T * 1.8 + 32`）:在采集管道里求值,含输入映射、就绪门控、质量传播,与真实 Tag 一同发布 |
+| 工程量缩放/偏移 | 真实 Tag 可配**缩放系数 + 偏移**,发布前把原始值换算成工程量（raw → 工程量） |
 | 任务编排 | `TaskOrchestrator`:启停 / 热增删 Tag / 心跳监控 / 超时自动重启 |
 | TCP 发布 | MessagePack / JSON 可切换,wire v1.1（magic + format-id）,冷却重连 + 可选离线队列 |
 | 诊断 + 可观测 | WPF 面板（每任务速率/错误/重启/心跳 sparkline）;并经 `System.Diagnostics.Metrics` + `/metrics` 暴露指标（速率/错误/重启/心跳龄/队列积压/丢弃帧数,dotnet-counters / OpenTelemetry / Prometheus 可抓）+ 周期结构化诊断日志（含队列溢出丢弃边沿告警） |
 | **无头 / 服务模式** | `Dc.Cli` 控制台:从 DB 加载任务跑 UA 采集 + 发布,**Linux/Docker 可部署**,复用同一采集引擎 |
 | Excel 导入/导出 Tag | ClosedXML;导入按 Item + 数据类型落当前任务（导出另含 TaskId 列） |
+| 配置备份/恢复 | 一键导出/导入**全部任务·Tag·配置**为 JSON（设置页）,合并或替换 |
 | 发现 → 配置闭环 | 浏览地址空间、多选节点,一键**「加为 Tag」**批量落到任务（数据类型自动映射）,随即跳到该任务 |
 | 系统托盘 + 单实例锁 · 滚动日志（Serilog） | |
 
@@ -149,6 +152,11 @@ dotnet run --project src/Dc.App
 3. 选中任务 → **启动** → 在**实时数据**看值流入。
 
 Tag 直接挂任务,无需先建分组。
+
+### 虚拟测点 & 工程量缩放
+
+- **虚拟测点(公式)** —— 在 Tag 编辑器勾选**「虚拟测点(公式计算)」**,填写基于同任务其它 Tag 的表达式(如 `T * 1.8 + 32`),把每个变量映射到一个源 Tag。它在采集管道里计算,像真实 Tag 一样发布(内置 `SQRT/ABS/SIN/COS/IF/MIN/MAX/AVG/SUM/...`);结果质量由输入传播。
+- **缩放** —— 真实 Tag 可填**缩放系数 + 偏移**,发布前把原始值换算成工程量。
 
 ### 采集 OPC DA / AE
 
@@ -249,6 +257,8 @@ git tag v1.2.3 && git push origin v1.2.3
 | `pki/rejected/` | 被拒证书（供审核） |
 
 dev 环境可设 `"AutoAcceptUntrustedCertificates": true` 跳过（不推荐用于生产）。
+
+每个 UA 任务还有独立的**「使用安全连接」**开关:开 = 选最高安全端点（需双向证书信任）,关 = 直连 None 端点（免证书,适合模拟器/dev server）。默认**开**(产线安全优先)。
 
 ---
 

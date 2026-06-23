@@ -62,11 +62,14 @@ docker logs -f dc-collector
 | OPC DA subscribe + browse + IP scan | Technosoftware DaAeHdaClient (COM/DCOM, Windows-only) |
 | OPC AE subscribe + Area/Source browse | same as above |
 | Live data view | event-driven + tri-state quality coloring (Good/Uncertain/Bad) |
+| Virtual (computed) tags | A tag can be a **formula** over other tags in the same task (DynamicExpresso engine, e.g. `T * 1.8 + 32`): evaluated in the collection pipeline with input mapping, readiness gating and quality propagation, then published like a real tag |
+| Engineering-unit scaling | Real tags can carry a **scale factor + offset**, applied to the raw value before publishing (raw → engineering units) |
 | Task orchestration | `TaskOrchestrator`: start/stop · hot add/remove tags · heartbeat monitoring · auto-restart on timeout |
 | TCP publishing | MessagePack / JSON switchable, wire v1.1 (magic + format-id), cooldown reconnect + optional offline queue |
 | Diagnostics + observability | WPF panel (per-task rate/error/restart/heartbeat sparkline); also exposed via `System.Diagnostics.Metrics` + `/metrics` (rate/errors/restarts/heartbeat-age/queue-backlog/dropped-frames — scrapeable by dotnet-counters / OpenTelemetry / Prometheus) + periodic structured diagnostic logs (incl. queue-overflow drop edge alerts) |
 | **Headless / service mode** | `Dc.Cli` console: loads tasks from the DB, runs UA collection + publishing, **deployable on Linux/Docker**, reuses the same engine |
 | Excel import/export of Tags | ClosedXML; import by Item + DataType into the current task (export also writes a TaskId column) |
+| Config backup/restore | One-click export/import of **all tasks · tags · config** as a JSON bundle (Settings page), merge or replace |
 | Discover → configure flow | Browse the address space, multi-select nodes, and **"Add as Tags"** in bulk to a task (data type auto-mapped); then jump straight to the task |
 | System tray + single-instance lock · rolling logs (Serilog) | |
 
@@ -149,6 +152,11 @@ On first run it creates, in the working directory: `sqlite.db` (empty), `logs/dc
 3. Select the task → **Start** → watch values stream in under **Live data**.
 
 Tags attach directly to a task — there is no group layer to set up.
+
+### Virtual tags & engineering-unit scaling
+
+- **Virtual tag (formula)** — in the Tag editor, tick **Virtual tag (formula)** and enter an expression over other tags in the same task (e.g. `T * 1.8 + 32`), mapping each variable to a source tag. It is computed in the collection pipeline and published just like a real tag (built-ins include `SQRT/ABS/SIN/COS/IF/MIN/MAX/AVG/SUM/...`). The result's quality is propagated from its inputs.
+- **Scaling** — for a real tag, set a **scale factor** and **offset** to convert the raw value to engineering units before publishing.
 
 ### Collecting OPC DA / AE
 
@@ -249,6 +257,8 @@ The first connection to an unknown UA server is rejected and its certificate wri
 | `pki/rejected/` | rejected certificates (for review) |
 
 For dev you can set `"AutoAcceptUntrustedCertificates": true` to skip this (not recommended for production).
+
+Each UA task also has a per-task **"Use secure connection"** toggle: on selects the strongest endpoint (requires mutual certificate trust), off connects to the None endpoint directly (no certs — handy for a simulator/dev server). It defaults to **on** (production-safe).
 
 ---
 
