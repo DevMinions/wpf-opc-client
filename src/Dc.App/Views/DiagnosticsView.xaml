@@ -44,14 +44,14 @@
         </Style>
 
         <!-- DataGrid cell style: default muted text -->
-        <Style x:Key="MutedCell" TargetType="DataGridCell">
+        <Style x:Key="MutedCell" TargetType="DataGridCell" BasedOn="{StaticResource DcDataGridCell}">
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
         </Style>
 
         <!-- Rate/秒 cell: 正常绿，有发送错误转黄 -->
-        <Style x:Key="RateCell" TargetType="DataGridCell">
+        <Style x:Key="RateCell" TargetType="DataGridCell" BasedOn="{StaticResource DcDataGridCell}">
             <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
@@ -63,7 +63,7 @@
         </Style>
 
         <!-- 心跳延迟 cell: >5s 黄(caution)，>2min 失联红(critical)，否则灰 -->
-        <Style x:Key="HeartbeatCell" TargetType="DataGridCell">
+        <Style x:Key="HeartbeatCell" TargetType="DataGridCell" BasedOn="{StaticResource DcDataGridCell}">
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
@@ -78,7 +78,7 @@
         </Style>
 
         <!-- 发送错误 cell: critical if >0, else muted -->
-        <Style x:Key="ErrorCell" TargetType="DataGridCell">
+        <Style x:Key="ErrorCell" TargetType="DataGridCell" BasedOn="{StaticResource DcDataGridCell}">
             <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
@@ -90,7 +90,7 @@
         </Style>
 
         <!-- 重启次数 cell: caution if >0, else muted -->
-        <Style x:Key="RestartCell" TargetType="DataGridCell">
+        <Style x:Key="RestartCell" TargetType="DataGridCell" BasedOn="{StaticResource DcDataGridCell}">
             <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
@@ -224,6 +224,7 @@
                               ColumnHeaderHeight="36"
                               RowHeight="36"
                               SelectionMode="Single"
+                              CellStyle="{StaticResource DcDataGridCell}"
                               Margin="0">
                         <DataGrid.ColumnHeaderStyle>
                             <Style TargetType="DataGridColumnHeader">

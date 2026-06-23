@@ -326,6 +326,28 @@
 
     <!-- ===== 全局 DataGrid 样式 ===== -->
     <!-- 统一选中行 accent-soft、列头样式、交替行、网格线 -->
+    <!-- DataGrid 单元格:内容垂直居中。默认单元格模板让文本顶对齐,在固定行高(如 36)下文字显得偏上、
+         与状态点/图标错位;此模板把内容 ContentPresenter 垂直居中。选中/悬停在行级(DcDataGridRow)处理。 -->
+    <Style x:Key="DcDataGridCell" TargetType="DataGridCell">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="DcDataGrid" TargetType="DataGrid">
         <Setter Property="AutoGenerateColumns" Value="False" />
         <Setter Property="IsReadOnly" Value="True" />
@@ -339,6 +361,7 @@
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="HeadersVisibility" Value="Column" />
         <Setter Property="SelectionMode" Value="Single" />
+        <Setter Property="CellStyle" Value="{StaticResource DcDataGridCell}" />
     </Style>
 
     <!-- DataGrid 选中行 -->
