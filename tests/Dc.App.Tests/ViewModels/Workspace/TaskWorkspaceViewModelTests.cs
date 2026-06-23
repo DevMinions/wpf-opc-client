@@ -1,4 +1,6 @@
+using System.Globalization;
 using Dc.App.ViewModels.Workspace;
+using Dc.App.Services.I18n;
 using Dc.Domain.Entities;
 using Dc.Infrastructure.Orchestration;
 using Dc.App.ViewModels.Dashboard;
@@ -9,6 +11,10 @@ namespace Dc.App.Tests.ViewModels.Workspace;
 public class TaskWorkspaceViewModelTests
 {
     private static readonly DateTimeOffset Now = new(2026, 5, 20, 12, 0, 0, TimeSpan.Zero);
+
+    // 启动失败 toast 标题本地化后按 culture 取值;断言中文字面量须锁定中文。
+    public TaskWorkspaceViewModelTests() =>
+        LocalizationManager.Instance.SetCulture(new CultureInfo("zh-CN"));
 
     private sealed class FakeTaskSource : IWorkspaceTaskSource
     {

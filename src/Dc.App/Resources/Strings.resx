@@ -303,4 +303,79 @@
   <data name="About_Body" xml:space="preserve"><value>通用 OPC 数据采集客户端，支持 OPC UA / DA / AE 三种协议（DA 与 AE 需 Windows + COM SDK）。序列化器和发布器解耦，broker 协议由部署方决定。</value></data>
   <data name="About_BodyRewrite" xml:space="preserve"><value>源代码自 Wails (Go) 版本全量重写至 .NET 8 + WPF。</value></data>
   <data name="About_Close" xml:space="preserve"><value>关闭</value></data>
+
+  <!-- 批次 C: 工作台/Tag/任务/配置 VM 运行时串 -->
+  <data name="Common_Error" xml:space="preserve"><value>错误</value></data>
+
+  <!-- 工作台任务 CRUD -->
+  <data name="Toast_TaskStartFailedTitle" xml:space="preserve"><value>任务启动失败</value></data>
+  <data name="Confirm_DeleteTaskTitle" xml:space="preserve"><value>删除任务</value></data>
+  <data name="Confirm_DeleteTaskMessage" xml:space="preserve"><value>将删除任务「{0}」及其 {1} 个 Tag，不可恢复。确定删除？</value></data>
+  <data name="Overview_SecondsAgo" xml:space="preserve"><value>{0}s 前</value></data>
+
+  <!-- Tag 管理 (TagsViewModel) -->
+  <data name="Tags_Title" xml:space="preserve"><value>Tag 管理</value></data>
+  <data name="Tags_CannotDeleteTitle" xml:space="preserve"><value>无法删除</value></data>
+  <data name="Tags_TagReferencedByFormula" xml:space="preserve"><value>该测点被公式 {0} 引用,请先修改公式或删除对应虚拟测点。</value></data>
+  <data name="Tags_DeleteConfirmTitle" xml:space="preserve"><value>删除确认</value></data>
+  <data name="Tags_DeleteConfirmMessage" xml:space="preserve"><value>确定删除 Tag {0}？</value></data>
+  <data name="Tags_CannotImportTitle" xml:space="preserve"><value>无法导入</value></data>
+  <data name="Tags_CannotImportMessage" xml:space="preserve"><value>请先在采集任务里选中一个任务再导入 Tag。</value></data>
+  <data name="Tags_ExcelFilter" xml:space="preserve"><value>Excel 工作簿|*.xlsx</value></data>
+  <data name="Tags_ImportDialogTitle" xml:space="preserve"><value>导入 Tag</value></data>
+  <data name="Tags_ExportDialogTitle" xml:space="preserve"><value>导出 Tag</value></data>
+  <data name="Tags_ReadFailed" xml:space="preserve"><value>读取失败: {0}</value></data>
+  <data name="Tags_HotAddFailed" xml:space="preserve"><value>任务 {0} 热加失败: {1}</value></data>
+  <data name="Tags_InsertFailed" xml:space="preserve"><value>插入失败（可能有重复 Item）: {0}</value></data>
+  <data name="Tags_ImportSucceeded" xml:space="preserve"><value>成功导入: {0} 条</value></data>
+  <data name="Tags_ImportErrorsHeader" xml:space="preserve"><value>错误 ({0}):</value></data>
+  <data name="Tags_ImportResultTitle" xml:space="preserve"><value>导入结果</value></data>
+  <data name="Tags_ExportSucceededTitle" xml:space="preserve"><value>导出成功</value></data>
+  <data name="Tags_ExportSucceededMessage" xml:space="preserve"><value>已导出 {0} 条到 {1}</value></data>
+  <data name="Tags_ExportFailed" xml:space="preserve"><value>导出失败: {0}</value></data>
+  <data name="Tags_SaveFailed" xml:space="preserve"><value>保存失败:{0}</value></data>
+
+  <!-- 重启提示 -->
+  <data name="Restart_VirtualTagSaved" xml:space="preserve"><value>虚拟测点已保存,重启任务后生效。</value></data>
+  <data name="Restart_VirtualTagOrFormulaSaved" xml:space="preserve"><value>虚拟测点/公式已保存,重启任务后生效。</value></data>
+  <data name="Restart_ScaleOffsetSaved" xml:space="preserve"><value>缩放/偏移已保存,重启任务后生效。</value></data>
+
+  <!-- 编辑器标题 -->
+  <data name="TagEditor_TitleNew" xml:space="preserve"><value>新建 Tag</value></data>
+  <data name="TagEditor_TitleEdit" xml:space="preserve"><value>编辑 Tag</value></data>
+  <data name="TaskEditor_TitleNew" xml:space="preserve"><value>新建任务</value></data>
+  <data name="TaskEditor_TitleEdit" xml:space="preserve"><value>编辑任务</value></data>
+  <data name="ConfigEditor_TitleNew" xml:space="preserve"><value>新建配置</value></data>
+  <data name="ConfigEditor_TitleEdit" xml:space="preserve"><value>编辑配置</value></data>
+
+  <!-- 任务编辑器:服务器字段按协议切换 + 扫描状态 -->
+  <data name="TaskEditor_ServerLabelProgId" xml:space="preserve"><value>ProgID:</value></data>
+  <data name="TaskEditor_ServerLabelUa" xml:space="preserve"><value>服务器:</value></data>
+  <data name="TaskEditor_ServerPlaceholderProgId" xml:space="preserve"><value>如 SampleCompany.DaSample</value></data>
+  <data name="TaskEditor_ServerPlaceholderUa" xml:space="preserve"><value>opc.tcp://host:port</value></data>
+  <data name="TaskEditor_ServerTooltipProgId" xml:space="preserve"><value>OPC ProgID — DA 例: SampleCompany.DaSample；AE 例: SampleCompany.AeSample</value></data>
+  <data name="TaskEditor_ServerTooltipUa" xml:space="preserve"><value>UA 端点 URL，须以 opc.tcp:// 开头</value></data>
+  <data name="TaskEditor_ScanFilledWithClsid" xml:space="preserve"><value>已填充：{0} / {1} @ {2}</value></data>
+  <data name="TaskEditor_ScanFilled" xml:space="preserve"><value>已填充：{0} @ {1}</value></data>
+  <data name="TaskEditor_ScanNoBrowser" xml:space="preserve"><value>未注册 {0} 协议的浏览器</value></data>
+  <data name="TaskEditor_Scanning" xml:space="preserve"><value>正在扫描 {0}…</value></data>
+  <data name="TaskEditor_ScanNoServers" xml:space="preserve"><value>未发现 OPC 服务器（检查 OPCEnum / DCOM / 防火墙）</value></data>
+  <data name="TaskEditor_ScanFoundCount" xml:space="preserve"><value>发现 {0} 个服务器</value></data>
+  <data name="TaskEditor_ScanFailed" xml:space="preserve"><value>扫描失败: {0}</value></data>
+
+  <!-- 保存校验红字/错误消息 -->
+  <data name="Validation_ItemRequired" xml:space="preserve"><value>Item 不能为空</value></data>
+  <data name="Validation_ScaleMustBeNumber" xml:space="preserve"><value>缩放系数必须是数字</value></data>
+  <data name="Validation_OffsetMustBeNumber" xml:space="preserve"><value>偏移量必须是数字</value></data>
+  <data name="Validation_FormulaNameRequired" xml:space="preserve"><value>公式名不能为空</value></data>
+  <data name="Validation_FormulaNameDuplicate" xml:space="preserve"><value>公式名在任务内已存在</value></data>
+  <data name="Validation_ExpressionRequired" xml:space="preserve"><value>表达式不能为空</value></data>
+  <data name="Validation_InputNotSelected" xml:space="preserve"><value>变量 {0} 未选择输入测点</value></data>
+  <data name="Validation_KeyRequired" xml:space="preserve"><value>Key 不能为空</value></data>
+  <data name="Validation_ServerRequired" xml:space="preserve"><value>服务器不能为空</value></data>
+  <data name="Validation_NodeRequired" xml:space="preserve"><value>节点不能为空</value></data>
+  <data name="Validation_IntervalRange" xml:space="preserve"><value>采样间隔必须大于 0 ms</value></data>
+  <data name="Validation_DeadbandRange" xml:space="preserve"><value>死区必须在 0-100 范围内</value></data>
+  <data name="Validation_TcpAddressFormat" xml:space="preserve"><value>TCP 地址格式应为 host:port</value></data>
+  <data name="Validation_UaServerPrefix" xml:space="preserve"><value>UA 服务器须以 opc.tcp:// 开头</value></data>
 </root>

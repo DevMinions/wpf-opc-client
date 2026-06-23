@@ -10,6 +10,7 @@ public sealed partial class WorkspaceOverviewViewModel : ObservableObject
 
     private readonly IDashboardOrchestratorView _orch;
     private readonly Func<DateTimeOffset> _clock;
+    private readonly Dc.App.Services.I18n.ILocalizer _loc;
 
     private string? _taskId;
     private long? _lastValueCount;
@@ -25,10 +26,12 @@ public sealed partial class WorkspaceOverviewViewModel : ObservableObject
 
     public ObservableCollection<double> SparklineRates { get; } = new();
 
-    public WorkspaceOverviewViewModel(IDashboardOrchestratorView orchestratorView, Func<DateTimeOffset> clock)
+    public WorkspaceOverviewViewModel(IDashboardOrchestratorView orchestratorView, Func<DateTimeOffset> clock,
+        Dc.App.Services.I18n.ILocalizer? localizer = null)
     {
         _orch = orchestratorView;
         _clock = clock;
+        _loc = localizer ?? new Dc.App.Services.I18n.ResourceLocalizer();
     }
 
     public void SetTask(string? taskId)
@@ -62,7 +65,7 @@ public sealed partial class WorkspaceOverviewViewModel : ObservableObject
         SubscribedTags = diag.SubscribedTagCount;
         UptimeDisplay = FormatUptime(now - diag.StartedAt);
         LastHeartbeatDisplay = diag.LastHeartbeatAt is { } hb
-            ? $"{(now - hb).TotalSeconds:F0}s 前"
+            ? _loc.Format("Overview_SecondsAgo", $"{(now - hb).TotalSeconds:F0}")
             : "—";
 
         if (_lastValueCount is { } prev)

@@ -20,6 +20,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     private readonly ITaskEditorDialog? _editor;
     private readonly Dc.App.Services.IConfirmDialog _confirm;
     private readonly Dc.App.Services.INotificationService _notify;
+    private readonly Dc.App.Services.I18n.ILocalizer _loc;
     private Dictionary<string, Dc.Domain.Entities.CollectorTask> _tasksById = new();
 
     public ObservableCollection<TaskMasterRow> AllTasks { get; } = new();
@@ -56,7 +57,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         IEmbeddableDiagPanel? diagPanel = null,
         WorkspaceConfigViewModel? config = null,
         Dc.App.Services.IConfirmDialog? confirm = null,
-        Dc.App.Services.INotificationService? notify = null)
+        Dc.App.Services.INotificationService? notify = null,
+        Dc.App.Services.I18n.ILocalizer? localizer = null)
     {
         _source = source;
         _orch = orchestratorView;
@@ -66,6 +68,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         _editor = editor;
         _confirm = confirm ?? new DenyConfirm();
         _notify = notify ?? new NullNotification();
+        _loc = localizer ?? new Dc.App.Services.I18n.ResourceLocalizer();
         Overview = overview;
         TagsPanel = tagsPanel;
         TagsPanel.IsEmbedded = true;
@@ -242,7 +245,7 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            _notify.ShowError("任务启动失败", ex.Message);
+            _notify.ShowError(_loc["Toast_TaskStartFailedTitle"], ex.Message);
         }
         await LoadAsync();
     }
@@ -298,8 +301,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
 
         // 先确认，确认后才产生任何副作用（取消 = 真 no-op，不停不删）
         var t = await _source.GetCountsAsync(id);
-        if (!_confirm.Confirm("删除任务",
-                $"将删除任务「{name}」及其 {t} 个 Tag，不可恢复。确定删除？"))
+        if (!_confirm.Confirm(_loc["Confirm_DeleteTaskTitle"],
+                _loc.Format("Confirm_DeleteTaskMessage", name, t)))
             return;
 
         // 确认后：运行中先停，再级联删

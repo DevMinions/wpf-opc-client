@@ -303,4 +303,79 @@
   <data name="About_Body" xml:space="preserve"><value>A general-purpose OPC data collection client supporting OPC UA / DA / AE (DA and AE require Windows + a COM SDK). The serializer and publisher are decoupled; the broker protocol is chosen by the deployment.</value></data>
   <data name="About_BodyRewrite" xml:space="preserve"><value>Source fully rewritten from the Wails (Go) version to .NET 8 + WPF.</value></data>
   <data name="About_Close" xml:space="preserve"><value>Close</value></data>
+
+  <!-- Batch C: Workspace / Tag / Task / Config VM runtime strings -->
+  <data name="Common_Error" xml:space="preserve"><value>Error</value></data>
+
+  <!-- Workspace task CRUD -->
+  <data name="Toast_TaskStartFailedTitle" xml:space="preserve"><value>Failed to start task</value></data>
+  <data name="Confirm_DeleteTaskTitle" xml:space="preserve"><value>Delete Task</value></data>
+  <data name="Confirm_DeleteTaskMessage" xml:space="preserve"><value>This will delete task "{0}" and its {1} Tag(s). This cannot be undone. Delete?</value></data>
+  <data name="Overview_SecondsAgo" xml:space="preserve"><value>{0}s ago</value></data>
+
+  <!-- Tag management (TagsViewModel) -->
+  <data name="Tags_Title" xml:space="preserve"><value>Tag Management</value></data>
+  <data name="Tags_CannotDeleteTitle" xml:space="preserve"><value>Cannot Delete</value></data>
+  <data name="Tags_TagReferencedByFormula" xml:space="preserve"><value>This tag is referenced by formula(s) {0}. Please modify the formula or delete the corresponding virtual tag first.</value></data>
+  <data name="Tags_DeleteConfirmTitle" xml:space="preserve"><value>Confirm Delete</value></data>
+  <data name="Tags_DeleteConfirmMessage" xml:space="preserve"><value>Delete Tag {0}?</value></data>
+  <data name="Tags_CannotImportTitle" xml:space="preserve"><value>Cannot Import</value></data>
+  <data name="Tags_CannotImportMessage" xml:space="preserve"><value>Please select a task under Tasks before importing Tags.</value></data>
+  <data name="Tags_ExcelFilter" xml:space="preserve"><value>Excel Workbook|*.xlsx</value></data>
+  <data name="Tags_ImportDialogTitle" xml:space="preserve"><value>Import Tags</value></data>
+  <data name="Tags_ExportDialogTitle" xml:space="preserve"><value>Export Tags</value></data>
+  <data name="Tags_ReadFailed" xml:space="preserve"><value>Read failed: {0}</value></data>
+  <data name="Tags_HotAddFailed" xml:space="preserve"><value>Hot-add failed for task {0}: {1}</value></data>
+  <data name="Tags_InsertFailed" xml:space="preserve"><value>Insert failed (possible duplicate Item): {0}</value></data>
+  <data name="Tags_ImportSucceeded" xml:space="preserve"><value>Imported: {0} row(s)</value></data>
+  <data name="Tags_ImportErrorsHeader" xml:space="preserve"><value>Errors ({0}):</value></data>
+  <data name="Tags_ImportResultTitle" xml:space="preserve"><value>Import Result</value></data>
+  <data name="Tags_ExportSucceededTitle" xml:space="preserve"><value>Export Succeeded</value></data>
+  <data name="Tags_ExportSucceededMessage" xml:space="preserve"><value>Exported {0} row(s) to {1}</value></data>
+  <data name="Tags_ExportFailed" xml:space="preserve"><value>Export failed: {0}</value></data>
+  <data name="Tags_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data>
+
+  <!-- Restart prompts -->
+  <data name="Restart_VirtualTagSaved" xml:space="preserve"><value>Virtual tag saved; restart the task to take effect.</value></data>
+  <data name="Restart_VirtualTagOrFormulaSaved" xml:space="preserve"><value>Virtual tag / formula saved; restart the task to take effect.</value></data>
+  <data name="Restart_ScaleOffsetSaved" xml:space="preserve"><value>Scale / offset saved; restart the task to take effect.</value></data>
+
+  <!-- Editor titles -->
+  <data name="TagEditor_TitleNew" xml:space="preserve"><value>New Tag</value></data>
+  <data name="TagEditor_TitleEdit" xml:space="preserve"><value>Edit Tag</value></data>
+  <data name="TaskEditor_TitleNew" xml:space="preserve"><value>New Task</value></data>
+  <data name="TaskEditor_TitleEdit" xml:space="preserve"><value>Edit Task</value></data>
+  <data name="ConfigEditor_TitleNew" xml:space="preserve"><value>New Config</value></data>
+  <data name="ConfigEditor_TitleEdit" xml:space="preserve"><value>Edit Config</value></data>
+
+  <!-- Task editor: server field varies by protocol + scan status -->
+  <data name="TaskEditor_ServerLabelProgId" xml:space="preserve"><value>ProgID:</value></data>
+  <data name="TaskEditor_ServerLabelUa" xml:space="preserve"><value>Server:</value></data>
+  <data name="TaskEditor_ServerPlaceholderProgId" xml:space="preserve"><value>e.g. SampleCompany.DaSample</value></data>
+  <data name="TaskEditor_ServerPlaceholderUa" xml:space="preserve"><value>opc.tcp://host:port</value></data>
+  <data name="TaskEditor_ServerTooltipProgId" xml:space="preserve"><value>OPC ProgID — DA e.g.: SampleCompany.DaSample; AE e.g.: SampleCompany.AeSample</value></data>
+  <data name="TaskEditor_ServerTooltipUa" xml:space="preserve"><value>UA endpoint URL, must start with opc.tcp://</value></data>
+  <data name="TaskEditor_ScanFilledWithClsid" xml:space="preserve"><value>Filled: {0} / {1} @ {2}</value></data>
+  <data name="TaskEditor_ScanFilled" xml:space="preserve"><value>Filled: {0} @ {1}</value></data>
+  <data name="TaskEditor_ScanNoBrowser" xml:space="preserve"><value>No browser registered for protocol {0}</value></data>
+  <data name="TaskEditor_Scanning" xml:space="preserve"><value>Scanning {0}…</value></data>
+  <data name="TaskEditor_ScanNoServers" xml:space="preserve"><value>No OPC servers found (check OPCEnum / DCOM / firewall)</value></data>
+  <data name="TaskEditor_ScanFoundCount" xml:space="preserve"><value>Found {0} server(s)</value></data>
+  <data name="TaskEditor_ScanFailed" xml:space="preserve"><value>Scan failed: {0}</value></data>
+
+  <!-- Save validation messages -->
+  <data name="Validation_ItemRequired" xml:space="preserve"><value>Item cannot be empty</value></data>
+  <data name="Validation_ScaleMustBeNumber" xml:space="preserve"><value>Scale factor must be a number</value></data>
+  <data name="Validation_OffsetMustBeNumber" xml:space="preserve"><value>Offset must be a number</value></data>
+  <data name="Validation_FormulaNameRequired" xml:space="preserve"><value>Formula name cannot be empty</value></data>
+  <data name="Validation_FormulaNameDuplicate" xml:space="preserve"><value>Formula name already exists in this task</value></data>
+  <data name="Validation_ExpressionRequired" xml:space="preserve"><value>Expression cannot be empty</value></data>
+  <data name="Validation_InputNotSelected" xml:space="preserve"><value>Variable {0} has no input tag selected</value></data>
+  <data name="Validation_KeyRequired" xml:space="preserve"><value>Key cannot be empty</value></data>
+  <data name="Validation_ServerRequired" xml:space="preserve"><value>Server cannot be empty</value></data>
+  <data name="Validation_NodeRequired" xml:space="preserve"><value>Node cannot be empty</value></data>
+  <data name="Validation_IntervalRange" xml:space="preserve"><value>Sampling interval must be greater than 0 ms</value></data>
+  <data name="Validation_DeadbandRange" xml:space="preserve"><value>Deadband must be within 0-100</value></data>
+  <data name="Validation_TcpAddressFormat" xml:space="preserve"><value>TCP address format should be host:port</value></data>
+  <data name="Validation_UaServerPrefix" xml:space="preserve"><value>UA server must start with opc.tcp://</value></data>
 </root>

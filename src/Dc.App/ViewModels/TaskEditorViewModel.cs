@@ -13,6 +13,7 @@ namespace Dc.App.ViewModels;
 public partial class TaskEditorViewModel : ObservableValidator
 {
     private readonly Dictionary<OpcProtocol, IOpcBrowserFactory> _factories;
+    private readonly Dc.App.Services.I18n.ILocalizer _loc;
 
     [ObservableProperty] private string _title;
 
@@ -63,11 +64,11 @@ public partial class TaskEditorViewModel : ObservableValidator
 
     // 「服务器」字段一词多义：classic OPC 填 ProgID，UA 填 opc.tcp:// URL。按协议切换标签/占位/提示，
     // 避免一个 placeholder 自己写「DA: ProgID / UA: opc.tcp://…」让用户两边猜。
-    public string ServerLabel => IsClassicOpcProtocol ? "ProgID:" : "服务器:";
-    public string ServerPlaceholder => IsClassicOpcProtocol ? "如 SampleCompany.DaSample" : "opc.tcp://host:port";
+    public string ServerLabel => IsClassicOpcProtocol ? _loc["TaskEditor_ServerLabelProgId"] : _loc["TaskEditor_ServerLabelUa"];
+    public string ServerPlaceholder => IsClassicOpcProtocol ? _loc["TaskEditor_ServerPlaceholderProgId"] : _loc["TaskEditor_ServerPlaceholderUa"];
     public string ServerToolTip => IsClassicOpcProtocol
-        ? "OPC ProgID — DA 例: SampleCompany.DaSample；AE 例: SampleCompany.AeSample"
-        : "UA 端点 URL，须以 opc.tcp:// 开头";
+        ? _loc["TaskEditor_ServerTooltipProgId"]
+        : _loc["TaskEditor_ServerTooltipUa"];
     // UA 不读 Node（启动时用 Server 字段的 opc.tcp URL，见 DbTaskLauncher.ToStartRequest），
     // 死区对 UA 订阅协议错配——两者仅 classic OPC 需要，UA 时隐藏。
     public bool ShowClassicOnlyFields => IsClassicOpcProtocol;
@@ -84,17 +85,19 @@ public partial class TaskEditorViewModel : ObservableValidator
 
     public TaskEditorViewModel() : this(null, Array.Empty<IOpcBrowserFactory>()) { }
 
-    public TaskEditorViewModel(CollectorTask? existing, IEnumerable<IOpcBrowserFactory> browserFactories)
+    public TaskEditorViewModel(CollectorTask? existing, IEnumerable<IOpcBrowserFactory> browserFactories,
+        Dc.App.Services.I18n.ILocalizer? localizer = null)
     {
         _factories = browserFactories.ToDictionary(f => f.Protocol);
+        _loc = localizer ?? new Dc.App.Services.I18n.ResourceLocalizer();
 
         if (existing is null)
         {
-            _title = "新建任务";
+            _title = _loc["TaskEditor_TitleNew"];
         }
         else
         {
-            _title = "编辑任务";
+            _title = _loc["TaskEditor_TitleEdit"];
             OriginalId = existing.Id;
             _name = existing.Name ?? string.Empty;
             _server = existing.Server;
@@ -149,13 +152,13 @@ public partial class TaskEditorViewModel : ObservableValidator
             {
                 Server = path.Substring(0, slash);
                 Clsid = path.Substring(slash + 1);
-                ScanStatus = $"已填充：{Server} / {Clsid} @ {host}";
+                ScanStatus = _loc.Format("TaskEditor_ScanFilledWithClsid", Server, Clsid, host);
             }
             else
             {
                 Server = path;
                 Clsid = string.Empty;
-                ScanStatus = $"已填充：{Server} @ {host}";
+                ScanStatus = _loc.Format("TaskEditor_ScanFilled", Server, host);
             }
         }
     }
@@ -165,11 +168,11 @@ public partial class TaskEditorViewModel : ObservableValidator
     {
         if (!_factories.TryGetValue(Protocol, out var factory))
         {
-            ScanStatus = $"未注册 {Protocol} 协议的浏览器";
+            ScanStatus = _loc.Format("TaskEditor_ScanNoBrowser", Protocol);
             return;
         }
         IsScanning = true;
-        ScanStatus = $"正在扫描 {DiscoveryHost}…";
+        ScanStatus = _loc.Format("TaskEditor_Scanning", DiscoveryHost);
         IOpcBrowser? scanner = null;
         try
         {
@@ -178,12 +181,12 @@ public partial class TaskEditorViewModel : ObservableValidator
             DiscoveredServers.Clear();
             foreach (var u in urls) DiscoveredServers.Add(u);
             ScanStatus = urls.Count == 0
-                ? "未发现 OPC 服务器（检查 OPCEnum / DCOM / 防火墙）"
-                : $"发现 {urls.Count} 个服务器";
+                ? _loc["TaskEditor_ScanNoServers"]
+                : _loc.Format("TaskEditor_ScanFoundCount", urls.Count);
         }
         catch (Exception ex)
         {
-            ScanStatus = $"扫描失败: {ex.Message}";
+            ScanStatus = _loc.Format("TaskEditor_ScanFailed", ex.Message);
         }
         finally
         {
@@ -192,22 +195,26 @@ public partial class TaskEditorViewModel : ObservableValidator
         }
     }
 
-    // 保存时点的兜底校验：字段校验特性 + 协议相关的 opc.tcp 前缀检查（属性特性无法表达条件校验）。
+    // 保存时点的兜底校验：DataAnnotation 特性只驱动 HasErrors/红框(其消息文本不展示给用户),
+    // 这里据相同字段条件产出本地化的用户可见错误消息(含属性特性无法表达的协议相关 opc.tcp 前缀检查)。
     public IReadOnlyList<string> Validate()
     {
         ValidateAllProperties();
-        var errors = GetErrors()
-            .Select(e => e.ErrorMessage ?? string.Empty)
-            .Where(m => m.Length > 0)
-            .Distinct()
-            .ToList();
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(Server)) errors.Add(_loc["Validation_ServerRequired"]);
+        if (string.IsNullOrWhiteSpace(Node)) errors.Add(_loc["Validation_NodeRequired"]);
+        if (Interval < 1) errors.Add(_loc["Validation_IntervalRange"]);
+        if (Deviation is < 0 or > 100) errors.Add(_loc["Validation_DeadbandRange"]);
+        if (!System.Text.RegularExpressions.Regex.IsMatch(TcpAddress ?? string.Empty, @"^[^:]+:\d+$"))
+            errors.Add(_loc["Validation_TcpAddressFormat"]);
 
         // UA 服务器须为 opc.tcp:// 端点 URL；classic OPC 此字段是 ProgID，不校验前缀。
         if (Protocol == OpcProtocol.Ua
             && !string.IsNullOrWhiteSpace(Server)
             && !Server.TrimStart().StartsWith("opc.tcp://", StringComparison.OrdinalIgnoreCase))
         {
-            errors.Add("UA 服务器须以 opc.tcp:// 开头");
+            errors.Add(_loc["Validation_UaServerPrefix"]);
         }
         return errors;
     }

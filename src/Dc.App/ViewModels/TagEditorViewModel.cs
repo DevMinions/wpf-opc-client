@@ -18,6 +18,7 @@ public partial class TagEditorViewModel : ObservableObject
     private readonly IReadOnlyCollection<Tag>? _taskTags;
     private readonly IReadOnlyCollection<Formula>? _existingFormulas;
     private readonly IFormulaValidator? _formulaValidator;
+    private readonly Dc.App.Services.I18n.ILocalizer _loc;
 
     [ObservableProperty] private string _title;
     [ObservableProperty] private string _item = string.Empty;
@@ -46,7 +47,8 @@ public partial class TagEditorViewModel : ObservableObject
         Func<string, CollectorTask?>? taskLookup = null,
         IReadOnlyCollection<Tag>? taskTags = null,
         IReadOnlyCollection<Formula>? existingFormulas = null,
-        IFormulaValidator? formulaValidator = null)
+        IFormulaValidator? formulaValidator = null,
+        Dc.App.Services.I18n.ILocalizer? localizer = null)
     {
         _taskId = taskId;
         _taskTags = taskTags;
@@ -54,10 +56,11 @@ public partial class TagEditorViewModel : ObservableObject
         _formulaValidator = formulaValidator;
         _browseDialog = browseDialog;
         _taskLookup = taskLookup;
+        _loc = localizer ?? new Dc.App.Services.I18n.ResourceLocalizer();
 
         if (existing is null)
         {
-            _title = "新建 Tag";
+            _title = _loc["TagEditor_TitleNew"];
         }
         else
         {
@@ -68,7 +71,7 @@ public partial class TagEditorViewModel : ObservableObject
                 ? existing.ScaleFactor.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
             _offset = existing.Offset.HasValue
                 ? existing.Offset.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
-            _title = "编辑 Tag";
+            _title = _loc["TagEditor_TitleEdit"];
         }
 
         Formula? existingVirtualFormula = null;
@@ -220,31 +223,31 @@ public partial class TagEditorViewModel : ObservableObject
 
         if (!IsVirtual)
         {
-            if (string.IsNullOrWhiteSpace(Item)) errors.Add("Item 不能为空");
+            if (string.IsNullOrWhiteSpace(Item)) errors.Add(_loc["Validation_ItemRequired"]);
             if (!string.IsNullOrWhiteSpace(ScaleFactor)
                 && !double.TryParse(ScaleFactor.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _))
-                errors.Add("缩放系数必须是数字");
+                errors.Add(_loc["Validation_ScaleMustBeNumber"]);
             if (!string.IsNullOrWhiteSpace(Offset)
                 && !double.TryParse(Offset.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _))
-                errors.Add("偏移量必须是数字");
+                errors.Add(_loc["Validation_OffsetMustBeNumber"]);
             return errors;
         }
 
         // 虚拟模式
-        if (string.IsNullOrWhiteSpace(FormulaName)) errors.Add("公式名不能为空");
+        if (string.IsNullOrWhiteSpace(FormulaName)) errors.Add(_loc["Validation_FormulaNameRequired"]);
         else if (_taskTags is not null)
         {
             // 任务内唯一(排除自身):比对其余虚拟 Tag 的 Item(虚拟 Tag Item=公式名)
             var dup = _taskTags.Any(t => t.Id != OriginalId
                 && t.IsVirtual
                 && string.Equals(t.Item, FormulaName.Trim(), StringComparison.OrdinalIgnoreCase));
-            if (dup) errors.Add("公式名在任务内已存在");
+            if (dup) errors.Add(_loc["Validation_FormulaNameDuplicate"]);
         }
-        if (string.IsNullOrWhiteSpace(Expression)) errors.Add("表达式不能为空");
+        if (string.IsNullOrWhiteSpace(Expression)) errors.Add(_loc["Validation_ExpressionRequired"]);
 
         // 每个提取出的变量必须选了 Tag
         foreach (var row in InputBindings.Where(r => r.SelectedTag is null))
-            errors.Add($"变量 {row.Alias} 未选择输入测点");
+            errors.Add(_loc.Format("Validation_InputNotSelected", row.Alias));
 
         // 类型可数值化 + 表达式语法
         var aliasToDataType = InputBindings

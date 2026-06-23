@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Globalization;
 using Dc.App.ViewModels;
+using Dc.App.Services.I18n;
 using Dc.Domain.Entities;
 using Dc.Infrastructure.Orchestration;
 
@@ -7,6 +9,10 @@ namespace Dc.App.Tests.ViewModels;
 
 public class TagEditorViewModelTests
 {
+    // 本地化后标题/校验消息按 culture 取值;断言中文字面量须锁定中文(非中文 OS 否则取英文)。
+    public TagEditorViewModelTests() =>
+        LocalizationManager.Instance.SetCulture(new CultureInfo("zh-CN"));
+
     [Fact]
     public void Create_New_TitlePlain_AttachesToTask()
     {

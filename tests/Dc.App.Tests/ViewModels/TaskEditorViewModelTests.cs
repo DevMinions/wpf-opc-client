@@ -1,4 +1,6 @@
+using System.Globalization;
 using Dc.App.ViewModels;
+using Dc.App.Services.I18n;
 using Dc.Domain.Entities;
 using Dc.Opc.Abstractions;
 
@@ -6,6 +8,10 @@ namespace Dc.App.Tests.ViewModels;
 
 public class TaskEditorViewModelTests
 {
+    // 本地化后 ServerLabel/占位等按 culture 取值;断言中文字面量须锁定中文(非中文 OS 否则取英文)。
+    public TaskEditorViewModelTests() =>
+        LocalizationManager.Instance.SetCulture(new CultureInfo("zh-CN"));
+
     private static TaskEditorViewModel New() => new(null, Array.Empty<IOpcBrowserFactory>());
 
     [Fact]

@@ -5,6 +5,8 @@ namespace Dc.App.ViewModels;
 
 public partial class ConfigEntryEditorViewModel : ObservableObject
 {
+    private readonly Dc.App.Services.I18n.ILocalizer _loc;
+
     [ObservableProperty] private string _title;
     [ObservableProperty] private string _key = string.Empty;
     [ObservableProperty] private string _value = string.Empty;
@@ -15,15 +17,17 @@ public partial class ConfigEntryEditorViewModel : ObservableObject
     public string? OriginalId { get; }
     public bool KeyIsReadOnly => OriginalId is not null;
 
-    public ConfigEntryEditorViewModel(ConfigEntry? existing)
+    public ConfigEntryEditorViewModel(ConfigEntry? existing,
+        Dc.App.Services.I18n.ILocalizer? localizer = null)
     {
+        _loc = localizer ?? new Dc.App.Services.I18n.ResourceLocalizer();
         if (existing is null)
         {
-            _title = "新建配置";
+            _title = _loc["ConfigEditor_TitleNew"];
         }
         else
         {
-            _title = "编辑配置";
+            _title = _loc["ConfigEditor_TitleEdit"];
             OriginalId = existing.Id;
             _key = existing.Key;
             _value = existing.Value;
@@ -43,7 +47,7 @@ public partial class ConfigEntryEditorViewModel : ObservableObject
     public IReadOnlyList<string> Validate()
     {
         var errors = new List<string>();
-        if (string.IsNullOrWhiteSpace(Key)) errors.Add("Key 不能为空");
+        if (string.IsNullOrWhiteSpace(Key)) errors.Add(_loc["Validation_KeyRequired"]);
         return errors;
     }
 

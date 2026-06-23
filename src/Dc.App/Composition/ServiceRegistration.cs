@@ -205,7 +205,8 @@ public static class ServiceRegistration
         services.AddSingleton<Dc.App.ViewModels.Workspace.WorkspaceOverviewViewModel>(sp =>
             new Dc.App.ViewModels.Workspace.WorkspaceOverviewViewModel(
                 sp.GetRequiredService<Dc.App.ViewModels.Dashboard.IDashboardOrchestratorView>(),
-                () => DateTimeOffset.UtcNow));
+                () => DateTimeOffset.UtcNow,
+                sp.GetRequiredService<Dc.App.Services.I18n.ILocalizer>()));
         // 全局监控分离（S4）：LiveData/Diagnostics 同时挂「全局监控」导航与工作台 tab，
         // 工作台用独立实例，避免工作台设的 TaskFilter/TaskScope 污染全局视图。
         services.AddSingleton<Dc.App.ViewModels.Workspace.IEmbeddableLivePanel>(
@@ -232,7 +233,8 @@ public static class ServiceRegistration
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableDiagPanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel>(),
                 confirm: sp.GetRequiredService<Dc.App.Services.IConfirmDialog>(),
-                notify: sp.GetRequiredService<Dc.App.Services.INotificationService>()));
+                notify: sp.GetRequiredService<Dc.App.Services.INotificationService>(),
+                localizer: sp.GetRequiredService<Dc.App.Services.I18n.ILocalizer>()));
 
         // === 旧 VM 保留（其他 View 由 Shell 路由继续承载） ===
         services.AddSingleton<System.Windows.Threading.Dispatcher>(
@@ -245,7 +247,8 @@ public static class ServiceRegistration
             sp.GetRequiredService<IFilePicker>(),
             sp.GetRequiredService<TaskOrchestrator>(),
             // 空状态「浏览节点添加 Tag」CTA → 切到浏览页(发现→批量加 Tag 主路径)
-            navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>().NavigateCommand.Execute(key)));
+            navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>().NavigateCommand.Execute(key),
+            localizer: sp.GetRequiredService<Dc.App.Services.I18n.ILocalizer>()));
         services.AddSingleton<LiveDataViewModel>(sp => new LiveDataViewModel(
             sp.GetRequiredService<TaskOrchestrator>(),
             System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher,

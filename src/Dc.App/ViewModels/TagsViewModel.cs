@@ -21,8 +21,9 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     private readonly IFilePicker _filePicker;
     private readonly TaskOrchestrator _orchestrator;
     private readonly Action<string>? _navigate; // 导航到其它页(空状态「浏览节点」CTA → "browse")
+    private readonly Dc.App.Services.I18n.ILocalizer _loc;
 
-    [ObservableProperty] private string _title = "Tag 管理";
+    [ObservableProperty] private string _title;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private TagRow? _selectedTag;
     [ObservableProperty] private string _searchText = string.Empty;
@@ -45,7 +46,8 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         ITagExcelService excel,
         IFilePicker filePicker,
         TaskOrchestrator orchestrator,
-        Action<string>? navigate = null)
+        Action<string>? navigate = null,
+        Dc.App.Services.I18n.ILocalizer? localizer = null)
     {
         _dbFactory = dbFactory;
         _editor = editor;
@@ -53,6 +55,8 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         _filePicker = filePicker;
         _orchestrator = orchestrator;
         _navigate = navigate;
+        _loc = localizer ?? new Dc.App.Services.I18n.ResourceLocalizer();
+        _title = _loc["Tags_Title"];
         _ = LoadAsync();
     }
 
@@ -153,13 +157,14 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             .Distinct().ToListAsync();
         if (referencingFormulas.Count > 0)
         {
-            MessageDialog.Show("无法删除",
-                $"该测点被公式 {string.Join(", ", referencingFormulas)} 引用,请先修改公式或删除对应虚拟测点。",
+            MessageDialog.Show(_loc["Tags_CannotDeleteTitle"],
+                _loc.Format("Tags_TagReferencedByFormula", string.Join(", ", referencingFormulas)),
                 MessageDialogKind.Warning);
             return;
         }
 
-        var confirm = MessageDialog.Confirm("删除确认", $"确定删除 Tag {tag.Item}？", MessageDialogKind.Warning);
+        var confirm = MessageDialog.Confirm(_loc["Tags_DeleteConfirmTitle"],
+            _loc.Format("Tags_DeleteConfirmMessage", tag.Item), MessageDialogKind.Warning);
         if (!confirm) return;
 
         await using var db = await _dbFactory.CreateDbContextAsync();
@@ -190,11 +195,11 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         // Tag 直接挂任务:导入落到当前任务(TaskScope)。无任务上下文(独立页)则无法导入。
         if (TaskScope is null)
         {
-            MessageDialog.Show("无法导入", "请先在采集任务里选中一个任务再导入 Tag。", MessageDialogKind.Warning);
+            MessageDialog.Show(_loc["Tags_CannotImportTitle"], _loc["Tags_CannotImportMessage"], MessageDialogKind.Warning);
             return;
         }
 
-        var path = _filePicker.PickOpenFile("Excel 工作簿|*.xlsx", "导入 Tag");
+        var path = _filePicker.PickOpenFile(_loc["Tags_ExcelFilter"], _loc["Tags_ImportDialogTitle"]);
         if (path is null) return;
 
         IReadOnlyList<TagImportRow> rows;
@@ -205,7 +210,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         }
         catch (Exception ex)
         {
-            MessageDialog.Show("错误", $"读取失败: {ex.Message}", MessageDialogKind.Error);
+            MessageDialog.Show(_loc["Common_Error"], _loc.Format("Tags_ReadFailed", ex.Message), MessageDialogKind.Error);
             return;
         }
 
@@ -238,26 +243,26 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
                         await _orchestrator.AddTagsAsync(byTask.Key,
                             byTask.Select(t => new TagDescriptor(t.Id, t.Item, t.DataType)).ToArray());
                     }
-                    catch (Exception ex) { errors.Add($"任务 {byTask.Key} 热加失败: {ex.Message}"); }
+                    catch (Exception ex) { errors.Add(_loc.Format("Tags_HotAddFailed", byTask.Key, ex.Message)); }
                 }
             }
             catch (DbUpdateException ex)
             {
-                errors.Add($"插入失败（可能有重复 Item）: {ex.InnerException?.Message ?? ex.Message}");
+                errors.Add(_loc.Format("Tags_InsertFailed", ex.InnerException?.Message ?? ex.Message));
             }
         }
 
-        var msg = $"成功导入: {inserted} 条";
+        var msg = _loc.Format("Tags_ImportSucceeded", inserted);
         if (errors.Count > 0)
-            msg += $"\n错误 ({errors.Count}):\n" + string.Join("\n", errors.Take(8));
-        MessageDialog.Show("导入结果", msg, errors.Count > 0 ? MessageDialogKind.Warning : MessageDialogKind.Success);
+            msg += "\n" + _loc.Format("Tags_ImportErrorsHeader", errors.Count) + "\n" + string.Join("\n", errors.Take(8));
+        MessageDialog.Show(_loc["Tags_ImportResultTitle"], msg, errors.Count > 0 ? MessageDialogKind.Warning : MessageDialogKind.Success);
         await LoadAsync();
     }
 
     [RelayCommand]
     private async Task ExportAsync()
     {
-        var path = _filePicker.PickSaveFile("Excel 工作簿|*.xlsx", $"tags-{DateTime.Now:yyyyMMdd-HHmmss}.xlsx", "导出 Tag");
+        var path = _filePicker.PickSaveFile(_loc["Tags_ExcelFilter"], $"tags-{DateTime.Now:yyyyMMdd-HHmmss}.xlsx", _loc["Tags_ExportDialogTitle"]);
         if (path is null) return;
 
         await using var db = await _dbFactory.CreateDbContextAsync();
@@ -275,11 +280,11 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         {
             await using var fs = File.Create(path);
             _excel.Write(list, fs);
-            MessageDialog.Show("导出成功", $"已导出 {list.Count} 条到 {path}", MessageDialogKind.Success);
+            MessageDialog.Show(_loc["Tags_ExportSucceededTitle"], _loc.Format("Tags_ExportSucceededMessage", list.Count, path), MessageDialogKind.Success);
         }
         catch (Exception ex)
         {
-            MessageDialog.Show("错误", $"导出失败: {ex.Message}", MessageDialogKind.Error);
+            MessageDialog.Show(_loc["Common_Error"], _loc.Format("Tags_ExportFailed", ex.Message), MessageDialogKind.Error);
         }
     }
 
@@ -341,7 +346,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         }
         catch (DbUpdateException ex)
         {
-            MessageDialog.Show("错误", $"保存失败:{ex.InnerException?.Message ?? ex.Message}", MessageDialogKind.Error);
+            MessageDialog.Show(_loc["Common_Error"], _loc.Format("Tags_SaveFailed", ex.InnerException?.Message ?? ex.Message), MessageDialogKind.Error);
             return;
         }
 
@@ -351,7 +356,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         if (tag.IsVirtual)
         {
             if (IsTaskRunning(tag.TaskId))
-                MessageDialog.Show("提示", "虚拟测点已保存,重启任务后生效。", MessageDialogKind.Info);
+                MessageDialog.Show(_loc["Dialog_Notice"], _loc["Restart_VirtualTagSaved"], MessageDialogKind.Info);
         }
         else
         {
@@ -408,13 +413,13 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         {
             // 真实 → 虚拟:卸载旧真实订阅;虚拟不订阅,运行中提示重启。
             await TryHotRemoveAsync(oldTaskId, oldItem);
-            if (running) MessageDialog.Show("提示", "虚拟测点/公式已保存,重启任务后生效。", MessageDialogKind.Info);
+            if (running) MessageDialog.Show(_loc["Dialog_Notice"], _loc["Restart_VirtualTagOrFormulaSaved"], MessageDialogKind.Info);
         }
         else if (wasVirtual && !entity.IsVirtual)
         {
             // 虚拟 → 真实:旧虚拟未订阅无需卸载;热加新真实订阅;运行中提示重启(公式已移除)。
             await TryHotAddAsync(entity);
-            if (running) MessageDialog.Show("提示", "虚拟测点/公式已保存,重启任务后生效。", MessageDialogKind.Info);
+            if (running) MessageDialog.Show(_loc["Dialog_Notice"], _loc["Restart_VirtualTagOrFormulaSaved"], MessageDialogKind.Info);
         }
         else if (!entity.IsVirtual && (oldItem != entity.Item || oldTaskId != entity.TaskId))
         {
@@ -422,17 +427,17 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             await TryHotRemoveAsync(oldTaskId, oldItem);
             await TryHotAddAsync(entity);
             if (running && scaleChanged)
-                MessageDialog.Show("提示", "缩放/偏移已保存,重启任务后生效。", MessageDialogKind.Info);
+                MessageDialog.Show(_loc["Dialog_Notice"], _loc["Restart_ScaleOffsetSaved"], MessageDialogKind.Info);
         }
         else if (!entity.IsVirtual && running && scaleChanged)
         {
             // 真实 Tag 仅缩放/偏移变更:运行中 transform 用启动快照,提示重启生效。
-            MessageDialog.Show("提示", "缩放/偏移已保存,重启任务后生效。", MessageDialogKind.Info);
+            MessageDialog.Show(_loc["Dialog_Notice"], _loc["Restart_ScaleOffsetSaved"], MessageDialogKind.Info);
         }
         else if (entity.IsVirtual && running)
         {
             // 虚拟 → 虚拟(公式变):不热同步,提示重启。
-            MessageDialog.Show("提示", "虚拟测点/公式已保存,重启任务后生效。", MessageDialogKind.Info);
+            MessageDialog.Show(_loc["Dialog_Notice"], _loc["Restart_VirtualTagOrFormulaSaved"], MessageDialogKind.Info);
         }
 
         var idx = Tags.IndexOf(SelectedTag);
