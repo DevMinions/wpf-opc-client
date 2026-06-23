@@ -17,7 +17,7 @@ public sealed class AboutViewModel : ObservableObject
     public AboutViewModel()
     {
         var asm = typeof(AboutViewModel).Assembly;
-        Product = asm.GetCustomAttribute<AssemblyProductAttribute>()?.Product ?? "Dc.App";
+        Product = LocalizationManager.Instance["Tray_Tooltip"];
         Version = $"v{asm.GetName().Version?.ToString(3) ?? "0.0.0"}";
         Company = asm.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "Dc";
         Description = LocalizationManager.Instance["About_Description"];
