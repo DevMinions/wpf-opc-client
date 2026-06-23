@@ -12,6 +12,8 @@ public sealed class TagRow
     public string Id => Tag.Id;
     public string Item => Tag.Item;
     public int DataType => Tag.DataType;
+    // 列表显示可读类型名(如 Int32 / Float64 / 默认),而非原始码(3/5/0)。
+    public string DataTypeText => OpcDataTypeOption.FromCode(Tag.DataType).DisplayName;
     public string TaskName { get; }
     public DateTime CreatedAt => Tag.CreatedAt;
 

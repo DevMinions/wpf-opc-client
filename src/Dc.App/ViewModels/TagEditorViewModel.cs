@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Dc.App.Services;
 using Dc.Domain.Entities;
 using Dc.Infrastructure.Orchestration;
+using Dc.Opc.Abstractions;
 
 namespace Dc.App.ViewModels;
 
@@ -148,11 +149,26 @@ public partial class TagEditorViewModel : ObservableObject
     private void Browse()
     {
         if (_browseDialog is null) return;
-        string? initialUri = null;
         var task = _taskLookup?.Invoke(_taskId);
-        if (task is not null && !string.IsNullOrWhiteSpace(task.Node))
-            initialUri = task.Node;
-        var nodeId = _browseDialog.PickNodeId(initialUri);
+        string? nodeId;
+        if (task is null)
+        {
+            nodeId = _browseDialog.PickNodeId();
+        }
+        else
+        {
+            // 镜像 DbTaskLauncher 的任务→连接映射:UA 端点在 Server(opc.tcp);DA/AE 用 Node=host、
+            // Server=ProgID、Clsid 兜底。把协议+端点预填给浏览对话框并自动连接,用户直接看到地址树。
+            var protocol = (OpcProtocol)task.Type;
+            string? serverUri = task.Node;
+            string? progId = task.Server;
+            if (protocol == OpcProtocol.Ua && task.Server.StartsWith("opc.tcp", StringComparison.OrdinalIgnoreCase))
+            {
+                serverUri = task.Server;
+                progId = null;
+            }
+            nodeId = _browseDialog.PickNodeId(protocol, serverUri, progId, task.Clsid);
+        }
         if (!string.IsNullOrWhiteSpace(nodeId)) Item = nodeId;
     }
 
