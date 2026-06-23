@@ -30,7 +30,8 @@ public class SettingsViewModelLanguageTests
         var vm = new LanguageSettingsViewModel(svc);
         vm.SelectedLanguage = AppLanguage.English;
         Assert.Equal(AppLanguage.English, svc.Current);
-        Assert.True(svc.ApplyCount >= 1);
+        Assert.Equal(AppLanguage.English, vm.SelectedLanguage);
+        Assert.Equal(1, svc.ApplyCount);
     }
 
     [Fact]
