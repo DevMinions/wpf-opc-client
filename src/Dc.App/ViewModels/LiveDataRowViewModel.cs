@@ -6,6 +6,7 @@ namespace Dc.App.ViewModels;
 public partial class LiveDataRowViewModel : ObservableObject
 {
     [ObservableProperty] private string _taskId = string.Empty;
+    [ObservableProperty] private string _taskName = string.Empty; // 可读任务名(DisplayName),「任务」列显示
     [ObservableProperty] private string _item = string.Empty;
     [ObservableProperty] private object? _value;
     [ObservableProperty] private ushort _quality;

@@ -134,7 +134,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Task -->
-                    <DataGridTextColumn Header="任务" Binding="{Binding TaskId}" Width="180">
+                    <DataGridTextColumn Header="任务" Binding="{Binding TaskName}" Width="180">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />

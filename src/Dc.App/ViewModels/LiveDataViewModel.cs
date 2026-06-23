@@ -8,7 +8,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dc.App.ViewModels.Workspace;
 using Dc.Infrastructure.Orchestration;
+using Dc.Infrastructure.Persistence;
 using Dc.Opc.Abstractions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Dc.App.ViewModels;
 
@@ -16,6 +18,8 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
 {
     private readonly TaskOrchestrator _orchestrator;
     private readonly Dispatcher _dispatcher;
+    private readonly IDbContextFactory<DcDbContext>? _dbFactory; // 解析任务可读名;测试/未注入时为 null,列回退显示 id
+    private IReadOnlyDictionary<string, string> _taskNames = new Dictionary<string, string>(StringComparer.Ordinal);
     private readonly Dictionary<string, LiveDataRowViewModel> _rowIndex = new();
     private readonly ConcurrentQueue<(string TaskId, TagValue Value)> _buffer = new();
     private readonly LiveValueCoalescer<(string TaskId, TagValue Value)> _coalescer = new();
@@ -84,11 +88,13 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     private bool _running;
 
     public LiveDataViewModel(TaskOrchestrator orchestrator, Dispatcher dispatcher,
-        Action<string>? navigate = null, bool showNavigateCta = false)
+        Action<string>? navigate = null, bool showNavigateCta = false,
+        IDbContextFactory<DcDbContext>? dbFactory = null)
     {
         _orchestrator = orchestrator;
         _dispatcher = dispatcher;
         _navigate = navigate;
+        _dbFactory = dbFactory;
         ShowNavigateCta = showNavigateCta;
 
         RowsView = CollectionViewSource.GetDefaultView(Rows);
@@ -123,6 +129,21 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
         _running = true;
         _orchestrator.TagValueReceived += OnTagValueReceived;
         _batchTimer.Start();
+        _ = LoadTaskNamesAsync(); // 刷新任务可读名(列显示);view 每次 Loaded 都会调,新建/改名后重进即更新
+    }
+
+    private string ResolveTaskName(string taskId) => _taskNames.GetValueOrDefault(taskId, taskId);
+
+    private async Task LoadTaskNamesAsync()
+    {
+        if (_dbFactory is null) return;
+        try
+        {
+            _taskNames = await TaskNames.LoadAsync(_dbFactory);
+            // 回填已存在行的可读名(行可能先于名字加载就创建)。Start 在 UI 线程,await 续回 UI 线程,改 Rows 安全。
+            foreach (var row in Rows) row.TaskName = ResolveTaskName(row.TaskId);
+        }
+        catch { /* 名字解析失败不影响数据流,列回退显示 id */ }
     }
 
     /// <summary>页面隐藏时调用（view Unloaded）：退订 + 停批处理，避免不可见时空跑数据洪流。幂等。</summary>
@@ -223,7 +244,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
         var key = $"{taskId}::{v.Item}";
         if (!_rowIndex.TryGetValue(key, out var row))
         {
-            row = new LiveDataRowViewModel { TaskId = taskId, Item = v.Item };
+            row = new LiveDataRowViewModel { TaskId = taskId, TaskName = ResolveTaskName(taskId), Item = v.Item };
             _rowIndex[key] = row;
             Rows.Add(row);
         }

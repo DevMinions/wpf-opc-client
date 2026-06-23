@@ -274,7 +274,7 @@
 
                             <!-- 任务列弹性：吸收剩余宽度，其余列固定 → 表格自适应窗宽、右侧列不被截 -->
                             <DataGridTextColumn Header="任务"
-                                                Binding="{Binding TaskId}"
+                                                Binding="{Binding TaskName}"
                                                 Width="*" MinWidth="140" />
 
                             <!-- 连接状态徽章 pill（对齐 LiveDataView 质量 pill 风格：软底 + 同色 SemiBold 文字）。
