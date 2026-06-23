@@ -45,12 +45,10 @@ public sealed class DbWorkspaceTaskSource : IWorkspaceTaskSource
         return (task, descriptors, formulas);
     }
 
-    public async Task<(int Groups, int Tags)> GetCountsAsync(string taskId)
+    public async Task<int> GetCountsAsync(string taskId)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var groups = await db.Groups.AsNoTracking().CountAsync(g => g.TaskId == taskId);
-        var tags = await db.Tags.AsNoTracking().CountAsync(t => t.TaskId == taskId);
-        return (groups, tags);
+        return await db.Tags.AsNoTracking().CountAsync(t => t.TaskId == taskId);
     }
 
     public async Task<IReadOnlyDictionary<string, int>> GetConfiguredTagCountsAsync(IReadOnlyCollection<string> taskIds)

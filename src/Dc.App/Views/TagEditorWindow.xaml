@@ -160,26 +160,6 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <!-- 分组选择器(两种模式共享) -->
-                <Grid Margin="0,8,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="96" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="所属分组:"
-                               Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1"
-                              AutomationProperties.Name="所属分组"
-                              Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
-                              ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding SelectedGroupRow}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Display}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </Grid>
             </StackPanel>
         </DockPanel>
             </Border>

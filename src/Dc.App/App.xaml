@@ -31,9 +31,6 @@
             <DataTemplate DataType="{x:Type wsvm:WorkspaceConfigViewModel}">
                 <wsview:ConfigTabPanel />
             </DataTemplate>
-            <DataTemplate DataType="{x:Type vm:GroupsViewModel}">
-                <views:GroupsView />
-            </DataTemplate>
             <DataTemplate DataType="{x:Type vm:TagsViewModel}">
                 <views:TagsView />
             </DataTemplate>

@@ -21,7 +21,6 @@ public sealed class JsonConfigBackupService : IConfigBackupService
             ExportedAt = DateTimeOffset.UtcNow,
             AppVersion = typeof(JsonConfigBackupService).Assembly.GetName().Version?.ToString(3) ?? "0.0.0",
             Tasks = await db.Tasks.AsNoTracking().OrderBy(t => t.CreatedAt).ToListAsync(ct),
-            Groups = await db.Groups.AsNoTracking().OrderBy(g => g.CreatedAt).ToListAsync(ct),
             Tags = await db.Tags.AsNoTracking().OrderBy(t => t.CreatedAt).ToListAsync(ct),
             Configs = await db.Configs.AsNoTracking().OrderBy(c => c.Key).ToListAsync(ct)
         };
@@ -30,31 +29,27 @@ public sealed class JsonConfigBackupService : IConfigBackupService
     public async Task<BackupImportResult> ImportAsync(DcDbContext db, BackupBundle bundle, BackupImportMode mode, CancellationToken ct = default)
     {
         if (bundle.SchemaVersion != 1)
-            return new BackupImportResult(0, 0, 0, 0, new[] { $"不支持的 schemaVersion: {bundle.SchemaVersion}" });
+            return new BackupImportResult(0, 0, 0, new[] { $"不支持的 schemaVersion: {bundle.SchemaVersion}" });
 
         var errors = new List<string>();
 
         if (mode == BackupImportMode.Replace)
         {
             await db.Tags.ExecuteDeleteAsync(ct);
-            await db.Groups.ExecuteDeleteAsync(ct);
             await db.Tasks.ExecuteDeleteAsync(ct);
             await db.Configs.ExecuteDeleteAsync(ct);
         }
 
-        var (existingTaskIds, existingGroupIds, existingTagIds, existingConfigIds) = (
+        var (existingTaskIds, existingTagIds, existingConfigIds) = (
             new HashSet<string>(await db.Tasks.AsNoTracking().Select(t => t.Id).ToListAsync(ct)),
-            new HashSet<string>(await db.Groups.AsNoTracking().Select(g => g.Id).ToListAsync(ct)),
             new HashSet<string>(await db.Tags.AsNoTracking().Select(t => t.Id).ToListAsync(ct)),
             new HashSet<string>(await db.Configs.AsNoTracking().Select(c => c.Id).ToListAsync(ct)));
 
         var tasksToAdd = bundle.Tasks.Where(t => !existingTaskIds.Contains(t.Id)).ToList();
-        var groupsToAdd = bundle.Groups.Where(g => !existingGroupIds.Contains(g.Id)).ToList();
         var tagsToAdd = bundle.Tags.Where(t => !existingTagIds.Contains(t.Id)).ToList();
         var configsToAdd = bundle.Configs.Where(c => !existingConfigIds.Contains(c.Id)).ToList();
 
         db.Tasks.AddRange(tasksToAdd);
-        db.Groups.AddRange(groupsToAdd);
         db.Tags.AddRange(tagsToAdd);
         db.Configs.AddRange(configsToAdd);
 
@@ -62,7 +57,7 @@ public sealed class JsonConfigBackupService : IConfigBackupService
         catch (DbUpdateException ex) { errors.Add(ex.InnerException?.Message ?? ex.Message); }
 
         return new BackupImportResult(
-            tasksToAdd.Count, groupsToAdd.Count, tagsToAdd.Count, configsToAdd.Count, errors);
+            tasksToAdd.Count, tagsToAdd.Count, configsToAdd.Count, errors);
     }
 
     public string SerializeToJson(BackupBundle bundle) =>

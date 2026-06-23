@@ -27,7 +27,6 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
 
     public WorkspaceOverviewViewModel Overview { get; }
     public IEmbeddableTagPanel TagsPanel { get; }
-    public IEmbeddableGroupPanel GroupsPanel { get; }
     public IEmbeddableLivePanel LivePanel { get; }
     public IEmbeddableDiagPanel DiagPanel { get; }
     public WorkspaceConfigViewModel Config { get; }
@@ -38,7 +37,6 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     [ObservableProperty] private int _runningCount;
     [ObservableProperty] private int _stoppedCount;
     [ObservableProperty] private int _alertCount;
-    [ObservableProperty] private int _selectedGroupCount; // tab badge：分组
     [ObservableProperty] private int _selectedTagCount;   // tab badge：Tag
     [ObservableProperty] private string _selectedTab = "overview";
     [ObservableProperty] private object? _currentTabContent;
@@ -54,7 +52,6 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         IEmbeddableTagPanel tagsPanel,
         TaskOrchestrator? orchestrator = null,
         ITaskEditorDialog? editor = null,
-        IEmbeddableGroupPanel? groupsPanel = null,
         IEmbeddableLivePanel? livePanel = null,
         IEmbeddableDiagPanel? diagPanel = null,
         WorkspaceConfigViewModel? config = null,
@@ -73,13 +70,11 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         TagsPanel = tagsPanel;
         TagsPanel.IsEmbedded = true;
 
-        // 分组层已对用户隐藏(Tag 直接挂任务):不再有「分组」页签,GroupsPanel 仅保留为隐式默认分组的载体。
-        GroupsPanel = groupsPanel ?? new NullGroupPanel();
+        // 分组层已去除:Tag 直接挂任务,不再有「分组」页签。
         LivePanel = livePanel ?? new NullLivePanel();
         DiagPanel = diagPanel ?? new NullDiagPanel();
         Config = config ?? new WorkspaceConfigViewModel(editor ?? new NullTaskEditorDialog());
 
-        GroupsPanel.IsEmbedded = true;
         // 任务编辑持久化走 VM(main 的任务 CRUD);PersistEditedAsync 内部已 LoadAsync 刷新列表。
         Config.Edited += async edited => await PersistEditedAsync(edited);
 
@@ -104,21 +99,17 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         Overview.Sample();
 
         var task = value is null ? null : _tasksById.GetValueOrDefault(value.TaskId);
-        GroupsPanel.TaskFilter = task;
-        _ = GroupsPanel.LoadAsync();
         LivePanel.TaskFilter = value?.TaskId;
         DiagPanel.TaskScope = value?.TaskId;
         Config.SetTask(task);
 
-        if (value is null) { SelectedGroupCount = 0; SelectedTagCount = 0; }
+        if (value is null) SelectedTagCount = 0;
         else _ = LoadCountsAsync(value.TaskId);
     }
 
     private async Task LoadCountsAsync(string taskId)
     {
-        var (g, t) = await _source.GetCountsAsync(taskId);
-        SelectedGroupCount = g;
-        SelectedTagCount = t;
+        SelectedTagCount = await _source.GetCountsAsync(taskId);
     }
 
     partial void OnSelectedTabChanged(string value) => UpdateTabContent();
@@ -306,9 +297,9 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         var name = SelectedTask.Name;
 
         // 先确认，确认后才产生任何副作用（取消 = 真 no-op，不停不删）
-        var (g, t) = await _source.GetCountsAsync(id);
+        var t = await _source.GetCountsAsync(id);
         if (!_confirm.Confirm("删除任务",
-                $"将删除任务「{name}」及其 {g} 个分组、{t} 个 Tag，不可恢复。确定删除？"))
+                $"将删除任务「{name}」及其 {t} 个 Tag，不可恢复。确定删除？"))
             return;
 
         // 确认后：运行中先停，再级联删
@@ -333,21 +324,6 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
     }
 
     // ── Null-object stubs for optional panels ──────────────────────────────
-
-    private sealed class NullGroupPanel
-        : CommunityToolkit.Mvvm.ComponentModel.ObservableObject, IEmbeddableGroupPanel
-    {
-        public bool IsEmbedded { get; set; }
-        private Dc.Domain.Entities.CollectorTask? _taskFilter;
-        public Dc.Domain.Entities.CollectorTask? TaskFilter
-        {
-            get => _taskFilter;
-            set => SetProperty(ref _taskFilter, value);
-        }
-        public Dc.Domain.Entities.Group? SelectedGroup => null;
-        public Task LoadAsync() => Task.CompletedTask;
-        public event Action? NavigateToTasksRequested;
-    }
 
     private sealed class NullLivePanel : IEmbeddableLivePanel
     {

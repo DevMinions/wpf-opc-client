@@ -42,23 +42,6 @@
                             Margin="32,0,0,0"
                             VerticalAlignment="Center"
                             Visibility="{Binding ShowFullToolbar, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="分组:"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               VerticalAlignment="Center"
-                               Margin="0,0,8,0" />
-                    <ComboBox Width="200"
-                              ItemsSource="{Binding AvailableGroups}"
-                              SelectedItem="{Binding GroupFilter}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Name}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <Button Content="清除"
-                            Style="{StaticResource DcBtnGhostSm}"
-                            Margin="6,0,0,0"
-                            Click="OnClearFilter" />
                     <TextBlock Text="搜索:"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center"

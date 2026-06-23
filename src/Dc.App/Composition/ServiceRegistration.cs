@@ -142,7 +142,6 @@ public static class ServiceRegistration
         // SnackbarPresenter 在 App 启动 Show 前经 SetSnackbarPresenter 接线（见 App.xaml.cs）。
         services.AddSingleton<Wpf.Ui.ISnackbarService, Wpf.Ui.SnackbarService>();
         services.AddSingleton<Dc.App.Services.INotificationService, Dc.App.Services.SnackbarNotificationService>();
-        services.AddSingleton<IGroupEditorDialog, GroupEditorDialog>();
         services.AddSingleton<ITagEditorDialog, TagEditorDialog>();
         services.AddSingleton<IConfigEditorDialog, ConfigEditorDialog>();
         services.AddSingleton<ITagExcelService, ClosedXmlTagExcelService>();
@@ -199,9 +198,6 @@ public static class ServiceRegistration
             new Dc.App.ViewModels.Workspace.WorkspaceOverviewViewModel(
                 sp.GetRequiredService<Dc.App.ViewModels.Dashboard.IDashboardOrchestratorView>(),
                 () => DateTimeOffset.UtcNow));
-        // GroupsViewModel 仅工作台用（无全局导航路由），复用单例即可
-        services.AddSingleton<Dc.App.ViewModels.Workspace.IEmbeddableGroupPanel>(
-            sp => sp.GetRequiredService<GroupsViewModel>());
         // 全局监控分离（S4）：LiveData/Diagnostics 同时挂「全局监控」导航与工作台 tab，
         // 工作台用独立实例，避免工作台设的 TaskFilter/TaskScope 污染全局视图。
         services.AddSingleton<Dc.App.ViewModels.Workspace.IEmbeddableLivePanel>(
@@ -224,7 +220,6 @@ public static class ServiceRegistration
                 sp.GetRequiredService<TagsViewModel>(),
                 sp.GetRequiredService<TaskOrchestrator>(),
                 sp.GetRequiredService<Dc.App.Services.ITaskEditorDialog>(),
-                sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableGroupPanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableLivePanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableDiagPanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel>(),
@@ -235,7 +230,6 @@ public static class ServiceRegistration
         services.AddSingleton<System.Windows.Threading.Dispatcher>(
             _ => System.Windows.Application.Current?.Dispatcher
                  ?? System.Windows.Threading.Dispatcher.CurrentDispatcher);
-        services.AddSingleton<GroupsViewModel>();
         services.AddSingleton<TagsViewModel>(sp => new TagsViewModel(
             sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
             sp.GetRequiredService<ITagEditorDialog>(),

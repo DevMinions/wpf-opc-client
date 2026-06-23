@@ -5,7 +5,6 @@ public class Tag : EntityBase
     public string Item { get; set; } = string.Empty;
     public int DataType { get; set; }
     public string TaskId { get; set; } = string.Empty;
-    public string GroupId { get; set; } = string.Empty;
 
     // 真实 Tag 的工程量映射；null 表示不缩放。虚拟 Tag 忽略。
     public double? ScaleFactor { get; set; }

@@ -132,14 +132,12 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         await AddCheckedAsTagsAsync(created.Id, created.DisplayName);
     }
 
-    // 把勾选的叶子节点批量建成 Tag,落到任务的默认分组(分组层隐藏);同任务已存在的 Item 跳过。
+    // 把勾选的叶子节点批量建成 Tag,直接挂到任务;同任务已存在的 Item 跳过。
     private async Task AddCheckedAsTagsAsync(string taskId, string taskDisplay)
     {
         if (_dbFactory is null) return;
         var picked = Children.Where(r => r.IsItem && r.IsChecked).ToList();
         if (picked.Count == 0) return;
-
-        var group = await DefaultTaskGroup.EnsureAsync(_dbFactory, taskId);
 
         await using var db = await _dbFactory.CreateDbContextAsync();
         var existing = (await db.Tags.AsNoTracking().Where(t => t.TaskId == taskId)
@@ -152,8 +150,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
                 Id = UlidGenerator.NewId(),
                 Item = r.Node.Id,
                 DataType = MapDataType(r.DataTypeText),
-                TaskId = taskId,
-                GroupId = group.Id
+                TaskId = taskId
             })
             .ToList();
 

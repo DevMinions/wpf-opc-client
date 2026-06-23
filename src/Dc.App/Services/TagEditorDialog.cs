@@ -18,15 +18,14 @@ public sealed class TagEditorDialog : ITagEditorDialog
     }
 
     public TagEditResult? Edit(
-        IEnumerable<Group> availableGroups,
+        string taskId,
         Tag? existing,
-        Group? defaultGroup = null,
         Func<string, CollectorTask?>? taskLookup = null,
         IReadOnlyCollection<Tag>? taskTags = null,
         IReadOnlyCollection<Formula>? existingFormulas = null)
     {
         var vm = new TagEditorViewModel(
-            availableGroups, existing, defaultGroup, _browseDialog, taskLookup,
+            taskId, existing, _browseDialog, taskLookup,
             taskTags, existingFormulas, _formulaValidator);
         var window = new TagEditorWindow
         {

@@ -23,14 +23,11 @@ public class TaskStoreTests
         using var db = new DcDbContext(opts);
         DbSchemaInitializer.EnsureCreated(db);
         db.Tasks.Add(new CollectorTask { Id = "task1", Server = "炉温", Node = "opc.tcp://x", Type = 2, Interval = 1000 });
-        db.Groups.Add(new Group { Id = "g1", Name = "组A", TaskId = "task1" });
-        db.Groups.Add(new Group { Id = "g2", Name = "组B", TaskId = "task1" });
-        db.Tags.Add(new Tag { Id = "tag1", Item = "i1", TaskId = "task1", GroupId = "g1" });
-        db.Tags.Add(new Tag { Id = "tag2", Item = "i2", TaskId = "task1", GroupId = "g2" });
-        db.Tags.Add(new Tag { Id = "tag3", Item = "i3", TaskId = "task1", GroupId = "" });
+        db.Tags.Add(new Tag { Id = "tag1", Item = "i1", TaskId = "task1" });
+        db.Tags.Add(new Tag { Id = "tag2", Item = "i2", TaskId = "task1" });
+        db.Tags.Add(new Tag { Id = "tag3", Item = "i3", TaskId = "task1" });
         db.Tasks.Add(new CollectorTask { Id = "other", Server = "s", Node = "n", Type = 2 });
-        db.Groups.Add(new Group { Id = "go", Name = "其它", TaskId = "other" });
-        db.Tags.Add(new Tag { Id = "tago", Item = "io", TaskId = "other", GroupId = "go" });
+        db.Tags.Add(new Tag { Id = "tago", Item = "io", TaskId = "other" });
         db.SaveChanges();
         return path;
     }
@@ -65,7 +62,7 @@ public class TaskStoreTests
     }
 
     [Fact]
-    public async Task DeleteCascadeAsync_RemovesTaskGroupsTags_NoOrphans_LeavesOtherTask()
+    public async Task DeleteCascadeAsync_RemovesTaskTags_NoOrphans_LeavesOtherTask()
     {
         var path = Seed(out var opts);
         try
@@ -76,10 +73,8 @@ public class TaskStoreTests
             await using (var db = new DcDbContext(opts))
             {
                 Assert.Null(await db.Tasks.FindAsync("task1"));
-                Assert.Equal(0, await db.Groups.CountAsync(g => g.TaskId == "task1"));
                 Assert.Equal(0, await db.Tags.CountAsync(t => t.TaskId == "task1"));
                 Assert.NotNull(await db.Tasks.FindAsync("other"));
-                Assert.Equal(1, await db.Groups.CountAsync(g => g.TaskId == "other"));
                 Assert.Equal(1, await db.Tags.CountAsync(t => t.TaskId == "other"));
             }
         }

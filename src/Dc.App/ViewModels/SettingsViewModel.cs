@@ -53,7 +53,7 @@ public partial class SettingsViewModel : ObservableObject
             var json = _backup.SerializeToJson(bundle);
             await File.WriteAllTextAsync(path, json);
             MessageDialog.Show("导出成功",
-                $"已导出 {bundle.Tasks.Count} 任务 / {bundle.Groups.Count} 分组 / {bundle.Tags.Count} Tag / {bundle.Configs.Count} 配置到 {path}",
+                $"已导出 {bundle.Tasks.Count} 任务 / {bundle.Tags.Count} Tag / {bundle.Configs.Count} 配置到 {path}",
                 MessageDialogKind.Success);
         }
         catch (Exception ex)
@@ -85,7 +85,7 @@ public partial class SettingsViewModel : ObservableObject
             await using var db = await _dbFactory.CreateDbContextAsync();
             var result = await _backup.ImportAsync(db, bundle, mode);
 
-            var msg = $"已导入 任务 {result.TasksImported} / 分组 {result.GroupsImported} / Tag {result.TagsImported} / 配置 {result.ConfigsImported}";
+            var msg = $"已导入 任务 {result.TasksImported} / Tag {result.TagsImported} / 配置 {result.ConfigsImported}";
             if (result.Errors.Count > 0)
                 msg += $"\n错误 ({result.Errors.Count}):\n" + string.Join("\n", result.Errors.Take(5));
             MessageDialog.Show("导入结果", msg, result.Errors.Count > 0 ? MessageDialogKind.Warning : MessageDialogKind.Success);

@@ -7,36 +7,29 @@ namespace Dc.App.Tests.ViewModels;
 
 public class TagEditorViewModelTests
 {
-    private static Group Grp(string id, string name, string taskId = "t1")
-        => new() { Id = id, Name = name, TaskId = taskId };
-
     [Fact]
-    public void Create_WithDefaultGroup_HidesSelector_TitlePlain_LocksGroup()
+    public void Create_New_TitlePlain_AttachesToTask()
     {
-        var g = Grp("g1", "温度组");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g);
+        var vm = new TagEditorViewModel("t1", existing: null);
 
-        Assert.False(vm.ShowGroupSelector);            // 分组层隐藏:不显示选择器
-        Assert.Equal("新建 Tag", vm.Title);            // 标题不再带分组名
+        Assert.Equal("新建 Tag", vm.Title);
         vm.Item = "tag.a";
-        Assert.Equal("g1", vm.ToResult().Tag.GroupId); // 仍锁定到默认分组
+        Assert.Equal("t1", vm.ToResult().Tag.TaskId); // 直接挂到任务
     }
 
     [Fact]
     public void Edit_ExistingScaledRealTag_RestoresScaleFields()
     {
-        var g = Grp("g1", "温度组");
         var existing = new Tag
         {
             Id = "tag1",
             Item = "x",
             DataType = 4,
-            GroupId = "g1",
             TaskId = "t1",
             ScaleFactor = 0.1,
             Offset = -5
         };
-        var vm = new TagEditorViewModel(new[] { g }, existing, defaultGroup: null);
+        var vm = new TagEditorViewModel("t1", existing);
 
         Assert.Equal("0.1", vm.ScaleFactor);
         Assert.Equal("-5", vm.Offset);
@@ -46,51 +39,24 @@ public class TagEditorViewModelTests
     }
 
     [Fact]
-    public void Create_WithoutDefaultGroup_ShowsSelector_GroupNull()
+    public void Edit_TitlePlain()
     {
-        var g = Grp("g1", "温度组");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: null);
+        var existing = new Tag { Id = "tag1", Item = "x", DataType = 4, TaskId = "t1" };
+        var vm = new TagEditorViewModel("t1", existing);
 
-        Assert.True(vm.ShowGroupSelector);
-        Assert.Null(vm.Group);   // 不兜底选第一个分组
-        Assert.Equal("新建 Tag", vm.Title);
-    }
-
-    [Fact]
-    public void Edit_HidesSelector_TitlePlain()
-    {
-        var g = Grp("g1", "温度组");
-        var existing = new Tag { Id = "tag1", Item = "x", DataType = 4, GroupId = "g1", TaskId = "t1" };
-        var vm = new TagEditorViewModel(new[] { g }, existing, defaultGroup: null);
-
-        Assert.False(vm.ShowGroupSelector);
-        Assert.Equal("编辑 Tag", vm.Title);
-    }
-
-    [Fact]
-    public void Edit_OrphanedGroup_ShowsSelector_TitlePlain()
-    {
-        // existing.GroupId 不在 AvailableGroups 中（分组已删）→ 无法锁定 → 显示选择器、标题退化
-        var g = Grp("g1", "温度组");
-        var existing = new Tag { Id = "tag1", Item = "x", DataType = 4, GroupId = "GONE", TaskId = "t1" };
-        var vm = new TagEditorViewModel(new[] { g }, existing, defaultGroup: null);
-
-        Assert.True(vm.ShowGroupSelector);
-        Assert.Null(vm.Group);
         Assert.Equal("编辑 Tag", vm.Title);
     }
 
     [Fact]
     public void ToResult_RealTag_NoFormula()
     {
-        var g = Grp("g1", "温度组");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g);
+        var vm = new TagEditorViewModel("t1", existing: null);
         vm.Item = "ns=3;i=1002";
         var result = vm.ToResult();
 
         Assert.NotNull(result);
         Assert.Equal("ns=3;i=1002", result.Tag.Item);
-        Assert.Equal("g1", result.Tag.GroupId);
+        Assert.Equal("t1", result.Tag.TaskId);
         Assert.Null(result.Formula);
         Assert.Empty(result.Inputs);
     }
@@ -112,10 +78,8 @@ public class TagEditorViewModelTests
     [Fact]
     public void Virtual_ExpressionExtractsInputs_AndToResultBuildsFormula()
     {
-        var g = Grp("g1", "温度组");
         var realT = RealTag("rt1", "Random");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
-            taskTags: new[] { realT });
+        var vm = new TagEditorViewModel("t1", existing: null, taskTags: new[] { realT });
 
         vm.IsVirtual = true;
         vm.FormulaName = "Sum";
@@ -144,11 +108,9 @@ public class TagEditorViewModelTests
     [Fact]
     public void Virtual_ExpressionChange_PreservesSelectedKeepsNewNull()
     {
-        var g = Grp("g1", "温度组");
         var realT = RealTag("rt1", "Random");
         var realP = RealTag("rt2", "Counter");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
-            taskTags: new[] { realT, realP });
+        var vm = new TagEditorViewModel("t1", existing: null, taskTags: new[] { realT, realP });
 
         vm.IsVirtual = true;
         vm.Expression = "T";
@@ -165,15 +127,14 @@ public class TagEditorViewModelTests
     [Fact]
     public void Edit_ExistingVirtualTag_PreselectsInputsFromFormula()
     {
-        var g = Grp("g1", "温度组");
         var realT = RealTag("rt1", "Random");
-        var existing = new Tag { Id = "vt1", Item = "Sum", IsVirtual = true, GroupId = "g1", TaskId = "t1" };
+        var existing = new Tag { Id = "vt1", Item = "Sum", IsVirtual = true, TaskId = "t1" };
         var formula = new Formula
         {
             Id = "f1", Name = "Sum", Expression = "T * 2", OutputTagId = "vt1", TaskId = "t1",
             Inputs = new List<FormulaInput> { new() { Id = "fi1", FormulaId = "f1", Alias = "T", SourceTagId = "rt1" } }
         };
-        var vm = new TagEditorViewModel(new[] { g }, existing, defaultGroup: g,
+        var vm = new TagEditorViewModel("t1", existing,
             taskTags: new[] { realT, existing },
             existingFormulas: new[] { formula });
 
@@ -189,10 +150,8 @@ public class TagEditorViewModelTests
     [Fact]
     public void ToggleIsVirtual_AfterExpression_RebuildsInputBindings()
     {
-        var g = Grp("g1", "温度组");
         var realT = RealTag("rt1", "Random");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
-            taskTags: new[] { realT });
+        var vm = new TagEditorViewModel("t1", existing: null, taskTags: new[] { realT });
         // Set expression BEFORE toggling virtual on
         vm.Expression = "T * 2";
         Assert.Empty(vm.InputBindings);   // not virtual yet → no rows
@@ -206,9 +165,7 @@ public class TagEditorViewModelTests
     [Fact]
     public void Validate_RealTag_BadScaleNumber_HasError()
     {
-        var g = Grp("g1", "温度组");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
-            formulaValidator: Validator());
+        var vm = new TagEditorViewModel("t1", existing: null, formulaValidator: Validator());
         vm.Item = "x";
         vm.ScaleFactor = "abc";
         Assert.Contains(vm.Validate(), e => e.Contains("缩放"));
@@ -217,8 +174,7 @@ public class TagEditorViewModelTests
     [Fact]
     public void Validate_RealTag_EmptyScale_NullScale()
     {
-        var g = Grp("g1", "温度组");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g);
+        var vm = new TagEditorViewModel("t1", existing: null);
         vm.Item = "x";
         Assert.Null(vm.ToResult().Tag.ScaleFactor);
     }
@@ -226,8 +182,7 @@ public class TagEditorViewModelTests
     [Fact]
     public void Validate_Virtual_MissingName_HasError()
     {
-        var g = Grp("g1", "温度组");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+        var vm = new TagEditorViewModel("t1", existing: null,
             taskTags: new[] { RealTag("rt1", "Random") },
             formulaValidator: Validator());
         vm.IsVirtual = true;
@@ -238,9 +193,8 @@ public class TagEditorViewModelTests
     [Fact]
     public void Validate_Virtual_DuplicateName_HasError()
     {
-        var g = Grp("g1", "温度组");
         var existingVirtual = new Tag { Id = "rv1", Item = "Sum", IsVirtual = true, TaskId = "t1" };
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+        var vm = new TagEditorViewModel("t1", existing: null,
             taskTags: new[] { existingVirtual, RealTag("rt1", "Random") },
             formulaValidator: Validator());
         vm.IsVirtual = true;
@@ -253,8 +207,7 @@ public class TagEditorViewModelTests
     [Fact]
     public void Validate_Virtual_UnselectedInput_HasError()
     {
-        var g = Grp("g1", "温度组");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+        var vm = new TagEditorViewModel("t1", existing: null,
             taskTags: new[] { RealTag("rt1", "Random") },
             formulaValidator: Validator());
         vm.IsVirtual = true;
@@ -266,9 +219,8 @@ public class TagEditorViewModelTests
     [Fact]
     public void Validate_Virtual_StringInputTag_HasError()
     {
-        var g = Grp("g1", "温度组");
         var strTag = RealTag("rs1", "Name", dataType: 8); // String
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+        var vm = new TagEditorViewModel("t1", existing: null,
             taskTags: new[] { strTag },
             formulaValidator: Validator());
         vm.IsVirtual = true;
@@ -281,8 +233,7 @@ public class TagEditorViewModelTests
     [Fact]
     public void Validate_Virtual_Valid_NoErrors()
     {
-        var g = Grp("g1", "温度组");
-        var vm = new TagEditorViewModel(new[] { g }, existing: null, defaultGroup: g,
+        var vm = new TagEditorViewModel("t1", existing: null,
             taskTags: new[] { RealTag("rt1", "Random") },
             formulaValidator: Validator());
         vm.IsVirtual = true;

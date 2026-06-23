@@ -36,7 +36,7 @@ public class TaskWorkspaceViewModelTests
         public List<string> Deleted { get; } = new();
         public Task UpdateTaskAsync(CollectorTask task) { Updated.Add(task); return Task.CompletedTask; }
         public Task DeleteTaskCascadeAsync(string taskId) { Deleted.Add(taskId); return Task.CompletedTask; }
-        public Task<(int Groups, int Tags)> GetCountsAsync(string taskId) => Task.FromResult((2, 5));
+        public Task<int> GetCountsAsync(string taskId) => Task.FromResult(5);
     }
 
     private sealed class FakeOrchView : IDashboardOrchestratorView
@@ -51,26 +51,10 @@ public class TaskWorkspaceViewModelTests
     {
         public bool IsEmbedded { get; set; }
         public string? TaskScope { get; set; }
-        public Dc.Domain.Entities.Group? GroupFilter { get; set; }
         public int LoadCount;
         public Task LoadAsync() { LoadCount++; return Task.CompletedTask; }
         public int ImportCount;
         public Task ImportAsync() { ImportCount++; return Task.CompletedTask; }
-        public event Action? NavigateToGroupsRequested;
-    }
-
-    private sealed class FakeGroupPanel
-        : CommunityToolkit.Mvvm.ComponentModel.ObservableObject, IEmbeddableGroupPanel
-    {
-        public bool IsEmbedded { get; set; }
-        private CollectorTask? _taskFilter;
-        public CollectorTask? TaskFilter { get => _taskFilter; set => SetProperty(ref _taskFilter, value); }
-        private Group? _selectedGroup;
-        public Group? SelectedGroup { get => _selectedGroup; private set => SetProperty(ref _selectedGroup, value); }
-        public int LoadCount;
-        public Task LoadAsync() { LoadCount++; return Task.CompletedTask; }
-        public void SimulateSelect(Group g) => SelectedGroup = g;
-        public event Action? NavigateToTasksRequested;
     }
 
     private sealed class FakeLivePanel : IEmbeddableLivePanel
@@ -124,7 +108,6 @@ public class TaskWorkspaceViewModelTests
         public FakeTaskSource Src = new();
         public FakeOrchView Orch = new();
         public FakeTagPanel Tag = new();
-        public FakeGroupPanel Group = new();
         public FakeLivePanel Live = new();
         public FakeDiagPanel Diag = new();
         public WorkspaceOverviewViewModel Overview = null!;
@@ -141,7 +124,6 @@ public class TaskWorkspaceViewModelTests
             d.Overview, d.Tag,
             orchestrator: null,
             editor: null,
-            groupsPanel: d.Group,
             livePanel: d.Live,
             diagPanel: d.Diag,
             config: d.Config);
@@ -179,7 +161,6 @@ public class TaskWorkspaceViewModelTests
             overview, new FakeTagPanel(),
             orchestrator: orchestrator,
             editor: editor,
-            groupsPanel: new FakeGroupPanel(),
             livePanel: new FakeLivePanel(),
             diagPanel: new FakeDiagPanel(),
             config: config,
@@ -299,7 +280,6 @@ public class TaskWorkspaceViewModelTests
         vm.SelectedTask = vm.AllTasks[0];
         Assert.Equal("t1", d.Live.TaskFilter);
         Assert.Equal("t1", d.Diag.TaskScope);
-        Assert.Equal("t1", d.Group.TaskFilter?.Id);
         Assert.True(d.Config.HasTask);
     }
 
@@ -359,7 +339,6 @@ public class TaskWorkspaceViewModelTests
             overview, new FakeTagPanel(),
             orchestrator: null,
             editor: new SavingEditor(),
-            groupsPanel: new FakeGroupPanel(),
             livePanel: new FakeLivePanel(),
             diagPanel: new FakeDiagPanel(),
             config: config);

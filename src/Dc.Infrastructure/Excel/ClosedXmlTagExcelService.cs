@@ -16,7 +16,6 @@ public sealed class ClosedXmlTagExcelService : ITagExcelService
         var headerRow = sheet.Row(1);
         var itemCol = FindColumn(headerRow, "Item") ?? 1;
         var typeCol = FindColumn(headerRow, "DataType") ?? 2;
-        var groupCol = FindColumn(headerRow, "GroupName") ?? 3;
 
         var rows = new List<TagImportRow>();
         var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
@@ -31,22 +30,20 @@ public sealed class ClosedXmlTagExcelService : ITagExcelService
                 System.Globalization.NumberStyles.Integer,
                 System.Globalization.CultureInfo.InvariantCulture,
                 out var dataType);
-            var groupName = sheet.Cell(r, groupCol).GetString().Trim();
 
-            rows.Add(new TagImportRow(item, dataType, groupName));
+            rows.Add(new TagImportRow(item, dataType));
         }
         return rows;
     }
 
-    public void Write(IEnumerable<Tag> tags, IReadOnlyDictionary<string, string> groupIdToName, Stream output)
+    public void Write(IEnumerable<Tag> tags, Stream output)
     {
         using var workbook = new XLWorkbook();
         var sheet = workbook.AddWorksheet(SheetName);
 
         sheet.Cell(1, 1).Value = "Item";
         sheet.Cell(1, 2).Value = "DataType";
-        sheet.Cell(1, 3).Value = "GroupName";
-        sheet.Cell(1, 4).Value = "TaskId";
+        sheet.Cell(1, 3).Value = "TaskId";
         sheet.Row(1).Style.Font.Bold = true;
 
         int row = 2;
@@ -54,8 +51,7 @@ public sealed class ClosedXmlTagExcelService : ITagExcelService
         {
             sheet.Cell(row, 1).Value = tag.Item;
             sheet.Cell(row, 2).Value = tag.DataType;
-            sheet.Cell(row, 3).Value = groupIdToName.GetValueOrDefault(tag.GroupId, string.Empty);
-            sheet.Cell(row, 4).Value = tag.TaskId;
+            sheet.Cell(row, 3).Value = tag.TaskId;
             row++;
         }
         sheet.Columns().AdjustToContents();
