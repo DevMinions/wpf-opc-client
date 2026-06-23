@@ -200,6 +200,14 @@
                                 </Style.Triggers>
                             </Style>
                         </DataGrid.RowStyle>
+                        <!-- 单元格内容垂直居中：否则文本列默认顶对齐，与居中的复选框/图标错位（字偏上） -->
+                        <DataGrid.CellStyle>
+                            <Style TargetType="DataGridCell">
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="Background" Value="Transparent" />
+                            </Style>
+                        </DataGrid.CellStyle>
                         <DataGrid.InputBindings>
                             <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding DrillDownCommand}" />
                         </DataGrid.InputBindings>
@@ -245,10 +253,17 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="名称" Binding="{Binding Node.DisplayName}" Width="*" />
+                            <DataGridTextColumn Header="名称" Binding="{Binding Node.DisplayName}" Width="*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
                             <DataGridTextColumn Header="NodeId" Binding="{Binding Node.Id}" Width="280">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center" />
                                         <Setter Property="FontFamily" Value="Consolas, Cascadia Code, monospace" />
                                         <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
                                     </Style>
@@ -257,6 +272,7 @@
                             <DataGridTextColumn Header="值" Binding="{Binding ValueText}" Width="140">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center" />
                                         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding HasValue}" Value="True">
@@ -272,6 +288,7 @@
                             <DataGridTextColumn Header="类型" Binding="{Binding DataTypeText}" Width="84">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center" />
                                         <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
