@@ -214,10 +214,16 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
 
         FilteredTasks.Refresh();
 
-        // 重建后恢复选中：按 TaskId 找回对应新行（启动/停止/刷新都经此处）
-        if (prevSelectedId is not null)
-            SelectedTask = AllTasks.FirstOrDefault(r => r.TaskId == prevSelectedId);
+        // 优先用外部请求的选中(浏览批量加 Tag 后跳回工作台);否则恢复原选中（启动/停止/刷新都经此处）。
+        var targetId = _pendingSelectId ?? prevSelectedId;
+        _pendingSelectId = null;
+        if (targetId is not null)
+            SelectedTask = AllTasks.FirstOrDefault(r => r.TaskId == targetId);
     }
+
+    private string? _pendingSelectId;
+    /// <summary>请求下次 LoadAsync 时选中该任务(浏览批量加 Tag 后跳回工作台用)。</summary>
+    public void RequestSelect(string taskId) => _pendingSelectId = taskId;
 
     private static string ProtocolLabel(byte type) => type switch
     {

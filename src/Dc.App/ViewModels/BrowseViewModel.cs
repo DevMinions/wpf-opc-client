@@ -18,6 +18,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     // 可空:导航页注入(走 DI)→ 启用批量「加为 Tag」;Tag 编辑器内嵌的单点取用对话框传 null → 不启用。
     private readonly IDbContextFactory<DcDbContext>? _dbFactory;
     private readonly ITaskEditorDialog? _taskEditor;
+    private readonly Action<string>? _onTagsAdded; // 批量加 Tag 后回调(taskId):由组合根接「选中该任务+跳工作台」
     private IOpcBrowser? _browser;
     private readonly Stack<(string? Id, string Name)> _path = new();
 
@@ -56,11 +57,13 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     public BrowseViewModel(
         IEnumerable<IOpcBrowserFactory> browserFactories,
         IDbContextFactory<DcDbContext>? dbFactory = null,
-        ITaskEditorDialog? taskEditor = null)
+        ITaskEditorDialog? taskEditor = null,
+        Action<string>? onTagsAdded = null)
     {
         _factories = browserFactories.ToDictionary(f => f.Protocol);
         _dbFactory = dbFactory;
         _taskEditor = taskEditor;
+        _onTagsAdded = onTagsAdded;
         // 暴露注册的所有协议；DI 顺序 = UA, DA → UI 下拉同序
         AvailableProtocols = _factories.Keys.ToArray();
         if (_dbFactory is not null) _ = LoadTasksAsync();
@@ -165,8 +168,11 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         var skipped = picked.Count - toAdd.Count;
         var msg = $"已添加 {toAdd.Count} 个 Tag 到「{taskDisplay}」"
             + (skipped > 0 ? $",跳过 {skipped} 个重复 Item" : "")
-            + "。去「采集任务」启动即可采集。";
+            + "。即将跳到「采集任务」,启动即可采集。";
         MessageDialog.Show("加为 Tag", msg, MessageDialogKind.Success);
+
+        // 跳到采集任务并选中目标任务(发现→配置→看数据 一条线);组合根接线,BrowseViewModel 不依赖具体 VM。
+        if (toAdd.Count > 0) _onTagsAdded?.Invoke(taskId);
     }
 
     // 浏览到的数据类型名(UA: Float/Double/...; 或选项 DisplayName)→ Tag.DataType 码;认不出落 0(默认/自动)。

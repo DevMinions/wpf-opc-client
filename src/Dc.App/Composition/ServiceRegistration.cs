@@ -244,7 +244,16 @@ public static class ServiceRegistration
                 .NavigateCommand.Execute(key),
             showNavigateCta: true,
             dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
-        services.AddSingleton<BrowseViewModel>();
+        services.AddSingleton<BrowseViewModel>(sp => new BrowseViewModel(
+            sp.GetServices<IOpcBrowserFactory>(),
+            sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
+            sp.GetRequiredService<Dc.App.Services.ITaskEditorDialog>(),
+            // 批量加 Tag 后:选中目标任务 + 跳到「采集任务」(发现→配置→看数据 一条线)。
+            onTagsAdded: taskId =>
+            {
+                sp.GetRequiredService<Dc.App.ViewModels.Workspace.TaskWorkspaceViewModel>().RequestSelect(taskId);
+                sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>().NavigateCommand.Execute("workspace");
+            }));
         services.AddSingleton<DiagnosticsViewModel>(sp => new DiagnosticsViewModel(
             sp.GetRequiredService<TaskOrchestrator>(),
             navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>()
