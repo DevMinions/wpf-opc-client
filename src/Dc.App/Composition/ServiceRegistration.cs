@@ -206,9 +206,11 @@ public static class ServiceRegistration
         // 工作台用独立实例，避免工作台设的 TaskFilter/TaskScope 污染全局视图。
         services.AddSingleton<Dc.App.ViewModels.Workspace.IEmbeddableLivePanel>(
             sp => new LiveDataViewModel(sp.GetRequiredService<TaskOrchestrator>(),
-                System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher));
+                System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher,
+                dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
         services.AddSingleton<Dc.App.ViewModels.Workspace.IEmbeddableDiagPanel>(
-            sp => new DiagnosticsViewModel(sp.GetRequiredService<TaskOrchestrator>()));
+            sp => new DiagnosticsViewModel(sp.GetRequiredService<TaskOrchestrator>(),
+                dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
         services.AddSingleton<Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel>(
             sp => new Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel(
                 sp.GetRequiredService<Dc.App.Services.ITaskEditorDialog>()));
@@ -240,13 +242,15 @@ public static class ServiceRegistration
             System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher,
             navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>()
                 .NavigateCommand.Execute(key),
-            showNavigateCta: true));
+            showNavigateCta: true,
+            dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
         services.AddSingleton<BrowseViewModel>();
         services.AddSingleton<DiagnosticsViewModel>(sp => new DiagnosticsViewModel(
             sp.GetRequiredService<TaskOrchestrator>(),
             navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>()
                 .NavigateCommand.Execute(key),
-            showNavigateCta: true));
+            showNavigateCta: true,
+            dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<LogsViewModel>();
 

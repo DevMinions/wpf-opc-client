@@ -11,8 +11,12 @@ public partial class BrowseNodeRowViewModel : ObservableObject
     [ObservableProperty] private string _valueText = "";
     [ObservableProperty] private ushort _quality;
     [ObservableProperty] private bool _hasValue;
+    [ObservableProperty] private string _dataTypeText = "";
+    // 批量「加为 Tag」多选态。仅叶子(Variable)可勾选;文件夹用 IsItem 在视图里隐藏复选框。
+    [ObservableProperty] private bool _isChecked;
 
     public bool IsGood => Quality == 0xC0;
+    public bool IsItem => Node.Kind == OpcNodeKind.Item;
 
     public BrowseNodeRowViewModel(OpcNode node) => Node = node;
 
@@ -22,6 +26,7 @@ public partial class BrowseNodeRowViewModel : ObservableObject
         HasValue = v is not null;
         Quality = v?.Quality ?? 0;
         ValueText = v?.Value?.ToString() ?? "—";
+        DataTypeText = v?.DataType ?? "";
     }
 
     partial void OnQualityChanged(ushort value) => OnPropertyChanged(nameof(IsGood));

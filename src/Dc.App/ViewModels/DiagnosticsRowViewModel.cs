@@ -6,6 +6,7 @@ namespace Dc.App.ViewModels;
 public partial class DiagnosticsRowViewModel : ObservableObject
 {
     [ObservableProperty] private string _taskId = string.Empty;
+    [ObservableProperty] private string _taskName = string.Empty; // 可读任务名(DisplayName),「任务」列显示
     [ObservableProperty] private DateTimeOffset _startedAt;
     [ObservableProperty] private DateTimeOffset? _lastValueAt;
     [ObservableProperty] private DateTimeOffset? _lastHeartbeatAt;

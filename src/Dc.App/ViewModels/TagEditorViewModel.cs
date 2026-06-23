@@ -73,7 +73,7 @@ public partial class TagEditorViewModel : ObservableObject
         if (existing is null)
         {
             selected = defaultGroup is null ? null : rows.FirstOrDefault(r => r.Group.Id == defaultGroup.Id);
-            _title = selected is null ? "新建 Tag" : $"新建 Tag · 分组：{selected.Group.Name}";
+            _title = "新建 Tag"; // 分组层已对用户隐藏,标题不再带分组名
         }
         else
         {
@@ -85,7 +85,7 @@ public partial class TagEditorViewModel : ObservableObject
             _offset = existing.Offset.HasValue
                 ? existing.Offset.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
             selected = rows.FirstOrDefault(r => r.Group.Id == existing.GroupId);
-            _title = selected is null ? "编辑 Tag" : $"编辑 Tag · 分组：{selected.Group.Name}";
+            _title = "编辑 Tag"; // 分组层已对用户隐藏,标题不再带分组名
         }
         _selectedGroupRow = selected;
 

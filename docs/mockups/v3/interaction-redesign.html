@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Dc — 交互重设计原型（发现 → 添加 → 看数据）</title>
+<link rel="stylesheet" href="../v2/app.css">
+<style>
+/* ===== v3 交互重设计专属样式（复用 v2 令牌） ===== */
+
+/* 顶部 Before/After 对比条 */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.cmp .col{border:1px solid var(--stroke);border-radius:10px;padding:11px 13px;background:var(--bg-card);box-shadow:var(--shadow-card)}
+.cmp .col.old{border-left:3px solid var(--bad)}
+.cmp .col.new{border-left:3px solid var(--good)}
+.cmp h4{font-size:12px;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+.cmp .steps{font-size:11.5px;color:var(--text-2);line-height:1.65}
+.cmp .steps .x{color:var(--bad)} .cmp .steps .ok{color:var(--good)}
+.cmp .tally{margin-top:8px;font-size:12px;font-weight:600}
+.cmp .tally.old{color:var(--bad)} .cmp .tally.new{color:var(--good)}
+
+/* 流程指引 stepper */
+.guide{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.guide .step{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-3);
+  padding:5px 11px;border-radius:999px;border:1px solid var(--stroke);background:var(--bg-card)}
+.guide .step .num{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-size:10px;
+  background:var(--bg-subtle);color:var(--text-3)}
+.guide .step.on{color:var(--accent-text);border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.guide .step.on .num{background:var(--accent);color:#fff}
+.guide .step.done{color:var(--good)} .guide .step.done .num{background:var(--good);color:#fff}
+.guide .arr{color:var(--text-3)}
+
+/* 工作台主从 + 页签（取自 v2 workspace，去掉分组） */
+.ws{display:grid;grid-template-columns:250px 1fr;gap:14px;height:calc(100vh - 40px - 26px - 36px - 250px)}
+.master{display:flex;flex-direction:column;gap:8px;min-height:0}
+.pills{display:flex;gap:6px}
+.tasklist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.trow{padding:9px 11px;border-radius:7px;cursor:pointer;border-left:3px solid transparent}
+.trow:hover{background:var(--bg-subtle-hover)}
+.trow.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.trow .n{font-size:13px;display:flex;align-items:center;gap:4px}
+.trow .m{font-size:10px;color:var(--text-3);margin-top:2px}
+.badge-new{font-size:9px;background:var(--accent-soft);color:var(--accent-text);padding:1px 6px;border-radius:999px;font-weight:600;margin-left:auto}
+.detail{display:flex;flex-direction:column;min-height:0}
+.dhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dhead .title{font-size:17px;font-weight:600}
+.dhead .sp{margin-left:auto;display:flex;gap:6px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--stroke);margin-bottom:14px}
+.tab{padding:9px 15px;font-size:13px;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--text-1)}
+.tab.on{color:var(--text-1);border-bottom-color:var(--accent);font-weight:600}
+.tab .b{font-size:10px;background:var(--bg-subtle);padding:1px 7px;border-radius:999px;margin-left:5px}
+.ov{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.ov .c{background:var(--bg-subtle);border-radius:8px;padding:11px 13px}
+.ov .c .v{font-size:19px;font-weight:600}
+.ov .c .l{font-size:11px;color:var(--text-3);margin-top:1px}
+.tbody{overflow:auto;min-height:0;flex:1}
+
+/* 浏览页 */
+.crumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);margin-bottom:10px}
+.crumb b{color:var(--text-1)}
+.crumb span{cursor:pointer} .crumb span:hover{color:var(--accent-text)}
+.browsewrap{height:calc(100vh - 40px - 26px - 36px - 300px);display:flex;flex-direction:column}
+.chk{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;vertical-align:middle}
+tr.node{cursor:pointer}
+tr.node.sel{background:var(--accent-soft)}
+.nodeicon{opacity:.8}
+
+/* 浏览底部常驻动作条 */
+.actionbar{display:flex;align-items:center;gap:12px;margin-top:12px;padding:11px 14px;border:1px solid var(--stroke);
+  border-radius:10px;background:var(--bg-card);box-shadow:var(--shadow-card)}
+.actionbar.hide{display:none}
+.actionbar .lead{font-size:13px;font-weight:600}
+.actionbar .sp{flex:1}
+.actionbar .muted{font-size:12px;color:var(--text-3)}
+
+/* 任务选择弹出 */
+.pop{position:fixed;z-index:50;min-width:240px;background:var(--bg-card);border:1px solid var(--stroke-strong);
+  border-radius:10px;box-shadow:0 16px 48px rgba(0,0,0,.22);padding:6px;backdrop-filter:blur(16px)}
+.pop.hide{display:none}
+.pop .ph{font-size:11px;color:var(--text-3);padding:7px 10px 4px}
+.pop .opt{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;cursor:pointer;font-size:13px}
+.pop .opt:hover{background:var(--bg-subtle-hover)}
+.pop .opt .meta{font-size:10px;color:var(--text-3);margin-left:auto}
+.pop .div{height:1px;background:var(--stroke);margin:4px 6px}
+.pop .opt.new{color:var(--accent-text);font-weight:600}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:46px;transform:translateX(-50%) translateY(20px);z-index:60;
+  display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:10px;
+  background:var(--bg-card);border:1px solid var(--stroke-strong);box-shadow:0 16px 48px rgba(0,0,0,.22);
+  backdrop-filter:blur(16px);font-size:13px;opacity:0;pointer-events:none;transition:.28s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.toast .ic{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--good-soft);color:var(--good);font-size:12px}
+.toast a{color:var(--accent-text);cursor:pointer;font-weight:600;text-decoration:none}
+
+/* 空状态 */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:54px 20px;text-align:center}
+.empty .eic{font-size:34px;opacity:.5;margin-bottom:4px}
+.empty .et{font-size:14px;font-weight:600}
+.empty .eh{font-size:12px;color:var(--text-3);max-width:340px;line-height:1.6}
+.empty .ea{display:flex;gap:8px;margin-top:12px}
+
+.pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--accent-soft)}50%{box-shadow:0 0 0 6px var(--accent-soft)}}
+.hidden{display:none!important}
+.note{font-size:11px;color:var(--text-3);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="titlebar">
+    <div class="logo"></div><div class="app">Dc · OPC 数据采集</div>
+    <span class="txt-3" id="crumb">› 浏览节点</span>
+    <div class="caps"><button class="theme"></button><div class="cap">─</div><div class="cap">▢</div><div class="cap x">✕</div></div>
+  </div>
+  <div class="body">
+    <nav class="nav" id="nav"></nav>
+    <main class="main">
+
+      <!-- ===== Before / After 对比 ===== -->
+      <div class="cmp">
+        <div class="col old">
+          <h4><span class="dot bad"></span>旧流程 · 给新任务加第一个 Tag</h4>
+          <div class="steps">
+            采集任务 → <span class="x">+新建任务(模态)</span> → 列表里找回并选中 → <span class="x">分组页签</span> →
+            <span class="x">+新建分组(模态)</span> → 选分组 → Tag页签 → <span class="x">+新建Tag(模态)</span> →
+            手填/浏览(<span class="x">再套一层模态</span>) → 保存
+          </div>
+          <div class="tally old">≈ 6 次点击 · 2–3 个模态 · 强制「概览→分组→Tag」绕行 · 浏览靠复制粘贴</div>
+        </div>
+        <div class="col new">
+          <h4><span class="dot good"></span>新流程 · 发现 → 添加 → 看数据</h4>
+          <div class="steps">
+            浏览节点 → <span class="ok">勾选要采集的点位(可多选)</span> →
+            <span class="ok">加为 Tag → 选/建任务</span> → 看实时数据
+          </div>
+          <div class="tally new">≈ 3 次点击 · 0 逐项模态 · 0 分组层 · 发现即配置(自动带类型/名称)</div>
+        </div>
+      </div>
+
+      <!-- ===== 流程指引 ===== -->
+      <div class="guide" id="guide">
+        <div class="step" data-step="1"><span class="num">1</span>勾选节点</div>
+        <span class="arr">→</span>
+        <div class="step" data-step="2"><span class="num">2</span>加为 Tag</div>
+        <span class="arr">→</span>
+        <div class="step" data-step="3"><span class="num">3</span>看数据</div>
+        <div style="flex:1"></div>
+        <button class="btn ghost sm" onclick="resetFlow()">↺ 重放</button>
+      </div>
+
+      <!-- ===================== 屏 1：浏览节点 ===================== -->
+      <section id="s-browse">
+        <div class="page-title">浏览节点 <span class="txt-3" style="font-size:13px;font-weight:400">· 发现要采集的点位</span></div>
+        <div class="page-sub">连接 OPC 服务器，浏览地址空间、边看实时值边勾选，一键批量加为 Tag —— 发现与配置合并成一条线</div>
+
+        <div class="toolbar">
+          <select class="select"><option>OPC UA</option><option>OPC DA</option><option>OPC AE</option></select>
+          <input class="input" style="flex:1" value="opc.tcp://10.0.0.45:4840" />
+          <button class="btn ghost">连接</button>
+          <span class="pill good" style="align-self:center">● 已连接</span>
+        </div>
+        <div class="crumb"><span>Root</span>›<span>Objects</span>›<b>Boiler</b></div>
+
+        <div class="browsewrap">
+          <div class="card pad0" style="flex:1;overflow:auto">
+            <table class="t">
+              <thead><tr>
+                <th style="width:34px"></th><th style="width:30px"></th><th>名称</th><th>类型</th><th>当前值</th><th>NodeId</th>
+              </tr></thead>
+              <tbody id="nodes">
+                <tr class="node folder"><td></td><td class="nodeicon">📁</td><td>炉膛温度</td><td class="txt-3">Folder</td><td class="txt-3">—</td><td class="mono txt-3">ns=2;s=Boiler.Furnace</td></tr>
+                <tr class="node" data-name="Temp.Furnace" data-type="Float32" data-val="842.3 °C"><td><input type="checkbox" class="chk"></td><td class="nodeicon">🔢</td><td>Temp.Furnace</td><td class="txt-3">Variable · Float</td><td class="txt-good mono">842.3 °C</td><td class="mono txt-3">ns=2;s=Boiler.Temp.Furnace</td></tr>
+                <tr class="node" data-name="Temp.Exit" data-type="Float32" data-val="318.7 °C"><td><input type="checkbox" class="chk"></td><td class="nodeicon">🔢</td><td>Temp.Exit</td><td class="txt-3">Variable · Float</td><td class="txt-good mono">318.7 °C</td><td class="mono txt-3">ns=2;s=Boiler.Temp.Exit</td></tr>
+                <tr class="node" data-name="O2.Inlet" data-type="Float32" data-val="6.2 %"><td><input type="checkbox" class="chk"></td><td class="nodeicon">🔢</td><td>O2.Inlet</td><td class="txt-3">Variable · Float</td><td class="txt-warn mono">6.2 %</td><td class="mono txt-3">ns=2;s=Boiler.O2.Inlet</td></tr>
+                <tr class="node" data-name="Pressure.Drum" data-type="Float32" data-val="12.7 MPa"><td><input type="checkbox" class="chk"></td><td class="nodeicon">🔢</td><td>Pressure.Drum</td><td class="txt-3">Variable · Float</td><td class="txt-good mono">12.7 MPa</td><td class="mono txt-3">ns=2;s=Boiler.Pressure.Drum</td></tr>
+                <tr class="node" data-name="Flow.Feedwater" data-type="Float32" data-val="48.5 t/h"><td><input type="checkbox" class="chk"></td><td class="nodeicon">🔢</td><td>Flow.Feedwater</td><td class="txt-3">Variable · Float</td><td class="txt-good mono">48.5 t/h</td><td class="mono txt-3">ns=2;s=Boiler.Flow.Feedwater</td></tr>
+                <tr class="node folder"><td></td><td class="nodeicon">📁</td><td>给水系统</td><td class="txt-3">Folder</td><td class="txt-3">—</td><td class="mono txt-3">ns=2;s=Boiler.Water</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 常驻动作条 -->
+          <div class="actionbar hide" id="actionbar">
+            <span class="lead">已选 <span id="selcount">0</span> 个节点</span>
+            <span class="muted">将自动带数据类型与名称，无需分组</span>
+            <span class="sp"></span>
+            <button class="btn ghost sm" onclick="clearSel()">清空</button>
+            <button class="btn sm" id="addbtn" onclick="openTaskPop(event)">加为 Tag (<span id="selcount2">0</span>) ▾</button>
+          </div>
+          <div class="note">提示：勾选多行 → 「加为 Tag」→ 选现有任务或当场「+ 新建任务」。这是配置 Tag 的主入口；任务工作台里的「+ 添加 Tag」也复用这同一面板。</div>
+        </div>
+      </section>
+
+      <!-- ===================== 屏 2：采集任务工作台（无分组） ===================== -->
+      <section id="s-workspace" class="hidden">
+        <div class="page-title">采集任务</div>
+        <div class="page-sub">选择任务，在右侧管理它的 Tag、实时数据与诊断 —— Tag 直接挂任务，无分组层</div>
+
+        <div class="ws">
+          <div class="master">
+            <div class="pills"><span class="pill good">运行 2</span><span class="pill bad">停 1</span><span class="pill warn">告警 0</span></div>
+            <input class="input" style="min-width:0" placeholder="搜索任务…" />
+            <div class="seg" style="width:100%"><button class="on" style="flex:1">全部</button><button style="flex:1">运行中</button><button style="flex:1">已停止</button></div>
+            <div class="tasklist">
+              <div class="trow on" id="tk-boiler"><div class="n"><span class="dot good"></span>1号炉温度<span class="badge-new" id="tk-badge">刚创建 · 已选中</span></div><div class="m" id="tk-meta">UA · 0 tag</div></div>
+              <div class="trow"><div class="n"><span class="dot good"></span>能源采集器</div><div class="m">UA · 1240 tag · 1.2k/s</div></div>
+              <div class="trow"><div class="n"><span class="dot bad"></span>报警源-AE</div><div class="m">AE · 停止</div></div>
+            </div>
+            <div style="display:flex;gap:6px"><button class="btn sm" style="flex:1">+ 新建</button><button class="btn ghost sm" style="flex:1">导入</button></div>
+          </div>
+
+          <div class="detail">
+            <div class="dhead">
+              <span class="dot good"></span><span class="title">1号炉温度</span><span class="pill bad" id="ws-status">已停止</span>
+              <div class="sp"><button class="btn sm" style="background:var(--good)" id="ws-start" onclick="startTask()">▶ 启动</button><button class="btn ghost sm">✎ 编辑</button><button class="btn ghost sm">🗑 删除</button></div>
+            </div>
+            <!-- 5 页签：无「分组」 -->
+            <div class="tabs" id="ws-tabs">
+              <div class="tab" data-t="ov">概览</div>
+              <div class="tab on" data-t="tag">Tag <span class="b" id="tag-badge">0</span></div>
+              <div class="tab" data-t="live">实时数据</div>
+              <div class="tab" data-t="diag">诊断</div>
+              <div class="tab" data-t="cfg">配置</div>
+            </div>
+
+            <!-- Tag 页签内容 -->
+            <div id="ws-tag">
+              <div class="toolbar">
+                <input class="input" placeholder="搜索 Item…" />
+                <div class="sp"></div>
+                <button class="btn sm" onclick="go('browse')">+ 添加 Tag（浏览）</button>
+                <button class="btn ghost sm" onclick="toast('+ 虚拟测点：打开公式编辑器（原型未展开）')">+ 虚拟测点</button>
+                <button class="btn ghost sm">⥯ Excel</button>
+              </div>
+              <!-- 空状态（0 Tag 时，对准「还没有子项」） -->
+              <div class="card" id="tag-empty">
+                <div class="empty">
+                  <div class="eic">🏷️</div>
+                  <div class="et">这个任务还没有 Tag</div>
+                  <div class="eh">去「浏览节点」连上服务器、挑选要采集的点位，一键加进来即可 —— 不用先建分组。</div>
+                  <div class="ea">
+                    <button class="btn sm" onclick="go('browse')">浏览节点添加 Tag</button>
+                    <button class="btn ghost sm" onclick="toast('手动添加：填写 Item / 类型（原型未展开）')">手动添加</button>
+                  </div>
+                </div>
+              </div>
+              <!-- Tag 表（有 Tag 时；无分组列） -->
+              <div class="card pad0 tbody hidden" id="tag-table">
+                <table class="t">
+                  <thead><tr><th style="width:30px"></th><th>Item</th><th>类型</th><th>最新值</th><th>质量</th></tr></thead>
+                  <tbody id="tag-rows"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 其它页签占位 -->
+            <div id="ws-ov" class="hidden">
+              <div class="ov">
+                <div class="c"><div class="v" id="ov-total">0</div><div class="l">总 Tag</div></div>
+                <div class="c"><div class="v txt-good" id="ov-ok">0</div><div class="l">采集中</div></div>
+                <div class="c"><div class="v txt-warn">0</div><div class="l">错误</div></div>
+                <div class="c"><div class="v" id="ov-rate">—</div><div class="l">速率/s</div></div>
+              </div>
+              <div class="card"><div class="card-h">消息速率（最近 60s）</div><div class="txt-3" style="padding:24px 0;text-align:center">启动后开始采集…</div></div>
+            </div>
+            <div id="ws-other" class="hidden"><div class="card"><div class="empty"><div class="eic">📊</div><div class="et" id="other-t">实时数据</div><div class="eh">该页签原型未展开（与全局「实时数据/诊断」复用同一视图，按当前任务过滤）。</div></div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== 屏 3：实时数据 ===================== -->
+      <section id="s-live" class="hidden">
+        <div class="page-title">实时数据</div>
+        <div class="page-sub">刚配置的点位正在流式刷新（100ms 批量合并，质量/时间戳实时）</div>
+        <div class="toolbar">
+          <input class="input" placeholder="搜索 Item…" />
+          <select class="select"><option>全部任务</option><option>1号炉温度</option></select>
+          <div class="seg"><button class="on">运行中</button><button>已暂停</button></div>
+          <div class="sp"></div>
+          <span class="txt-3" id="live-count">0 行 · 0/s</span>
+          <button class="btn ghost sm">⏸ 暂停</button>
+        </div>
+        <div class="card pad0" style="height:calc(100vh - 40px - 26px - 36px - 250px);overflow:auto">
+          <table class="t">
+            <thead><tr><th style="width:30px"></th><th>Item</th><th>任务</th><th>值</th><th>质量</th><th>时间戳</th><th>更新数</th></tr></thead>
+            <tbody id="live-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <div class="statusbar"><span>Dc · v1.0.0</span><span>主题 · 跟随系统</span><span>DB · sqlite.db</span><span class="sp txt-good">● 全部正常</span></div>
+</div>
+
+<!-- 任务选择弹出 -->
+<div class="pop hide" id="taskpop">
+  <div class="ph">加到哪个任务？</div>
+  <div class="opt" onclick="addTags('1号炉温度', true)">📋 1号炉温度 <span class="meta">UA · 0 tag · 新建</span></div>
+  <div class="opt" onclick="addTags('能源采集器', false)">📋 能源采集器 <span class="meta">UA · 1240 tag</span></div>
+  <div class="div"></div>
+  <div class="opt new" onclick="addTags('新建任务…', true)">＋ 新建任务…</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span class="ic">✓</span><span id="toast-msg"></span></div>
+
+<script>
+/* ===== 导航（不跳页，只切屏；复用 v2 NAV 结构） ===== */
+const NAV=[{k:'dashboard',t:'仪表盘',ic:'⌂'},{grp:'采集'},{k:'workspace',t:'采集任务',ic:'▤'},{k:'browse',t:'浏览节点',ic:'⌕'},
+{grp:'全局监控'},{k:'livedata',t:'实时数据',ic:'∿'},{k:'diagnostics',t:'诊断',ic:'♥'},{grp:'系统'},{k:'settings',t:'设置',ic:'⚙'},{k:'logs',t:'日志',ic:'≡'}];
+const SCREEN={browse:'s-browse',workspace:'s-workspace',livedata:'s-live'};
+const CRUMB={browse:'› 浏览节点',workspace:'› 采集任务 › 1号炉温度',livedata:'› 实时数据'};
+let cur='browse', added=[];
+
+function renderNav(){
+  let h='';
+  for(const n of NAV){
+    if(n.grp){h+=`<div class="grp">${n.grp}</div>`;continue;}
+    const wired=SCREEN[n.k];const on=(n.k===cur||(cur==='workspace'&&n.k==='workspace'))?' on':'';
+    h+=`<div class="item${on}" data-k="${n.k}" onclick="navClick('${n.k}')"><span class="ic">${n.ic}</span>${n.t}</div>`;
+  }
+  h+=`<div class="foot"></div><div class="item"><span class="ic">ⓘ</span>关于</div>`;
+  document.getElementById('nav').innerHTML=h;
+}
+function navClick(k){ if(SCREEN[k]){go(k);} else {toast('「'+(NAV.find(n=>n.k===k)?.t||k)+'」原型未覆盖，本演示聚焦关键配置闭环');} }
+function go(k){
+  cur=k;
+  for(const s of Object.values(SCREEN)) document.getElementById(s).classList.add('hidden');
+  document.getElementById(SCREEN[k]).classList.remove('hidden');
+  document.getElementById('crumb').textContent=CRUMB[k]||'';
+  document.querySelectorAll('#nav .item').forEach(e=>e.classList.toggle('on', e.dataset.k===k || (k==='livedata'&&false)));
+  // nav 高亮：workspace tab 内的实时数据走 livedata 路由项
+  document.querySelectorAll('#nav .item').forEach(e=>e.classList.remove('on'));
+  const navKey = k;
+  const navItem=document.querySelector(`#nav .item[data-k="${navKey}"]`); if(navItem)navItem.classList.add('on');
+  updateGuide();
+  if(k==='livedata') startLiveTick(); else stopLiveTick();
+  window.scrollTo(0,0);
+}
+
+/* ===== 流程指引高亮 ===== */
+function updateGuide(){
+  const sel=selected().length;
+  let step = cur==='browse' ? (sel>0?2:1) : (cur==='workspace'?3:(cur==='livedata'?3:1));
+  document.querySelectorAll('#guide .step').forEach(e=>{
+    const s=+e.dataset.step; e.classList.remove('on','done');
+    if(s<step) e.classList.add('done'); else if(s===step) e.classList.add('on');
+  });
+  // 脉冲提示当前热点
+  const ab=document.getElementById('actionbar');
+  document.getElementById('addbtn')?.classList.toggle('pulse', cur==='browse'&&sel>0);
+}
+
+/* ===== 浏览：多选 ===== */
+function selected(){return [...document.querySelectorAll('#nodes tr.node .chk:checked')].map(c=>c.closest('tr'));}
+function onCheck(){
+  const rows=selected();
+  document.querySelectorAll('#nodes tr.node').forEach(tr=>{
+    const c=tr.querySelector('.chk'); tr.classList.toggle('sel', !!(c&&c.checked));
+  });
+  const n=rows.length;
+  document.getElementById('selcount').textContent=n;
+  document.getElementById('selcount2').textContent=n;
+  document.getElementById('actionbar').classList.toggle('hide', n===0);
+  updateGuide();
+}
+function clearSel(){document.querySelectorAll('#nodes .chk').forEach(c=>c.checked=false);onCheck();closePop();}
+
+/* ===== 任务选择弹出 ===== */
+function openTaskPop(ev){
+  const p=document.getElementById('taskpop');const r=ev.currentTarget.getBoundingClientRect();
+  p.style.left=Math.min(r.left, window.innerWidth-260)+'px';
+  p.style.top=(r.top-p.offsetHeight-8>10? r.top-180 : r.bottom+8)+'px';
+  p.classList.remove('hide');
+  // 重新定位（拿到真实高度后）
+  p.style.top=(r.top - p.offsetHeight - 8)+'px';
+  ev.stopPropagation();
+}
+function closePop(){document.getElementById('taskpop').classList.add('hide');}
+document.addEventListener('click',e=>{ if(!e.target.closest('#taskpop')&&!e.target.closest('#addbtn')) closePop(); });
+
+/* ===== 核心：批量加为 Tag ===== */
+function addTags(taskName, isNew){
+  const rows=selected();
+  if(rows.length===0){closePop();return;}
+  added = rows.map(r=>({name:r.dataset.name, type:r.dataset.type, val:r.dataset.val}));
+  closePop();
+  // 更新工作台任务为目标任务
+  const tk=document.getElementById('tk-boiler');
+  tk.querySelector('.n').childNodes[1].nodeValue = (taskName==='新建任务…'?'新采集任务':taskName);
+  document.querySelector('#s-workspace .dhead .title').textContent = (taskName==='新建任务…'?'新采集任务':taskName);
+  document.getElementById('tk-badge').textContent = isNew?'刚创建 · 已选中':'已选中';
+  renderTags();
+  toast(`已添加 ${rows.length} 个 Tag 到「${taskName==='新建任务…'?'新采集任务':taskName}」`, '去看实时数据 →', ()=>go('livedata'));
+  go('workspace'); setWsTab('tag');
+}
+
+function renderTags(){
+  const n=added.length;
+  document.getElementById('tag-badge').textContent=n;
+  document.getElementById('tk-meta').textContent=`UA · ${n} tag`;
+  document.getElementById('ov-total').textContent=n;
+  document.getElementById('ov-ok').textContent=0;
+  document.getElementById('tag-empty').classList.toggle('hidden', n>0);
+  document.getElementById('tag-table').classList.toggle('hidden', n===0);
+  document.getElementById('tag-rows').innerHTML = added.map(t=>
+    `<tr><td><span class="dot warn"></span></td><td class="mono">Boiler.${t.name}</td><td>${t.type}</td><td class="txt-3">待启动</td><td><span class="pill warn">—</span></td></tr>`).join('');
+}
+
+/* ===== 工作台页签 ===== */
+function setWsTab(t){
+  document.querySelectorAll('#ws-tabs .tab').forEach(e=>e.classList.toggle('on', e.dataset.t===t));
+  document.getElementById('ws-tag').classList.toggle('hidden', t!=='tag');
+  document.getElementById('ws-ov').classList.toggle('hidden', t!=='ov');
+  const other=document.getElementById('ws-other');
+  if(t==='live'||t==='diag'||t==='cfg'){other.classList.remove('hidden');document.getElementById('other-t').textContent={live:'实时数据',diag:'诊断',cfg:'配置'}[t];}
+  else other.classList.add('hidden');
+}
+document.getElementById('ws-tabs').addEventListener('click',e=>{const tab=e.target.closest('.tab');if(tab)setWsTab(tab.dataset.t);});
+
+/* ===== 启动任务 → 值变 Good ===== */
+function startTask(){
+  document.getElementById('ws-status').textContent='运行中';
+  document.getElementById('ws-status').className='pill good';
+  document.getElementById('ws-start').outerHTML='<button class="btn ghost sm" onclick="toast(\'已停止\')">■ 停止</button>';
+  document.getElementById('ov-ok').textContent=added.length;
+  document.getElementById('ov-rate').textContent=(added.length*30)+'';
+  document.querySelectorAll('#tag-rows tr').forEach((tr,i)=>{
+    tr.querySelector('.dot').className='dot good';
+    tr.children[3].innerHTML='<b>'+added[i].val.split(' ')[0]+'</b> '+(added[i].val.split(' ')[1]||'');
+    tr.children[3].className='';
+    tr.children[4].innerHTML='<span class="pill good">Good</span>';
+  });
+  toast('任务已启动，'+added.length+' 个 Tag 开始采集','去看实时数据 →',()=>go('livedata'));
+}
+
+/* ===== 实时数据流式 ===== */
+let liveTimer=null,liveCounts={};
+function startLiveTick(){
+  const tb=document.getElementById('live-rows');
+  if(added.length===0){tb.innerHTML='<tr><td colspan="7"><div class="empty"><div class="eic">∿</div><div class="et">暂无实时数据</div><div class="eh">先在浏览节点加 Tag 并启动任务。</div></div></td></tr>';document.getElementById('live-count').textContent='0 行 · 0/s';return;}
+  tick();liveTimer=setInterval(tick,900);
+}
+function stopLiveTick(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}}
+function tick(){
+  const tb=document.getElementById('live-rows');
+  tb.innerHTML=added.map((t,i)=>{
+    const base=parseFloat(t.val)||0; const v=(base+(Math.sin(Date.now()/700+i)*base*0.01)).toFixed(1);
+    liveCounts[t.name]=(liveCounts[t.name]||0)+ (Math.floor(Math.random()*3)+1);
+    const unit=(t.val.split(' ')[1]||'');
+    return `<tr><td><span class="dot good"></span></td><td class="mono">Boiler.${t.name}</td><td>1号炉温度</td><td><b>${v}</b> ${unit}</td><td><span class="pill good">Good</span></td><td class="mono txt-3">${ts()}</td><td>${liveCounts[t.name]}</td></tr>`;
+  }).join('');
+  document.getElementById('live-count').textContent=`${added.length} 行 · ${added.length*9}/s`;
+}
+function ts(){const d=new Date();return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}.${String(d.getMilliseconds()).padStart(3,'0')}`;}
+
+/* ===== Toast ===== */
+let toastTimer=null;
+function toast(msg, linkText, linkFn){
+  const t=document.getElementById('toast');document.getElementById('toast-msg').innerHTML=msg+(linkText?` <a id="toast-link">${linkText}</a>`:'');
+  t.classList.add('show');
+  if(linkText){document.getElementById('toast-link').onclick=()=>{linkFn&&linkFn();t.classList.remove('show');};}
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),4200);
+}
+
+/* ===== 重放 ===== */
+function resetFlow(){added=[];clearSel();renderTags();
+  document.getElementById('ws-status').textContent='已停止';document.getElementById('ws-status').className='pill bad';
+  document.querySelector('#s-workspace .dhead .sp').innerHTML='<button class="btn sm" style="background:var(--good)" id="ws-start" onclick="startTask()">▶ 启动</button><button class="btn ghost sm">✎ 编辑</button><button class="btn ghost sm">🗑 删除</button>';
+  document.querySelector('#s-workspace .dhead .title').textContent='1号炉温度';
+  document.getElementById('tk-boiler').querySelector('.n').childNodes[1].nodeValue='1号炉温度';
+  document.getElementById('tk-badge').textContent='刚创建 · 已选中';
+  setWsTab('tag');go('browse');toast('已重置 —— 试试勾选几个节点');}
+
+/* ===== 主题切换 ===== */
+document.querySelector('.theme').onclick=function(){document.body.classList.toggle('dark');this.textContent=document.body.classList.contains('dark')?'☀ 亮色':'🌙 暗色';};
+document.querySelector('.theme').textContent='🌙 暗色';
+
+/* ===== 初始化 ===== */
+document.querySelectorAll('#nodes .chk').forEach(c=>c.addEventListener('change',onCheck));
+document.querySelectorAll('#nodes tr.node').forEach(tr=>tr.addEventListener('click',e=>{
+  if(e.target.classList.contains('chk'))return; const c=tr.querySelector('.chk'); if(c){c.checked=!c.checked;onCheck();}
+}));
+renderNav();renderTags();setWsTab('tag');go('browse');
+</script>
+</body>
+</html>

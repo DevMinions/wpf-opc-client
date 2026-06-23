@@ -34,7 +34,8 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
 
     // 嵌入主从视图时隐藏标题 + 筛选区域，避免把右侧按钮挤出视区
     public bool ShowFullToolbar => !IsEmbedded;
-    public string EmbeddedTitle => GroupFilter is null ? "Tag ▸ (未选分组)" : $"Tag ▸ {GroupFilter.Name}";
+    // 分组层已对用户隐藏(Tag 直接挂任务),嵌入态只显「Tag」。
+    public string EmbeddedTitle => "Tag";
 
     // 无分组时无法新建 Tag——禁用「新建」并用空状态引导,而非弹阻塞 MessageBox 把用户挡在死路上。
     // CTA 仅内嵌模式显示(有「分组」页签可跳);独立页只给文字引导。
@@ -132,14 +133,17 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         }
     }
 
-    // 无分组时禁用(空状态引导去创建分组),双重防御。
-    private bool CanNew => AvailableGroups.Count > 0;
+    // Tag 直接挂任务:有任务上下文即可新建。分组层已隐藏,新建时自动落到任务的「默认分组」。
+    private bool CanNew => TaskScope is not null;
 
     [RelayCommand(CanExecute = nameof(CanNew))]
     private async Task NewAsync()
     {
-        if (AvailableGroups.Count == 0) return;
-        var result = await EditTagAsync(existing: null);
+        if (TaskScope is null) return;
+        // 确保当前任务有「默认分组」并作为默认传给编辑器 → 编辑器隐藏分组选择器,Tag 自动落到该任务。
+        var defaultGroup = await DefaultTaskGroup.EnsureAsync(_dbFactory, TaskScope);
+        if (AvailableGroups.All(g => g.Id != defaultGroup.Id)) AvailableGroups.Add(defaultGroup);
+        var result = await EditTagAsync(existing: null, defaultGroup: defaultGroup);
         if (result is null) return;
         await PersistNewAsync(result);
     }
@@ -315,8 +319,8 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         _ = LoadAsync();
     }
 
-    // 占位:Task 7 替换为真实实现。签名固定,供 NewAsync/EditAsync 调用。
-    private async Task<TagEditResult?> EditTagAsync(Tag? existing)
+    // 供 NewAsync/EditAsync 调用。defaultGroup:新建时传任务的默认分组(编辑器据此隐藏分组选择器)。
+    private async Task<TagEditResult?> EditTagAsync(Tag? existing, Group? defaultGroup = null)
     {
         // 任务上下文:优先当前工作台 TaskScope;独立页(无 TaskScope)编辑现有 Tag 时用其 TaskId。
         // 独立页新建虚拟测点无任务上下文 → AvailableInputTags 为空,虚拟创建受限(已知限制)。
@@ -330,7 +334,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
                 existingFormulas = await LoadTaskFormulasAsync(taskId);
         }
 
-        return _editor.Edit(AvailableGroups, existing, GroupFilter,
+        return _editor.Edit(AvailableGroups, existing, defaultGroup ?? GroupFilter,
             taskIdLookup => _taskById.TryGetValue(taskIdLookup, out var t) ? t : null,
             taskTags, existingFormulas);
     }

@@ -72,26 +72,14 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         Overview = overview;
         TagsPanel = tagsPanel;
         TagsPanel.IsEmbedded = true;
-        // Tag 面板无分组时,空状态 CTA 请求跳到「分组」页签创建分组。
-        TagsPanel.NavigateToGroupsRequested += () => SelectedTab = "groups";
 
+        // 分组层已对用户隐藏(Tag 直接挂任务):不再有「分组」页签,GroupsPanel 仅保留为隐式默认分组的载体。
         GroupsPanel = groupsPanel ?? new NullGroupPanel();
         LivePanel = livePanel ?? new NullLivePanel();
         DiagPanel = diagPanel ?? new NullDiagPanel();
         Config = config ?? new WorkspaceConfigViewModel(editor ?? new NullTaskEditorDialog());
 
         GroupsPanel.IsEmbedded = true;
-        GroupsPanel.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(IEmbeddableGroupPanel.SelectedGroup)
-                && GroupsPanel.SelectedGroup is not null)
-            {
-                TagsPanel.GroupFilter = GroupsPanel.SelectedGroup;
-                SelectedTab = "tags";
-            }
-        };
-        // 分组面板无任务时,空状态 CTA 请求跳到任务列表新建任务。
-        GroupsPanel.NavigateToTasksRequested += () => SelectedTab = "overview";
         // 任务编辑持久化走 VM(main 的任务 CRUD);PersistEditedAsync 内部已 LoadAsync 刷新列表。
         Config.Edited += async edited => await PersistEditedAsync(edited);
 
@@ -140,7 +128,6 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         CurrentTabContent = SelectedTab switch
         {
             "tags"        => (object)TagsPanel,
-            "groups"      => GroupsPanel,
             "livedata"    => LivePanel,
             "diagnostics" => DiagPanel,
             "config"      => Config,
@@ -286,6 +273,8 @@ public sealed partial class TaskWorkspaceViewModel : ObservableObject
         edited.Id = Dc.Infrastructure.Persistence.UlidGenerator.NewId();
         await _source.SaveNewTaskAsync(edited);
         await LoadAsync();
+        // 新建后自动选中该任务,免去用户在列表里再找一遍。
+        SelectedTask = AllTasks.FirstOrDefault(r => r.TaskId == edited.Id);
     }
 
     private async Task PersistEditedAsync(Dc.Domain.Entities.CollectorTask edited)
