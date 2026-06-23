@@ -66,7 +66,7 @@ docker logs -f dc-collector
 | TCP 发布 | MessagePack / JSON 可切换,wire v1.1（magic + format-id）,冷却重连 + 可选离线队列 |
 | 诊断 + 可观测 | WPF 面板（每任务速率/错误/重启/心跳 sparkline）;并经 `System.Diagnostics.Metrics` + `/metrics` 暴露指标（速率/错误/重启/心跳龄/队列积压/丢弃帧数,dotnet-counters / OpenTelemetry / Prometheus 可抓）+ 周期结构化诊断日志（含队列溢出丢弃边沿告警） |
 | **无头 / 服务模式** | `Dc.Cli` 控制台:从 DB 加载任务跑 UA 采集 + 发布,**Linux/Docker 可部署**,复用同一采集引擎 |
-| Excel 导入/导出 Tag | ClosedXML（Item + 数据类型两列;导入落当前任务） |
+| Excel 导入/导出 Tag | ClosedXML;导入按 Item + 数据类型落当前任务（导出另含 TaskId 列） |
 | 发现 → 配置闭环 | 浏览地址空间、多选节点,一键**「加为 Tag」**批量落到任务（数据类型自动映射）,随即跳到该任务 |
 | 系统托盘 + 单实例锁 · 滚动日志（Serilog） | |
 

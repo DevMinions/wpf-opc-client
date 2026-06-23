@@ -66,7 +66,7 @@ docker logs -f dc-collector
 | TCP publishing | MessagePack / JSON switchable, wire v1.1 (magic + format-id), cooldown reconnect + optional offline queue |
 | Diagnostics + observability | WPF panel (per-task rate/error/restart/heartbeat sparkline); also exposed via `System.Diagnostics.Metrics` + `/metrics` (rate/errors/restarts/heartbeat-age/queue-backlog/dropped-frames — scrapeable by dotnet-counters / OpenTelemetry / Prometheus) + periodic structured diagnostic logs (incl. queue-overflow drop edge alerts) |
 | **Headless / service mode** | `Dc.Cli` console: loads tasks from the DB, runs UA collection + publishing, **deployable on Linux/Docker**, reuses the same engine |
-| Excel import/export of Tags | ClosedXML (Item + DataType columns; import lands tags in the current task) |
+| Excel import/export of Tags | ClosedXML; import by Item + DataType into the current task (export also writes a TaskId column) |
 | Discover → configure flow | Browse the address space, multi-select nodes, and **"Add as Tags"** in bulk to a task (data type auto-mapped); then jump straight to the task |
 | System tray + single-instance lock · rolling logs (Serilog) | |
 
