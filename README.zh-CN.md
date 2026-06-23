@@ -55,25 +55,47 @@ docker logs -f dc-collector
 
 ## 功能
 
-| 模块 | 说明 |
-|---|---|
-| 配置管理 | 任务 / Tag / 公式 / 系统配置,EF Core + SQLite。Tag **直接挂任务**（无分组层） |
-| OPC UA 订阅 + 浏览 + 读值 | OPC Foundation .NET Standard SDK,证书信任链,**KeepAlive 断线自动重连** |
-| OPC DA 订阅 + 浏览 + IP 扫描 | Technosoftware DaAeHdaClient（COM/DCOM,需 Windows） |
-| OPC AE 订阅 + Area/Source 浏览 | 同上 |
-| 实时数据视图 | 事件驱动 + 三态质量码着色（Good/Uncertain/Bad） |
-| 虚拟测点（公式计算） | 一个 Tag 可定义为基于同任务其它 Tag 的**公式**（DynamicExpresso 引擎,如 `T * 1.8 + 32`）:在采集管道里求值,含输入映射、就绪门控、质量传播,与真实 Tag 一同发布 |
-| 工程量缩放/偏移 | 真实 Tag 可配**缩放系数 + 偏移**,发布前把原始值换算成工程量（raw → 工程量） |
-| 任务编排 | `TaskOrchestrator`:启停 / 热增删 Tag / 心跳监控 / 超时自动重启 |
-| TCP 发布 | MessagePack / JSON 可切换,wire v1.1（magic + format-id）,冷却重连 + 可选离线队列 |
-| 诊断 + 可观测 | WPF 面板（每任务速率/错误/重启/心跳 sparkline）;并经 `System.Diagnostics.Metrics` + `/metrics` 暴露指标（速率/错误/重启/心跳龄/队列积压/丢弃帧数,dotnet-counters / OpenTelemetry / Prometheus 可抓）+ 周期结构化诊断日志（含队列溢出丢弃边沿告警） |
-| **无头 / 服务模式** | `Dc.Cli` 控制台:从 DB 加载任务跑 UA 采集 + 发布,**Linux/Docker 可部署**,复用同一采集引擎 |
-| Excel 导入/导出 Tag | ClosedXML;导入按 Item + 数据类型落当前任务（导出另含 TaskId 列） |
-| 配置备份/恢复 | 一键导出/导入**全部任务·Tag·配置**为 JSON（设置页）,合并或替换 |
-| 发现 → 配置闭环 | 浏览地址空间、多选节点,一键**「加为 Tag」**批量落到任务（数据类型自动映射）,随即跳到该任务 |
-| 系统托盘 + 单实例锁 · 滚动日志（Serilog） | |
+### OPC 协议与数据源
 
-路线图见 [`ROADMAP.md`](./ROADMAP.md)。
+- **OPC UA** —— 订阅、浏览地址空间、**浏览时读当前值**（批量读）、证书信任链、**KeepAlive 断线自动重连**、每任务安全/None 端点开关。（OPC Foundation .NET Standard SDK。）
+- **OPC DA** —— 订阅、浏览、**OPCEnum 服务器扫描 / IP 发现**、主动**探活**（`GetServerStatus`）及时发现断线。（Technosoftware DaAeHdaClient,COM/DCOM,需 Windows。）
+- **OPC AE** —— 报警与事件订阅、Area/Source 浏览。（同一 SDK。）
+
+### Tag 数据加工
+
+- **三态质量码** —— Good / Uncertain / Bad,按 `0xC0/0x40/0x00` 位运算解析,UI 着色。
+- **工程量缩放/偏移** —— 每个真实 Tag 可配**缩放系数 + 偏移**,发布前把原始值换算成工程量（raw → 工程量）。
+- **虚拟测点（公式计算）** —— 一个 Tag 可定义为基于同任务其它 Tag 的**公式**（DynamicExpresso 引擎,如 `T * 1.8 + 32`;内置 `SQRT/ABS/SIN/COS/IF/MIN/MAX/AVG/SUM/...`）:在采集管道里求值,含输入映射、就绪门控、**质量传播**,与真实 Tag 一同发布。
+
+### 任务配置（桌面端）
+
+- **主从工作台** —— 任务列表带状态筛选（全部 / 运行中 / 已停止）+ 实时搜索;详情区 5 个标签页（概览 / Tag / 实时数据 / 诊断 / 配置）。
+- **任务增删改** —— 新建/编辑/删除任务（UA/DA/AE;服务器/节点/CLSID、采样间隔、死区、下游 TCP 地址、每任务安全开关）,带用户可读名称。
+- **Tag 增删改** —— 新建/编辑/删除真实或虚拟 Tag,带**引用完整性拦截**（被公式引用的 Tag 不能删;删虚拟 Tag 级联删其公式）;能安全地热同步到运行中的任务。
+- **发现 → 配置** —— 浏览、多选节点,一键**「加为 Tag」**批量落到任务（数据类型自动映射）,随即跳到该任务;空状态引导到浏览页。
+- **Excel 导入/导出** —— ClosedXML;导入按 Item + 数据类型落当前任务（导出另含 TaskId 列）。
+
+### 运行引擎
+
+- **`TaskOrchestrator`** —— 启停/重启、**不重启热增删 Tag**、心跳监控、看门狗**超时自动重启**、连接状态跟踪。
+- **TCP 发布** —— 批量发送、**MessagePack / JSON** 可切换、wire 格式 v1.1（magic + format-id）、冷却重连 + 发送超时、**可选有界离线队列**（溢出丢最旧）。
+- **解耦 + 泛型** —— `PublishAsync<T>` 不限定消息类型,broker 协议由部署方决定,OPC SDK 不泄漏出抽象层。
+
+### 监控与可观测
+
+- **仪表盘** —— 健康评分、运行/停止/告警计数、总吞吐、每任务状态一览。
+- **实时数据** —— 跨任务值流、三态质量着色、任务筛选 + 搜索 + 暂停/清空、**高频合并**（每秒数千更新仍流畅）。
+- **诊断** —— 每任务速率 / 发送错误 / 重启 / 心跳龄 / 队列积压 / 丢弃帧 + sparkline,刷新间隔可调;区分「无下游消费者」与真实发送错误。
+- **指标与探针** —— `System.Diagnostics.Metrics` + `GET /metrics`（Prometheus `dc_collector_*`）、`GET /healthz` 与 `/readyz`;另有周期结构化诊断日志（含队列溢出丢弃边沿告警）。
+- **日志** —— Serilog 滚动文件 + 应用内日志查看器。
+
+### 部署与运维
+
+- **两种形态、一套引擎** —— Windows 桌面（UA/DA/AE）与无头 `Dc.Cli`（Linux/Docker,仅 UA）;均 **self-contained**（目标机无需预装 .NET 运行时）。
+- **配置备份/恢复** —— 把**全部任务·Tag·配置**导出/导入为 JSON（合并或替换）,以及 `appsettings.json` 外部化。
+- **桌面体验** —— Fluent UI,**亮/暗/跟随系统主题**、主题化弹窗、**实时输入校验**、系统托盘 + 单实例锁。
+
+持久化为 EF Core + SQLite（表:任务 / Tag / 公式 / 系统配置）。路线图见 [`ROADMAP.md`](./ROADMAP.md)。
 
 ---
 

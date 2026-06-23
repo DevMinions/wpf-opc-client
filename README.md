@@ -55,25 +55,47 @@ docker logs -f dc-collector
 
 ## Features
 
-| Module | Notes |
-|---|---|
-| Config management | Tasks / Tags / Formulas / system config, EF Core + SQLite. Tags attach **directly to a task** (no group layer) |
-| OPC UA subscribe + browse + read | OPC Foundation .NET Standard SDK, certificate trust chain, **KeepAlive auto-reconnect on disconnect** |
-| OPC DA subscribe + browse + IP scan | Technosoftware DaAeHdaClient (COM/DCOM, Windows-only) |
-| OPC AE subscribe + Area/Source browse | same as above |
-| Live data view | event-driven + tri-state quality coloring (Good/Uncertain/Bad) |
-| Virtual (computed) tags | A tag can be a **formula** over other tags in the same task (DynamicExpresso engine, e.g. `T * 1.8 + 32`): evaluated in the collection pipeline with input mapping, readiness gating and quality propagation, then published like a real tag |
-| Engineering-unit scaling | Real tags can carry a **scale factor + offset**, applied to the raw value before publishing (raw → engineering units) |
-| Task orchestration | `TaskOrchestrator`: start/stop · hot add/remove tags · heartbeat monitoring · auto-restart on timeout |
-| TCP publishing | MessagePack / JSON switchable, wire v1.1 (magic + format-id), cooldown reconnect + optional offline queue |
-| Diagnostics + observability | WPF panel (per-task rate/error/restart/heartbeat sparkline); also exposed via `System.Diagnostics.Metrics` + `/metrics` (rate/errors/restarts/heartbeat-age/queue-backlog/dropped-frames — scrapeable by dotnet-counters / OpenTelemetry / Prometheus) + periodic structured diagnostic logs (incl. queue-overflow drop edge alerts) |
-| **Headless / service mode** | `Dc.Cli` console: loads tasks from the DB, runs UA collection + publishing, **deployable on Linux/Docker**, reuses the same engine |
-| Excel import/export of Tags | ClosedXML; import by Item + DataType into the current task (export also writes a TaskId column) |
-| Config backup/restore | One-click export/import of **all tasks · tags · config** as a JSON bundle (Settings page), merge or replace |
-| Discover → configure flow | Browse the address space, multi-select nodes, and **"Add as Tags"** in bulk to a task (data type auto-mapped); then jump straight to the task |
-| System tray + single-instance lock · rolling logs (Serilog) | |
+### OPC protocols & data sources
 
-See the roadmap in [`ROADMAP.md`](./ROADMAP.md).
+- **OPC UA** — subscribe, browse the address space, **read values while browsing** (batched read), certificate trust chain, **KeepAlive auto-reconnect**, per-task secure/None endpoint toggle. (OPC Foundation .NET Standard SDK.)
+- **OPC DA** — subscribe, browse, **OPCEnum server scan / IP discovery**, active **liveness probing** (`GetServerStatus`) for prompt disconnect detection. (Technosoftware DaAeHdaClient, COM/DCOM, Windows-only.)
+- **OPC AE** — alarms & events subscribe, Area/Source browse. (same SDK.)
+
+### Tag data processing
+
+- **Tri-state quality** — Good / Uncertain / Bad, parsed by `0xC0/0x40/0x00` bit masking, color-coded in the UI.
+- **Engineering-unit scaling** — per real tag: **scale factor + offset**, applied to the raw value before publish (raw → engineering units).
+- **Virtual (computed) tags** — a tag defined as a **formula** over other tags in the same task (DynamicExpresso engine, e.g. `T * 1.8 + 32`; built-ins `SQRT/ABS/SIN/COS/IF/MIN/MAX/AVG/SUM/...`): evaluated in the collection pipeline with input mapping, readiness gating and **quality propagation**, then published like a real tag.
+
+### Task configuration (desktop)
+
+- **Master-detail workspace** — task list with status filter (all / running / stopped) + live search; detail has 5 tabs (overview / tags / live data / diagnostics / config).
+- **Task CRUD** — create/edit/delete tasks (UA/DA/AE; server/node/CLSID, sampling interval, deadband, downstream TCP target, per-task security), with a user-readable name.
+- **Tag CRUD** — new/edit/delete real or virtual tags, with a **referential-integrity guard** (can't delete a tag a formula references; deleting a virtual tag cascade-removes its formula). Hot-applied to running tasks where safe.
+- **Discover → configure** — browse, multi-select nodes, bulk **"Add as Tags"** to a task (data type auto-mapped), then jump straight to the task; empty states guide you to the browse page.
+- **Excel import/export** — ClosedXML; import by Item + DataType into the current task (export also writes a TaskId column).
+
+### Runtime engine
+
+- **`TaskOrchestrator`** — start/stop/restart, **hot add/remove tags without a restart**, heartbeat monitoring, watchdog **auto-restart on timeout**, connection-state tracking.
+- **TCP publishing** — batched sender, **MessagePack / JSON** switchable, wire format v1.1 (magic + format-id), reconnect cooldown + send timeout, **optional bounded offline queue** (drop-oldest on overflow).
+- **Decoupled & generic** — `PublishAsync<T>` is message-type agnostic; the broker protocol is the deployer's choice, no OPC SDK leaks past the abstraction layer.
+
+### Monitoring & observability
+
+- **Dashboard** — health score, running/stopped/alert counts, total throughput, per-task status at a glance.
+- **Live data** — cross-task value stream, tri-state quality coloring, task filter + search + pause/clear, **high-rate coalescing** (stays smooth at thousands of updates/s).
+- **Diagnostics** — per-task rate / publish-errors / restarts / heartbeat-age / queue-backlog / dropped-frames + sparkline, configurable refresh; distinguishes "no downstream consumer" from real send errors.
+- **Metrics & probes** — `System.Diagnostics.Metrics` + `GET /metrics` (Prometheus `dc_collector_*`), `GET /healthz` & `/readyz`; plus periodic structured diagnostic logs (incl. queue-overflow drop edge alerts).
+- **Logs** — Serilog rolling file + an in-app log viewer.
+
+### Deployment & operations
+
+- **Two forms, one engine** — Windows desktop (UA/DA/AE) and headless `Dc.Cli` (Linux/Docker, UA); both **self-contained** (no .NET runtime needed on the target).
+- **Config backup/restore** — export/import **all tasks · tags · config** as a JSON bundle (merge or replace), plus `appsettings.json` externalization.
+- **Desktop niceties** — Fluent UI with **light/dark/system theme**, themed dialogs, **live input validation**, system tray + single-instance lock.
+
+Persistence is EF Core + SQLite (tables: tasks / tags / formulas / system config). See the roadmap in [`ROADMAP.md`](./ROADMAP.md).
 
 ---
 
