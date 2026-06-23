@@ -446,4 +446,13 @@ Cancel = Cancel import</value></data>
   <data name="Health_HeartbeatLate" xml:space="preserve"><value>Heartbeat late {0}s</value></data>
   <data name="Health_NoConsumer" xml:space="preserve"><value>No downstream consumer connected (all {0} sends failed)</value></data>
   <data name="Health_SendErrors" xml:space="preserve"><value>Send errors {0}</value></data>
+
+  <!-- Batch D: data type enum display names -->
+  <data name="DataType_Default" xml:space="preserve"><value>Default</value></data>
+  <data name="DataType_Unknown" xml:space="preserve"><value>Unknown({0})</value></data>
+
+  <!-- Batch D: App pre-startup prompts (fired before host/DI build) -->
+  <data name="App_AlreadyRunningTitle" xml:space="preserve"><value>Data Collector</value></data>
+  <data name="App_AlreadyRunningMessage" xml:space="preserve"><value>The application is already running.</value></data>
+  <data name="App_StartupFailedMessage" xml:space="preserve"><value>Startup failed: {0}</value></data>
 </root>

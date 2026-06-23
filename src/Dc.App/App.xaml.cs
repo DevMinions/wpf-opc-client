@@ -33,10 +33,15 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
+        // 早期 culture:让 DI/host 构建之前的启动提示(单实例/启动失败)也尊重用户持久化语言偏好。
+        // 全程 try/catch 兜底——任何失败都退回 OS 默认 culture(LocalizationManager 初值),绝不阻断启动。
+        TryApplyEarlyCulture();
+
         _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out bool createdNew);
         if (!createdNew)
         {
-            MessageDialog.Show("数据采集", "应用已在运行中。", MessageDialogKind.Info);
+            var loc = Dc.App.Services.I18n.LocalizationManager.Instance;
+            MessageDialog.Show(loc["App_AlreadyRunningTitle"], loc["App_AlreadyRunningMessage"], MessageDialogKind.Info);
             Shutdown(0);
             return;
         }
@@ -113,9 +118,50 @@ public partial class App : Application
         {
             Log.Fatal(ex, "Application failed to start");
             // 启动失败的兜底路径:此时 MainWindow/host 可能未就绪,保留原生 MessageBox 以保鲁棒性
-            // (自定义圆角窗依赖资源加载,异常态下可能二次失败)。
-            MessageBox.Show($"启动失败：{ex.Message}", "Dc.App", MessageBoxButton.OK, MessageBoxImage.Error);
+            // (自定义圆角窗依赖资源加载,异常态下可能二次失败)。标题 "Dc.App" 是产品名常量,保留。
+            MessageBox.Show(
+                string.Format(Dc.App.Services.I18n.LocalizationManager.Instance["App_StartupFailedMessage"], ex.Message),
+                "Dc.App", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
+        }
+    }
+
+    /// <summary>
+    /// host/DI 构建前直接读 appsettings.json 的 Language 偏好并应用到 UICulture + LocalizationManager,
+    /// 使单实例/启动失败这类启动前提示也遵循用户语言。映射逻辑复用 LanguageService 同款
+    /// (System→OS 解析、显式→zh-CN/en)。任何异常都吞掉,退回 OS 默认 culture,绝不破坏启动路径。
+    /// </summary>
+    private static void TryApplyEarlyCulture()
+    {
+        try
+        {
+            var configPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+            if (!File.Exists(configPath))
+                return;
+
+            using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(configPath));
+            if (!doc.RootElement.TryGetProperty("Language", out var langEl)
+                || langEl.ValueKind != System.Text.Json.JsonValueKind.String)
+                return;
+
+            if (!Enum.TryParse<Dc.App.Services.I18n.AppLanguage>(langEl.GetString(), ignoreCase: true, out var lang))
+                lang = Dc.App.Services.I18n.AppLanguage.System;
+
+            var culture = lang switch
+            {
+                Dc.App.Services.I18n.AppLanguage.ChineseSimplified => new System.Globalization.CultureInfo("zh-CN"),
+                Dc.App.Services.I18n.AppLanguage.English => new System.Globalization.CultureInfo("en"),
+                _ => Dc.App.Services.I18n.CultureLanguageApplier.ResolveSupported(
+                        System.Globalization.CultureInfo.InstalledUICulture.Name),
+            };
+
+            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
+            Thread.CurrentThread.CurrentUICulture = culture;
+            Dc.App.Services.I18n.LocalizationManager.Instance.SetCulture(culture);
+        }
+        catch
+        {
+            // 早期 culture 读取失败不致命:保持 LocalizationManager 的 OS 默认 culture 即可。
         }
     }
 

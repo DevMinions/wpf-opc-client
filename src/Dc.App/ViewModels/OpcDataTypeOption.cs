@@ -1,12 +1,16 @@
+using Dc.App.Services.I18n;
+
 namespace Dc.App.ViewModels;
 
 public sealed record OpcDataTypeOption(int Code, string DisplayName)
 {
     public override string ToString() => $"{Code} - {DisplayName}";
 
-    public static readonly IReadOnlyList<OpcDataTypeOption> All = new[]
+    // 每次访问按当前 culture 重建：数据类型下拉每次打开重建,故能反映当前语言。
+    // code 0 的「默认」与未知码走资源；其余类型名是通用英文,保持不动。
+    public static IReadOnlyList<OpcDataTypeOption> All => new[]
     {
-        new OpcDataTypeOption(0, "默认"),
+        new OpcDataTypeOption(0, LocalizationManager.Instance["DataType_Default"]),
         new OpcDataTypeOption(11, "Boolean"),
         new OpcDataTypeOption(16, "Int8"),
         new OpcDataTypeOption(17, "UInt8"),
@@ -23,5 +27,9 @@ public sealed record OpcDataTypeOption(int Code, string DisplayName)
     };
 
     public static OpcDataTypeOption FromCode(int code) =>
-        All.FirstOrDefault(o => o.Code == code) ?? new OpcDataTypeOption(code, $"未知({code})");
+        All.FirstOrDefault(o => o.Code == code)
+        ?? new OpcDataTypeOption(code, string.Format(
+            LocalizationManager.Instance.Culture,
+            LocalizationManager.Instance["DataType_Unknown"],
+            code));
 }

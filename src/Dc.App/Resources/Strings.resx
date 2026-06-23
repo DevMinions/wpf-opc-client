@@ -446,4 +446,13 @@
   <data name="Health_HeartbeatLate" xml:space="preserve"><value>心跳延迟 {0}s</value></data>
   <data name="Health_NoConsumer" xml:space="preserve"><value>无下游消费者连接（发送全部失败 {0}）</value></data>
   <data name="Health_SendErrors" xml:space="preserve"><value>发送错误 {0}</value></data>
+
+  <!-- 批次 D: 数据类型枚举显示名 -->
+  <data name="DataType_Default" xml:space="preserve"><value>默认</value></data>
+  <data name="DataType_Unknown" xml:space="preserve"><value>未知({0})</value></data>
+
+  <!-- 批次 D: App 启动前提示(host/DI 构建前触发) -->
+  <data name="App_AlreadyRunningTitle" xml:space="preserve"><value>数据采集</value></data>
+  <data name="App_AlreadyRunningMessage" xml:space="preserve"><value>应用已在运行中。</value></data>
+  <data name="App_StartupFailedMessage" xml:space="preserve"><value>启动失败：{0}</value></data>
 </root>
