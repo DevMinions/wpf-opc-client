@@ -3,6 +3,7 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dc.App.Services;
+using Dc.App.Services.I18n;
 using Dc.App.ViewModels.Workspace;
 using Dc.Domain.Entities;
 using Dc.Infrastructure.Persistence;
@@ -19,10 +20,11 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     private readonly IDbContextFactory<DcDbContext>? _dbFactory;
     private readonly ITaskEditorDialog? _taskEditor;
     private readonly Action<string>? _onTagsAdded; // 批量加 Tag 后回调(taskId):由组合根接「选中该任务+跳工作台」
+    private readonly ILocalizer _loc;
     private IOpcBrowser? _browser;
     private readonly Stack<(string? Id, string Name)> _path = new();
 
-    [ObservableProperty] private string _title = "OPC 浏览";
+    [ObservableProperty] private string _title = string.Empty;
     [ObservableProperty] private OpcProtocol _protocol = OpcProtocol.Ua;
     [ObservableProperty] private string _serverUri = "opc.tcp://localhost:4840";
     [ObservableProperty] private string _serverProgId = string.Empty; // DA only: 如 Technosoftware.DaSample
@@ -31,9 +33,9 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     [ObservableProperty] private string? _selectedDiscoveredServer;   // 用户从扫描结果中选中的 opcda:// URL
     [ObservableProperty] private bool _connected;
     [ObservableProperty] private bool _isLoading;
-    [ObservableProperty] private string _statusMessage = "未连接";
+    [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _isConnectError;
-    [ObservableProperty] private string _currentPath = "(根)";
+    [ObservableProperty] private string _currentPath = string.Empty;
     [ObservableProperty] private BrowseNodeRowViewModel? _selectedNode;
 
     public bool ShowConnectPrompt => !Connected && !IsLoading && !IsConnectError;
@@ -58,12 +60,17 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         IEnumerable<IOpcBrowserFactory> browserFactories,
         IDbContextFactory<DcDbContext>? dbFactory = null,
         ITaskEditorDialog? taskEditor = null,
-        Action<string>? onTagsAdded = null)
+        Action<string>? onTagsAdded = null,
+        ILocalizer? localizer = null)
     {
         _factories = browserFactories.ToDictionary(f => f.Protocol);
         _dbFactory = dbFactory;
         _taskEditor = taskEditor;
         _onTagsAdded = onTagsAdded;
+        _loc = localizer ?? new ResourceLocalizer();
+        Title = _loc["Browse_Title"];
+        StatusMessage = _loc["Browse_StatusNotConnected"];
+        CurrentPath = _loc["Browse_PathRoot"];
         // 暴露注册的所有协议；DI 顺序 = UA, DA → UI 下拉同序
         AvailableProtocols = _factories.Keys.ToArray();
         if (_dbFactory is not null) _ = LoadTasksAsync();
@@ -163,10 +170,10 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         foreach (var r in picked) r.IsChecked = false; // 清勾选(触发 RecomputeChecked)
 
         var skipped = picked.Count - toAdd.Count;
-        var msg = $"已添加 {toAdd.Count} 个 Tag 到「{taskDisplay}」"
-            + (skipped > 0 ? $",跳过 {skipped} 个重复 Item" : "")
-            + "。即将跳到「采集任务」,启动即可采集。";
-        MessageDialog.Show("加为 Tag", msg, MessageDialogKind.Success);
+        var msg = _loc.Format("Browse_AddTagAdded", toAdd.Count, taskDisplay)
+            + (skipped > 0 ? _loc.Format("Browse_AddTagSkipped", skipped) : "")
+            + _loc["Browse_AddTagGoCollect"];
+        MessageDialog.Show(_loc["Browse_AddAsTag"], msg, MessageDialogKind.Success);
 
         // 跳到采集任务并选中目标任务(发现→配置→看数据 一条线);组合根接线,BrowseViewModel 不依赖具体 VM。
         if (toAdd.Count > 0) _onTagsAdded?.Invoke(taskId);
@@ -195,13 +202,13 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
 
         if (!_factories.TryGetValue(Protocol, out var factory))
         {
-            StatusMessage = $"未注册 {Protocol} 协议的浏览器";
+            StatusMessage = _loc.Format("Browse_StatusNoBrowserForProtocol", Protocol);
             return;
         }
 
         IsConnectError = false;
         IsLoading = true;
-        StatusMessage = "正在连接…";
+        StatusMessage = _loc["Browse_StatusConnecting"];
         try
         {
             _browser = factory.Create();
@@ -209,17 +216,20 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             await _browser.ConnectAsync(options);
             Connected = true;
             _path.Clear();
-            _path.Push((null, "(根)"));
-            CurrentPath = "(根)";
+            var root = _loc["Browse_PathRoot"];
+            _path.Push((null, root));
+            CurrentPath = root;
             await LoadChildrenAsync(null);
             _ = LoadTasksAsync(); // 刷新「加为 Tag」的任务下拉(可能在工作台新建过任务)
-            StatusMessage = $"已连接 {options.ServerUri}" + (string.IsNullOrEmpty(options.ServerProgId) ? "" : $" / {options.ServerProgId}");
+            StatusMessage = string.IsNullOrEmpty(options.ServerProgId)
+                ? _loc.Format("Browse_StatusConnected", options.ServerUri)
+                : _loc.Format("Browse_StatusConnectedWithProgId", options.ServerUri, options.ServerProgId);
         }
         catch (Exception ex)
         {
             Connected = false;
             IsConnectError = true;
-            StatusMessage = $"连接失败: {ex.Message}";
+            StatusMessage = _loc.Format("Browse_StatusConnectFailed", ex.Message);
             await DisposeBrowserAsync();
         }
         finally
@@ -234,12 +244,12 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     {
         if (!_factories.TryGetValue(Protocol, out var factory))
         {
-            StatusMessage = $"未注册 {Protocol} 协议的浏览器";
+            StatusMessage = _loc.Format("Browse_StatusNoBrowserForProtocol", Protocol);
             return;
         }
 
         IsLoading = true;
-        StatusMessage = $"正在扫描 {DiscoveryHost} 上的 OPC 服务器…";
+        StatusMessage = _loc.Format("Browse_StatusScanning", DiscoveryHost);
         IOpcBrowser? scanner = null;
         try
         {
@@ -248,12 +258,12 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             DiscoveredServers.Clear();
             foreach (var u in urls) DiscoveredServers.Add(u);
             StatusMessage = urls.Count == 0
-                ? $"未发现 OPC 服务器（检查 OPCEnum / DCOM / 防火墙）"
-                : $"发现 {urls.Count} 个服务器";
+                ? _loc["TaskEditor_ScanNoServers"]
+                : _loc.Format("TaskEditor_ScanFoundCount", urls.Count);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"扫描失败: {ex.Message}";
+            StatusMessage = _loc.Format("TaskEditor_ScanFailed", ex.Message);
         }
         finally
         {
@@ -282,13 +292,13 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
                 // scan 给了完整 progId/{clsid}：拆开分别落两个字段
                 ServerProgId = path.Substring(0, slash);
                 ServerClsid = path.Substring(slash + 1);
-                StatusMessage = $"已填充：{ServerProgId} / {ServerClsid} @ {DiscoveryHost}";
+                StatusMessage = _loc.Format("TaskEditor_ScanFilledWithClsid", ServerProgId, ServerClsid, DiscoveryHost);
             }
             else
             {
                 ServerProgId = path;
                 ServerClsid = string.Empty;
-                StatusMessage = $"已填充：{ServerProgId} @ {DiscoveryHost}";
+                StatusMessage = _loc.Format("TaskEditor_ScanFilled", ServerProgId, DiscoveryHost);
             }
         }
         else
@@ -328,7 +338,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         if (SelectedNode is null || _browser is null) return;
         if (SelectedNode.Node.Kind != OpcNodeKind.Folder)
         {
-            StatusMessage = $"叶子节点不可下钻: {SelectedNode.Node.Id}";
+            StatusMessage = _loc.Format("Browse_StatusCannotDrillLeaf", SelectedNode.Node.Id);
             return;
         }
         _path.Push((SelectedNode.Node.Id, SelectedNode.Node.DisplayName));
@@ -350,8 +360,8 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     private void CopyNodeId()
     {
         if (SelectedNode is null) return;
-        try { System.Windows.Clipboard.SetText(SelectedNode.Node.Id); StatusMessage = $"已复制: {SelectedNode.Node.Id}"; }
-        catch (Exception ex) { StatusMessage = $"复制失败: {ex.Message}"; }
+        try { System.Windows.Clipboard.SetText(SelectedNode.Node.Id); StatusMessage = _loc.Format("Browse_StatusCopied", SelectedNode.Node.Id); }
+        catch (Exception ex) { StatusMessage = _loc.Format("Browse_StatusCopyFailed", ex.Message); }
     }
 
     private async Task LoadChildrenAsync(string? parentId)
@@ -370,7 +380,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            StatusMessage = $"浏览失败: {ex.Message}";
+            StatusMessage = _loc.Format("Browse_StatusBrowseFailed", ex.Message);
         }
         finally
         {
@@ -391,7 +401,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         catch (Exception ex)
         {
             foreach (var r in items) r.SetValue(null);
-            StatusMessage = $"读取值失败: {ex.Message}";
+            StatusMessage = _loc.Format("Browse_StatusReadValuesFailed", ex.Message);
         }
     }
 
@@ -421,8 +431,8 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         await DisposeBrowserAsync();
         IsConnectError = false;
         _path.Clear();
-        CurrentPath = "(未连接)";
-        StatusMessage = "已断开";
+        CurrentPath = _loc["Browse_PathDisconnected"];
+        StatusMessage = _loc["Browse_StatusDisconnected"];
     }
 
     partial void OnSelectedNodeChanged(BrowseNodeRowViewModel? value)
@@ -439,7 +449,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         if (value.Node.Kind == OpcNodeKind.Item)
         {
             SelectedNodeDataType = "…";
-            SelectedNodeValue = "读取中…";
+            SelectedNodeValue = _loc["Browse_DetailValueReading"];
             _ = LoadSelectedNodeDetailAsync(value);
         }
         else
@@ -474,15 +484,15 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             if (ReferenceEquals(SelectedNode, row))
             {
                 SelectedNodeDataType = "—";
-                SelectedNodeValue = $"(读取失败: {ex.Message})";
+                SelectedNodeValue = _loc.Format("Browse_DetailReadFailed", ex.Message);
             }
         }
     }
 
-    private static string FormatValue(object? value) => value switch
+    private string FormatValue(object? value) => value switch
     {
         null => "null",
-        Array a => $"[{a.Length} 项]",
+        Array a => _loc.Format("Browse_ValueArrayItems", a.Length),
         _ => value.ToString() ?? "null"
     };
 

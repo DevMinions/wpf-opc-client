@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Dc.App.Services.I18n;
 using Dc.App.ViewModels.Workspace;
 using Dc.Infrastructure.Orchestration;
 using Dc.Infrastructure.Persistence;
@@ -16,15 +17,16 @@ public partial class DiagnosticsViewModel : ObservableObject, IDisposable, IEmbe
     private readonly TaskOrchestrator _orchestrator;
     private readonly Action<string>? _navigate;
     private readonly IDbContextFactory<DcDbContext>? _dbFactory; // 解析任务可读名;未注入(测试)时列回退显示 id
+    private readonly ILocalizer _loc;
     private IReadOnlyDictionary<string, string> _taskNames = new Dictionary<string, string>(StringComparer.Ordinal);
     private readonly Dictionary<string, DiagnosticsRowViewModel> _rowIndex = new();
     private readonly DispatcherTimer _timer;
     private bool _disposed;
 
-    [ObservableProperty] private string _title = "诊断";
+    [ObservableProperty] private string _title = string.Empty;
     [ObservableProperty] private bool _showNavigateCta;
 
-    public string? NavigateCtaText => ShowNavigateCta ? "去采集任务" : null;
+    public string? NavigateCtaText => ShowNavigateCta ? _loc["Common_GoToTasks"] : null;
 
     partial void OnShowNavigateCtaChanged(bool value) => OnPropertyChanged(nameof(NavigateCtaText));
     [ObservableProperty] private int _refreshIntervalSec = 2;
@@ -41,12 +43,24 @@ public partial class DiagnosticsViewModel : ObservableObject, IDisposable, IEmbe
 
     public DiagnosticsViewModel(TaskOrchestrator orchestrator,
         Action<string>? navigate = null, bool showNavigateCta = false,
-        IDbContextFactory<DcDbContext>? dbFactory = null)
+        IDbContextFactory<DcDbContext>? dbFactory = null,
+        ILocalizer? localizer = null, ILanguageService? language = null)
     {
         _orchestrator = orchestrator;
         _navigate = navigate;
         _dbFactory = dbFactory;
+        _loc = localizer ?? new ResourceLocalizer();
+        Title = _loc["Nav_Diagnostics"];
         ShowNavigateCta = showNavigateCta;
+
+        // 页标题/CTA 是持续显示的绑定串：随语言切换实时重取(单例 VM,生命周期=进程)。
+        if (language is not null)
+            language.LanguageChanged += _ =>
+            {
+                Title = _loc["Nav_Diagnostics"];
+                OnPropertyChanged(nameof(NavigateCtaText));
+            };
+
         _timer = new DispatcherTimer(DispatcherPriority.Background,
             Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher)
         {

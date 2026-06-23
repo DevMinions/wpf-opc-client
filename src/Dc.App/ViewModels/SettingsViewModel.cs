@@ -18,8 +18,9 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IConfigEditorDialog _editor;
     private readonly IConfigBackupService _backup;
     private readonly IFilePicker _filePicker;
+    private readonly ILocalizer _loc;
 
-    [ObservableProperty] private string _title = "系统配置";
+    [ObservableProperty] private string _title = string.Empty;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private ConfigEntry? _selectedEntry;
 
@@ -33,12 +34,15 @@ public partial class SettingsViewModel : ObservableObject
         IConfigBackupService backup,
         IFilePicker filePicker,
         IThemeService theme,
-        ILanguageService language)
+        ILanguageService language,
+        ILocalizer localizer)
     {
         _dbFactory = dbFactory;
         _editor = editor;
         _backup = backup;
         _filePicker = filePicker;
+        _loc = localizer;
+        Title = _loc["Settings_PageTitle"];
         Theme = new ThemeSettingsViewModel(theme);
         Language = new LanguageSettingsViewModel(language);
         _ = LoadAsync();
@@ -47,7 +51,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportBackupAsync()
     {
-        var path = _filePicker.PickSaveFile("JSON|*.json", $"dc-backup-{DateTime.Now:yyyyMMdd-HHmmss}.json", "导出全部配置");
+        var path = _filePicker.PickSaveFile("JSON|*.json", $"dc-backup-{DateTime.Now:yyyyMMdd-HHmmss}.json", _loc["Settings_ExportPickerTitle"]);
         if (path is null) return;
 
         try
@@ -56,26 +60,26 @@ public partial class SettingsViewModel : ObservableObject
             var bundle = await _backup.ExportAsync(db);
             var json = _backup.SerializeToJson(bundle);
             await File.WriteAllTextAsync(path, json);
-            MessageDialog.Show("导出成功",
-                $"已导出 {bundle.Tasks.Count} 任务 / {bundle.Tags.Count} Tag / {bundle.Configs.Count} 配置到 {path}",
+            MessageDialog.Show(_loc["Tags_ExportSucceededTitle"],
+                _loc.Format("Settings_ExportSucceededMessage", bundle.Tasks.Count, bundle.Tags.Count, bundle.Configs.Count, path),
                 MessageDialogKind.Success);
         }
         catch (Exception ex)
         {
-            MessageDialog.Show("错误", $"导出失败：{ex.Message}", MessageDialogKind.Error);
+            MessageDialog.Show(_loc["Common_Error"], _loc.Format("Settings_ExportFailed", ex.Message), MessageDialogKind.Error);
         }
     }
 
     [RelayCommand]
     private async Task ImportBackupAsync()
     {
-        var path = _filePicker.PickOpenFile("JSON|*.json", "导入备份");
+        var path = _filePicker.PickOpenFile("JSON|*.json", _loc["Settings_ImportPickerTitle"]);
         if (path is null) return;
 
         // 三选一(替换/合并/取消):自定义两按钮对话框无法表达,保留原生 MessageBox。
         var replace = System.Windows.MessageBox.Show(
-            "是 = 替换模式（清空现有数据再导入）\n否 = 合并模式（保留现有数据，仅插入新 ID）\n取消 = 取消导入",
-            "选择导入模式", System.Windows.MessageBoxButton.YesNoCancel, System.Windows.MessageBoxImage.Question);
+            _loc["Settings_ImportModeMessage"],
+            _loc["Settings_ImportModeTitle"], System.Windows.MessageBoxButton.YesNoCancel, System.Windows.MessageBoxImage.Question);
 
         if (replace == System.Windows.MessageBoxResult.Cancel) return;
         var mode = replace == System.Windows.MessageBoxResult.Yes
@@ -89,15 +93,15 @@ public partial class SettingsViewModel : ObservableObject
             await using var db = await _dbFactory.CreateDbContextAsync();
             var result = await _backup.ImportAsync(db, bundle, mode);
 
-            var msg = $"已导入 任务 {result.TasksImported} / Tag {result.TagsImported} / 配置 {result.ConfigsImported}";
+            var msg = _loc.Format("Settings_ImportResultMessage", result.TasksImported, result.TagsImported, result.ConfigsImported);
             if (result.Errors.Count > 0)
-                msg += $"\n错误 ({result.Errors.Count}):\n" + string.Join("\n", result.Errors.Take(5));
-            MessageDialog.Show("导入结果", msg, result.Errors.Count > 0 ? MessageDialogKind.Warning : MessageDialogKind.Success);
+                msg += "\n" + _loc.Format("Tags_ImportErrorsHeader", result.Errors.Count) + "\n" + string.Join("\n", result.Errors.Take(5));
+            MessageDialog.Show(_loc["Tags_ImportResultTitle"], msg, result.Errors.Count > 0 ? MessageDialogKind.Warning : MessageDialogKind.Success);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            MessageDialog.Show("错误", $"导入失败：{ex.Message}", MessageDialogKind.Error);
+            MessageDialog.Show(_loc["Common_Error"], _loc.Format("Settings_ImportFailed", ex.Message), MessageDialogKind.Error);
         }
     }
 
@@ -135,7 +139,7 @@ public partial class SettingsViewModel : ObservableObject
         }
         catch (DbUpdateException ex)
         {
-            MessageDialog.Show("错误", $"保存失败（Key 可能已存在）：{ex.InnerException?.Message ?? ex.Message}", MessageDialogKind.Error);
+            MessageDialog.Show(_loc["Common_Error"], _loc.Format("Settings_SaveFailedKeyExists", ex.InnerException?.Message ?? ex.Message), MessageDialogKind.Error);
         }
     }
 
@@ -166,7 +170,7 @@ public partial class SettingsViewModel : ObservableObject
         var entry = SelectedEntry;
         if (entry is null) return;
 
-        var confirm = MessageDialog.Confirm("删除确认", $"确定删除配置项 {entry.Key}？", MessageDialogKind.Warning);
+        var confirm = MessageDialog.Confirm(_loc["Tags_DeleteConfirmTitle"], _loc.Format("Settings_DeleteConfirmMessage", entry.Key), MessageDialogKind.Warning);
         if (!confirm) return;
 
         await using var db = await _dbFactory.CreateDbContextAsync();

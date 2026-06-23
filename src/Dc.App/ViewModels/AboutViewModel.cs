@@ -1,6 +1,7 @@
 using System.IO;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Dc.App.Services.I18n;
 
 namespace Dc.App.ViewModels;
 
@@ -19,19 +20,19 @@ public sealed class AboutViewModel : ObservableObject
         Product = asm.GetCustomAttribute<AssemblyProductAttribute>()?.Product ?? "Dc.App";
         Version = $"v{asm.GetName().Version?.ToString(3) ?? "0.0.0"}";
         Company = asm.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "Dc";
-        Description = "通用 OPC 数据采集 — .NET 8 + WPF";
+        Description = LocalizationManager.Instance["About_Description"];
         Runtime = $".NET {Environment.Version}";
 
         try
         {
             var path = asm.Location;
             BuildDate = string.IsNullOrEmpty(path)
-                ? "(未知)"
+                ? LocalizationManager.Instance["About_Unknown"]
                 : File.GetLastWriteTime(path).ToString("yyyy-MM-dd HH:mm");
         }
         catch
         {
-            BuildDate = "(未知)";
+            BuildDate = LocalizationManager.Instance["About_Unknown"];
         }
     }
 }

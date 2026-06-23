@@ -1,12 +1,18 @@
+using System.Globalization;
 using Dc.App.Dashboard;
+using Dc.App.Services.I18n;
 using Dc.Infrastructure.Orchestration;
 
 namespace Dc.App.Tests.Dashboard;
 
+[Collection("I18nCulture")]
 public class HealthEvaluatorTests
 {
     private static readonly DateTimeOffset Now = new(2026, 5, 20, 12, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan HeartbeatTimeout = TimeSpan.FromSeconds(120);
+
+    // 告警文案本地化后按 culture 取值;断言中文子串须锁定中文。
+    public HealthEvaluatorTests() => LocalizationManager.Instance.SetCulture(new CultureInfo("zh-CN"));
 
     private static TaskDiagnostics Diag(
         string id,

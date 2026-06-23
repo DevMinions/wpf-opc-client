@@ -1,3 +1,4 @@
+using Dc.App.Services.I18n;
 using Dc.Infrastructure.Orchestration;
 
 namespace Dc.App.Dashboard;
@@ -43,14 +44,15 @@ public static class HealthEvaluator
             if (!isRunning)
             {
                 severity = AlertSeverity.Critical;
-                message = "已停止";
+                message = LocalizationManager.Instance["Health_TaskStopped"];
                 score -= ScoreStoppedPenalty;
             }
             else if (d.LastHeartbeatAt is { } hb && (now - hb) > heartbeatTimeout)
             {
                 severity = AlertSeverity.Warning;
                 var late = (now - hb).TotalSeconds;
-                message = $"心跳延迟 {late:F0}s";
+                message = string.Format(LocalizationManager.Instance.Culture,
+                    LocalizationManager.Instance["Health_HeartbeatLate"], $"{late:F0}");
                 score -= ScoreStalePenalty;
             }
             else if (d.PublishErrorCount > 0)
@@ -58,9 +60,9 @@ public static class HealthEvaluator
                 severity = AlertSeverity.Warning;
                 // 区分「从未成功发过」vs「曾成功、现中断」:前者几乎必是无下游消费者连不上
                 // (单机自测不起消费端即此态),后者才是真实发送故障。避免把「无消费者」误读成采集器坏。
-                message = d.PublishedCount == 0
-                    ? $"无下游消费者连接（发送全部失败 {d.PublishErrorCount}）"
-                    : $"发送错误 {d.PublishErrorCount}";
+                message = string.Format(LocalizationManager.Instance.Culture,
+                    LocalizationManager.Instance[d.PublishedCount == 0 ? "Health_NoConsumer" : "Health_SendErrors"],
+                    d.PublishErrorCount);
                 score -= ScoreErrorPenalty;
             }
 

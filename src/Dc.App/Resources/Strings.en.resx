@@ -378,4 +378,63 @@
   <data name="Validation_DeadbandRange" xml:space="preserve"><value>Deadband must be within 0-100</value></data>
   <data name="Validation_TcpAddressFormat" xml:space="preserve"><value>TCP address format should be host:port</value></data>
   <data name="Validation_UaServerPrefix" xml:space="preserve"><value>UA server must start with opc.tcp://</value></data>
+
+  <!-- Batch C 2/3: Monitoring VMs + services runtime strings -->
+  <!-- Common buttons / actions -->
+  <data name="Common_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="Common_GotIt" xml:space="preserve"><value>Got it</value></data>
+  <data name="Common_GoToTasks" xml:space="preserve"><value>Go to Tasks</value></data>
+
+  <!-- Browse (BrowseViewModel) runtime status strings -->
+  <data name="Browse_StatusNotConnected" xml:space="preserve"><value>Not connected</value></data>
+  <data name="Browse_StatusConnecting" xml:space="preserve"><value>Connecting…</value></data>
+  <data name="Browse_StatusConnected" xml:space="preserve"><value>Connected {0}</value></data>
+  <data name="Browse_StatusConnectedWithProgId" xml:space="preserve"><value>Connected {0} / {1}</value></data>
+  <data name="Browse_StatusConnectFailed" xml:space="preserve"><value>Connect failed: {0}</value></data>
+  <data name="Browse_StatusDisconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="Browse_StatusNoBrowserForProtocol" xml:space="preserve"><value>No browser registered for protocol {0}</value></data>
+  <data name="Browse_StatusScanning" xml:space="preserve"><value>Scanning OPC servers on {0}…</value></data>
+  <data name="Browse_StatusCannotDrillLeaf" xml:space="preserve"><value>Cannot drill into leaf node: {0}</value></data>
+  <data name="Browse_StatusCopied" xml:space="preserve"><value>Copied: {0}</value></data>
+  <data name="Browse_StatusCopyFailed" xml:space="preserve"><value>Copy failed: {0}</value></data>
+  <data name="Browse_StatusBrowseFailed" xml:space="preserve"><value>Browse failed: {0}</value></data>
+  <data name="Browse_StatusReadValuesFailed" xml:space="preserve"><value>Read values failed: {0}</value></data>
+  <data name="Browse_PathRoot" xml:space="preserve"><value>(root)</value></data>
+  <data name="Browse_PathDisconnected" xml:space="preserve"><value>(not connected)</value></data>
+  <data name="Browse_DetailValueReading" xml:space="preserve"><value>Reading…</value></data>
+  <data name="Browse_DetailReadFailed" xml:space="preserve"><value>(read failed: {0})</value></data>
+  <data name="Browse_ValueArrayItems" xml:space="preserve"><value>[{0} items]</value></data>
+  <data name="Browse_AddTagAdded" xml:space="preserve"><value>Added {0} Tag(s) to "{1}"</value></data>
+  <data name="Browse_AddTagSkipped" xml:space="preserve"><value>, skipped {0} duplicate Item(s)</value></data>
+  <data name="Browse_AddTagGoCollect" xml:space="preserve"><value>. Switching to Tasks — start it to begin collecting.</value></data>
+
+  <!-- Live Data / Diagnostics / Run Log page titles (bound, refresh live with language) -->
+  <data name="Logs_Title" xml:space="preserve"><value>Run Log</value></data>
+  <data name="Logs_FileNotGenerated" xml:space="preserve"><value>(log file not generated yet)</value></data>
+  <data name="Logs_ReadFailed" xml:space="preserve"><value>(read failed: {0})</value></data>
+
+  <!-- About -->
+  <data name="About_Description" xml:space="preserve"><value>General-purpose OPC data collection — .NET 8 + WPF</value></data>
+  <data name="About_Unknown" xml:space="preserve"><value>(unknown)</value></data>
+
+  <!-- Settings: export/import backup runtime strings -->
+  <data name="Settings_PageTitle" xml:space="preserve"><value>System Configuration</value></data>
+  <data name="Settings_ExportPickerTitle" xml:space="preserve"><value>Export all config</value></data>
+  <data name="Settings_ExportSucceededMessage" xml:space="preserve"><value>Exported {0} task(s) / {1} Tag(s) / {2} config(s) to {3}</value></data>
+  <data name="Settings_ExportFailed" xml:space="preserve"><value>Export failed: {0}</value></data>
+  <data name="Settings_ImportPickerTitle" xml:space="preserve"><value>Import backup</value></data>
+  <data name="Settings_ImportModeMessage" xml:space="preserve"><value>Yes = Replace mode (clear existing data then import)
+No = Merge mode (keep existing data, insert new IDs only)
+Cancel = Cancel import</value></data>
+  <data name="Settings_ImportModeTitle" xml:space="preserve"><value>Choose Import Mode</value></data>
+  <data name="Settings_ImportResultMessage" xml:space="preserve"><value>Imported {0} task(s) / {1} Tag(s) / {2} config(s)</value></data>
+  <data name="Settings_ImportFailed" xml:space="preserve"><value>Import failed: {0}</value></data>
+  <data name="Settings_SaveFailedKeyExists" xml:space="preserve"><value>Save failed (Key may already exist): {0}</value></data>
+  <data name="Settings_DeleteConfirmMessage" xml:space="preserve"><value>Delete config entry {0}?</value></data>
+
+  <!-- Dashboard health evaluation alert messages (HealthEvaluator) -->
+  <data name="Health_TaskStopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="Health_HeartbeatLate" xml:space="preserve"><value>Heartbeat late {0}s</value></data>
+  <data name="Health_NoConsumer" xml:space="preserve"><value>No downstream consumer connected (all {0} sends failed)</value></data>
+  <data name="Health_SendErrors" xml:space="preserve"><value>Send errors {0}</value></data>
 </root>

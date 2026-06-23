@@ -3,6 +3,7 @@ using Dc.App.Services.I18n;
 
 namespace Dc.App.Tests.Services.I18n;
 
+[Collection("I18nCulture")]
 public class ResourceLocalizerTests
 {
     [Fact]

@@ -212,10 +212,14 @@ public static class ServiceRegistration
         services.AddSingleton<Dc.App.ViewModels.Workspace.IEmbeddableLivePanel>(
             sp => new LiveDataViewModel(sp.GetRequiredService<TaskOrchestrator>(),
                 System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher,
-                dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
+                dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
+                localizer: sp.GetRequiredService<Dc.App.Services.I18n.ILocalizer>(),
+                language: sp.GetRequiredService<Dc.App.Services.I18n.ILanguageService>()));
         services.AddSingleton<Dc.App.ViewModels.Workspace.IEmbeddableDiagPanel>(
             sp => new DiagnosticsViewModel(sp.GetRequiredService<TaskOrchestrator>(),
-                dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
+                dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
+                localizer: sp.GetRequiredService<Dc.App.Services.I18n.ILocalizer>(),
+                language: sp.GetRequiredService<Dc.App.Services.I18n.ILanguageService>()));
         services.AddSingleton<Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel>(
             sp => new Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel(
                 sp.GetRequiredService<Dc.App.Services.ITaskEditorDialog>()));
@@ -255,7 +259,9 @@ public static class ServiceRegistration
             navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>()
                 .NavigateCommand.Execute(key),
             showNavigateCta: true,
-            dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
+            dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
+            localizer: sp.GetRequiredService<Dc.App.Services.I18n.ILocalizer>(),
+            language: sp.GetRequiredService<Dc.App.Services.I18n.ILanguageService>()));
         services.AddSingleton<BrowseViewModel>(sp => new BrowseViewModel(
             sp.GetServices<IOpcBrowserFactory>(),
             sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
@@ -265,13 +271,16 @@ public static class ServiceRegistration
             {
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.TaskWorkspaceViewModel>().RequestSelect(taskId);
                 sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>().NavigateCommand.Execute("workspace");
-            }));
+            },
+            localizer: sp.GetRequiredService<Dc.App.Services.I18n.ILocalizer>()));
         services.AddSingleton<DiagnosticsViewModel>(sp => new DiagnosticsViewModel(
             sp.GetRequiredService<TaskOrchestrator>(),
             navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>()
                 .NavigateCommand.Execute(key),
             showNavigateCta: true,
-            dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
+            dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
+            localizer: sp.GetRequiredService<Dc.App.Services.I18n.ILocalizer>(),
+            language: sp.GetRequiredService<Dc.App.Services.I18n.ILanguageService>()));
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<LogsViewModel>();
 

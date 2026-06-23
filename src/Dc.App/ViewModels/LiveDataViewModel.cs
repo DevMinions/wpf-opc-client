@@ -6,6 +6,7 @@ using System.Windows.Data;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Dc.App.Services.I18n;
 using Dc.App.ViewModels.Workspace;
 using Dc.Infrastructure.Orchestration;
 using Dc.Infrastructure.Persistence;
@@ -55,8 +56,9 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     }
 
     private readonly Action<string>? _navigate;
+    private readonly ILocalizer _loc;
 
-    [ObservableProperty] private string _title = "实时数据";
+    [ObservableProperty] private string _title = string.Empty;
     [ObservableProperty] private bool _paused;
     [ObservableProperty] private string? _taskFilter;
     [ObservableProperty] private string _searchText = string.Empty; // 按 Item 子串过滤
@@ -64,7 +66,7 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
     [ObservableProperty] private double _updatesPerSecond;          // 更新速率 /s（工具栏显示）
     [ObservableProperty] private bool _showNavigateCta;
 
-    public string? NavigateCtaText => ShowNavigateCta ? "去采集任务" : null;
+    public string? NavigateCtaText => ShowNavigateCta ? _loc["Common_GoToTasks"] : null;
 
     partial void OnShowNavigateCtaChanged(bool value) => OnPropertyChanged(nameof(NavigateCtaText));
 
@@ -90,13 +92,24 @@ public partial class LiveDataViewModel : ObservableObject, IDisposable, IEmbedda
 
     public LiveDataViewModel(TaskOrchestrator orchestrator, Dispatcher dispatcher,
         Action<string>? navigate = null, bool showNavigateCta = false,
-        IDbContextFactory<DcDbContext>? dbFactory = null)
+        IDbContextFactory<DcDbContext>? dbFactory = null,
+        ILocalizer? localizer = null, ILanguageService? language = null)
     {
         _orchestrator = orchestrator;
         _dispatcher = dispatcher;
         _navigate = navigate;
         _dbFactory = dbFactory;
+        _loc = localizer ?? new ResourceLocalizer();
+        Title = _loc["Nav_LiveData"];
         ShowNavigateCta = showNavigateCta;
+
+        // 页标题/CTA 是持续显示的绑定串：随语言切换实时重取(单例 VM,生命周期=进程)。
+        if (language is not null)
+            language.LanguageChanged += _ =>
+            {
+                Title = _loc["Nav_LiveData"];
+                OnPropertyChanged(nameof(NavigateCtaText));
+            };
 
         RowsView = CollectionViewSource.GetDefaultView(Rows);
         RowsView.Filter = item =>

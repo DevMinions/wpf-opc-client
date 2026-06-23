@@ -1,4 +1,5 @@
 using System.Windows;
+using Dc.App.Services.I18n;
 using Dc.App.Views;
 
 namespace Dc.App.Services;
@@ -37,12 +38,12 @@ public static class MessageDialog
         w.Owner = owner ?? Application.Current?.MainWindow;
         if (confirm)
         {
-            w.AddButton("取消", isPrimary: false, isCancel: true, isDefault: false);
-            w.AddButton("确定", isPrimary: true, isCancel: false, isDefault: true);
+            w.AddButton(LocalizationManager.Instance["Common_Cancel"], isPrimary: false, isCancel: true, isDefault: false);
+            w.AddButton(LocalizationManager.Instance["Common_Ok"], isPrimary: true, isCancel: false, isDefault: true);
         }
         else
         {
-            w.AddButton("知道了", isPrimary: true, isCancel: true, isDefault: true);
+            w.AddButton(LocalizationManager.Instance["Common_GotIt"], isPrimary: true, isCancel: true, isDefault: true);
         }
         return w;
     }

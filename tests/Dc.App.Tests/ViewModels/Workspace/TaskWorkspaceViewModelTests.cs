@@ -8,6 +8,7 @@ using Dc.Opc.Abstractions;
 
 namespace Dc.App.Tests.ViewModels.Workspace;
 
+[Collection("I18nCulture")]
 public class TaskWorkspaceViewModelTests
 {
     private static readonly DateTimeOffset Now = new(2026, 5, 20, 12, 0, 0, TimeSpan.Zero);

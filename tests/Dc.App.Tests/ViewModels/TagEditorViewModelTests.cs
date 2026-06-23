@@ -7,6 +7,7 @@ using Dc.Infrastructure.Orchestration;
 
 namespace Dc.App.Tests.ViewModels;
 
+[Collection("I18nCulture")]
 public class TagEditorViewModelTests
 {
     // 本地化后标题/校验消息按 culture 取值;断言中文字面量须锁定中文(非中文 OS 否则取英文)。

@@ -378,4 +378,63 @@
   <data name="Validation_DeadbandRange" xml:space="preserve"><value>死区必须在 0-100 范围内</value></data>
   <data name="Validation_TcpAddressFormat" xml:space="preserve"><value>TCP 地址格式应为 host:port</value></data>
   <data name="Validation_UaServerPrefix" xml:space="preserve"><value>UA 服务器须以 opc.tcp:// 开头</value></data>
+
+  <!-- 批次 C 2/3: 监控类 VM + 服务 运行时串 -->
+  <!-- 通用按钮/动作 -->
+  <data name="Common_Ok" xml:space="preserve"><value>确定</value></data>
+  <data name="Common_GotIt" xml:space="preserve"><value>知道了</value></data>
+  <data name="Common_GoToTasks" xml:space="preserve"><value>去采集任务</value></data>
+
+  <!-- 浏览节点 (BrowseViewModel) 运行时状态串 -->
+  <data name="Browse_StatusNotConnected" xml:space="preserve"><value>未连接</value></data>
+  <data name="Browse_StatusConnecting" xml:space="preserve"><value>正在连接…</value></data>
+  <data name="Browse_StatusConnected" xml:space="preserve"><value>已连接 {0}</value></data>
+  <data name="Browse_StatusConnectedWithProgId" xml:space="preserve"><value>已连接 {0} / {1}</value></data>
+  <data name="Browse_StatusConnectFailed" xml:space="preserve"><value>连接失败: {0}</value></data>
+  <data name="Browse_StatusDisconnected" xml:space="preserve"><value>已断开</value></data>
+  <data name="Browse_StatusNoBrowserForProtocol" xml:space="preserve"><value>未注册 {0} 协议的浏览器</value></data>
+  <data name="Browse_StatusScanning" xml:space="preserve"><value>正在扫描 {0} 上的 OPC 服务器…</value></data>
+  <data name="Browse_StatusCannotDrillLeaf" xml:space="preserve"><value>叶子节点不可下钻: {0}</value></data>
+  <data name="Browse_StatusCopied" xml:space="preserve"><value>已复制: {0}</value></data>
+  <data name="Browse_StatusCopyFailed" xml:space="preserve"><value>复制失败: {0}</value></data>
+  <data name="Browse_StatusBrowseFailed" xml:space="preserve"><value>浏览失败: {0}</value></data>
+  <data name="Browse_StatusReadValuesFailed" xml:space="preserve"><value>读取值失败: {0}</value></data>
+  <data name="Browse_PathRoot" xml:space="preserve"><value>(根)</value></data>
+  <data name="Browse_PathDisconnected" xml:space="preserve"><value>(未连接)</value></data>
+  <data name="Browse_DetailValueReading" xml:space="preserve"><value>读取中…</value></data>
+  <data name="Browse_DetailReadFailed" xml:space="preserve"><value>(读取失败: {0})</value></data>
+  <data name="Browse_ValueArrayItems" xml:space="preserve"><value>[{0} 项]</value></data>
+  <data name="Browse_AddTagAdded" xml:space="preserve"><value>已添加 {0} 个 Tag 到「{1}」</value></data>
+  <data name="Browse_AddTagSkipped" xml:space="preserve"><value>，跳过 {0} 个重复 Item</value></data>
+  <data name="Browse_AddTagGoCollect" xml:space="preserve"><value>。即将跳到「采集任务」，启动即可采集。</value></data>
+
+  <!-- 实时数据 / 诊断 / 运行日志 页标题(绑定串,随语言实时刷) -->
+  <data name="Logs_Title" xml:space="preserve"><value>运行日志</value></data>
+  <data name="Logs_FileNotGenerated" xml:space="preserve"><value>(日志文件尚未生成)</value></data>
+  <data name="Logs_ReadFailed" xml:space="preserve"><value>(读取失败: {0})</value></data>
+
+  <!-- 关于 -->
+  <data name="About_Description" xml:space="preserve"><value>通用 OPC 数据采集 — .NET 8 + WPF</value></data>
+  <data name="About_Unknown" xml:space="preserve"><value>(未知)</value></data>
+
+  <!-- 设置页:导出/导入备份运行时串 -->
+  <data name="Settings_PageTitle" xml:space="preserve"><value>系统配置</value></data>
+  <data name="Settings_ExportPickerTitle" xml:space="preserve"><value>导出全部配置</value></data>
+  <data name="Settings_ExportSucceededMessage" xml:space="preserve"><value>已导出 {0} 任务 / {1} Tag / {2} 配置到 {3}</value></data>
+  <data name="Settings_ExportFailed" xml:space="preserve"><value>导出失败：{0}</value></data>
+  <data name="Settings_ImportPickerTitle" xml:space="preserve"><value>导入备份</value></data>
+  <data name="Settings_ImportModeMessage" xml:space="preserve"><value>是 = 替换模式（清空现有数据再导入）
+否 = 合并模式（保留现有数据，仅插入新 ID）
+取消 = 取消导入</value></data>
+  <data name="Settings_ImportModeTitle" xml:space="preserve"><value>选择导入模式</value></data>
+  <data name="Settings_ImportResultMessage" xml:space="preserve"><value>已导入 任务 {0} / Tag {1} / 配置 {2}</value></data>
+  <data name="Settings_ImportFailed" xml:space="preserve"><value>导入失败：{0}</value></data>
+  <data name="Settings_SaveFailedKeyExists" xml:space="preserve"><value>保存失败（Key 可能已存在）：{0}</value></data>
+  <data name="Settings_DeleteConfirmMessage" xml:space="preserve"><value>确定删除配置项 {0}？</value></data>
+
+  <!-- 仪表盘健康评估告警文案 (HealthEvaluator) -->
+  <data name="Health_TaskStopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="Health_HeartbeatLate" xml:space="preserve"><value>心跳延迟 {0}s</value></data>
+  <data name="Health_NoConsumer" xml:space="preserve"><value>无下游消费者连接（发送全部失败 {0}）</value></data>
+  <data name="Health_SendErrors" xml:space="preserve"><value>发送错误 {0}</value></data>
 </root>

@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Dc.App.Services.I18n;
 
 namespace Dc.App.ViewModels;
 
@@ -32,8 +33,9 @@ public partial class LogsViewModel : ObservableObject, IDisposable
     private readonly System.Threading.Timer _autoRefreshTimer;
     private long _lastFileLength = -1;          // 上次读取的文件长度；未变则跳过重建
     private string _lastFilePath = string.Empty;
+    private readonly ILocalizer _loc;
 
-    [ObservableProperty] private string _title = "运行日志";
+    [ObservableProperty] private string _title = string.Empty;
     [ObservableProperty] private string _content = string.Empty;
     [ObservableProperty] private string _logFilePath = string.Empty;
     [ObservableProperty] private bool _autoRefresh = true;
@@ -46,8 +48,14 @@ public partial class LogsViewModel : ObservableObject, IDisposable
 
     private bool _running;
 
-    public LogsViewModel()
+    public LogsViewModel(ILocalizer? localizer = null, ILanguageService? language = null)
     {
+        _loc = localizer ?? new ResourceLocalizer();
+        Title = _loc["Logs_Title"];
+        // 页标题是持续显示的绑定串：随语言切换实时重取(单例 VM,生命周期=进程)。
+        if (language is not null)
+            language.LanguageChanged += _ => Title = _loc["Logs_Title"];
+
         ResolveLogFilePath();
         // 定时器创建为不触发（Infinite）；仅页面可见时 Start 才开始每 2s 读文件，
         // 否则单例 VM 会全程每 2s 读日志文件做无谓 I/O。
@@ -116,7 +124,7 @@ public partial class LogsViewModel : ObservableObject, IDisposable
         ResolveLogFilePath();
         if (string.IsNullOrEmpty(LogFilePath) || !File.Exists(LogFilePath))
         {
-            Content = "(日志文件尚未生成)";
+            Content = _loc["Logs_FileNotGenerated"];
             _allEntries.Clear();
             LogEntriesView.Refresh();
             return;
@@ -159,7 +167,7 @@ public partial class LogsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            Content = $"(读取失败: {ex.Message})";
+            Content = _loc.Format("Logs_ReadFailed", ex.Message);
         }
     }
 

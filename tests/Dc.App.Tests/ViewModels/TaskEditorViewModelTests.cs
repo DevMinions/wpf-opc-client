@@ -6,6 +6,7 @@ using Dc.Opc.Abstractions;
 
 namespace Dc.App.Tests.ViewModels;
 
+[Collection("I18nCulture")]
 public class TaskEditorViewModelTests
 {
     // 本地化后 ServerLabel/占位等按 culture 取值;断言中文字面量须锁定中文(非中文 OS 否则取英文)。
