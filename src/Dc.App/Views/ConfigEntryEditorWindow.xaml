@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:views="clr-namespace:Dc.App.Views"
+        xmlns:loc="clr-namespace:Dc.App.Markup"
         Title="{Binding Title}">
     <Grid Background="#80000000">
         <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
@@ -31,8 +32,8 @@
                                Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                                FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="280" />
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="取消" Margin="0,0,8,0" IsCancel="True" Style="{StaticResource DcBtnGhostSm}" />
-                        <Button Content="保存" Click="OnSaveClick" IsDefault="True"
+                        <Button Content="{loc:Loc Common_Cancel}" Margin="0,0,8,0" IsCancel="True" Style="{StaticResource DcBtnGhostSm}" />
+                        <Button Content="{loc:Loc Common_Save}" Click="OnSaveClick" IsDefault="True"
                                 IsEnabled="{Binding CanSave}" Style="{StaticResource DcBtnPrimarySm}" />
                     </StackPanel>
                 </DockPanel>

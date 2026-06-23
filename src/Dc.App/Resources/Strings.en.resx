@@ -250,4 +250,57 @@
   <data name="Settings_ConfigBackupHint" xml:space="preserve"><value>Export/import all tasks · Tags · config</value></data>
   <data name="Settings_ExportAll" xml:space="preserve"><value>Export All</value></data>
   <data name="Settings_ImportBackup" xml:space="preserve"><value>Import Backup…</value></data>
+
+  <data name="Common_NameLabel" xml:space="preserve"><value>Name:</value></data>
+  <data name="Common_BrowseEllipsis" xml:space="preserve"><value>Browse…</value></data>
+  <data name="Dialog_ValidationErrorTitle" xml:space="preserve"><value>Input Error</value></data>
+  <data name="Dialog_Notice" xml:space="preserve"><value>Notice</value></data>
+
+  <data name="TaskEditor_ProtocolLabel" xml:space="preserve"><value>Protocol:</value></data>
+  <data name="TaskEditor_NodeLabel" xml:space="preserve"><value>Node:</value></data>
+  <data name="TaskEditor_IntervalLabel" xml:space="preserve"><value>Sampling Interval:</value></data>
+  <data name="TaskEditor_IntervalHint" xml:space="preserve"><value>ms · must be &gt; 0</value></data>
+  <data name="TaskEditor_DeadbandLabel" xml:space="preserve"><value>Deadband:</value></data>
+  <data name="TaskEditor_DeadbandHint" xml:space="preserve"><value>Percent 0 – 100</value></data>
+  <data name="TaskEditor_TcpAddressLabel" xml:space="preserve"><value>TCP Address:</value></data>
+  <data name="TaskEditor_NamePlaceholder" xml:space="preserve"><value>Optional, e.g. "Boiler #1 UA"</value></data>
+  <data name="TaskEditor_NodePlaceholder" xml:space="preserve"><value>Hostname or IP</value></data>
+  <data name="TaskEditor_UseSecurity" xml:space="preserve"><value>Use secure connection (recommended)</value></data>
+  <data name="TaskEditor_ScanSectionTitle" xml:space="preserve"><value>Scan OPC servers by IP</value></data>
+  <data name="TaskEditor_TargetIpLabel" xml:space="preserve"><value>Target IP:</value></data>
+  <data name="TaskEditor_ScanButton" xml:space="preserve"><value>Scan</value></data>
+  <data name="TaskEditor_DiscoveredLabel" xml:space="preserve"><value>Found:</value></data>
+  <data name="TaskEditor_AdvancedHeader" xml:space="preserve"><value>Advanced (CLSID direct connect)</value></data>
+  <data name="TaskEditor_ClsidPlaceholder" xml:space="preserve"><value>CLSID format: 5CEE2576-...</value></data>
+
+  <data name="TagEditor_IsVirtual" xml:space="preserve"><value>Virtual tag (formula)</value></data>
+  <data name="TagEditor_ItemPlaceholder" xml:space="preserve"><value>OPC node ItemId</value></data>
+  <data name="TagEditor_ScaleFactorLabel" xml:space="preserve"><value>Scale Factor:</value></data>
+  <data name="TagEditor_ScaleFactorName" xml:space="preserve"><value>Scale Factor</value></data>
+  <data name="TagEditor_OffsetLabel" xml:space="preserve"><value>Offset:</value></data>
+  <data name="TagEditor_OffsetName" xml:space="preserve"><value>Offset</value></data>
+  <data name="TagEditor_ScalePlaceholder" xml:space="preserve"><value>Empty = no scaling</value></data>
+  <data name="TagEditor_DataTypeLabel" xml:space="preserve"><value>Data Type:</value></data>
+  <data name="TagEditor_DataTypeName" xml:space="preserve"><value>Data Type</value></data>
+  <data name="TagEditor_NamePlaceholder" xml:space="preserve"><value>Unique within the task; identifies the virtual tag</value></data>
+  <data name="TagEditor_FormulaNameName" xml:space="preserve"><value>Formula Name</value></data>
+  <data name="TagEditor_ExpressionLabel" xml:space="preserve"><value>Expression:</value></data>
+  <data name="TagEditor_ExpressionName" xml:space="preserve"><value>Expression</value></data>
+  <data name="TagEditor_ExpressionPlaceholder" xml:space="preserve"><value>e.g. T * 1.8 + 32</value></data>
+  <data name="TagEditor_OutputUnitLabel" xml:space="preserve"><value>Output Unit:</value></data>
+  <data name="TagEditor_OutputUnitName" xml:space="preserve"><value>Output Unit</value></data>
+  <data name="TagEditor_OutputUnitPlaceholder" xml:space="preserve"><value>Optional</value></data>
+  <data name="TagEditor_InputMappingLabel" xml:space="preserve"><value>Input Mapping:</value></data>
+
+  <data name="BrowseDialog_Title" xml:space="preserve"><value>Select NodeId</value></data>
+  <data name="BrowseDialog_Select" xml:space="preserve"><value>Select</value></data>
+  <data name="BrowseDialog_SelectNodeFirst" xml:space="preserve"><value>Please select a node first</value></data>
+  <data name="BrowseDialog_LeafNodeOnly" xml:space="preserve"><value>Please select a leaf node (Variable); folder nodes cannot be used as a Tag</value></data>
+
+  <data name="About_CompanyLabel" xml:space="preserve"><value>Company:</value></data>
+  <data name="About_RuntimeLabel" xml:space="preserve"><value>Runtime:</value></data>
+  <data name="About_BuildDateLabel" xml:space="preserve"><value>Build Date:</value></data>
+  <data name="About_Body" xml:space="preserve"><value>A general-purpose OPC data collection client supporting OPC UA / DA / AE (DA and AE require Windows + a COM SDK). The serializer and publisher are decoupled; the broker protocol is chosen by the deployment.</value></data>
+  <data name="About_BodyRewrite" xml:space="preserve"><value>Source fully rewritten from the Wails (Go) version to .NET 8 + WPF.</value></data>
+  <data name="About_Close" xml:space="preserve"><value>Close</value></data>
 </root>

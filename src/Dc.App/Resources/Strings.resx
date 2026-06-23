@@ -250,4 +250,57 @@
   <data name="Settings_ConfigBackupHint" xml:space="preserve"><value>导出/导入全部任务·Tag·配置</value></data>
   <data name="Settings_ExportAll" xml:space="preserve"><value>导出全部</value></data>
   <data name="Settings_ImportBackup" xml:space="preserve"><value>导入备份…</value></data>
+
+  <data name="Common_NameLabel" xml:space="preserve"><value>名称:</value></data>
+  <data name="Common_BrowseEllipsis" xml:space="preserve"><value>浏览…</value></data>
+  <data name="Dialog_ValidationErrorTitle" xml:space="preserve"><value>输入错误</value></data>
+  <data name="Dialog_Notice" xml:space="preserve"><value>提示</value></data>
+
+  <data name="TaskEditor_ProtocolLabel" xml:space="preserve"><value>协议:</value></data>
+  <data name="TaskEditor_NodeLabel" xml:space="preserve"><value>节点:</value></data>
+  <data name="TaskEditor_IntervalLabel" xml:space="preserve"><value>采样间隔:</value></data>
+  <data name="TaskEditor_IntervalHint" xml:space="preserve"><value>毫秒 · 必须 &gt; 0</value></data>
+  <data name="TaskEditor_DeadbandLabel" xml:space="preserve"><value>死区:</value></data>
+  <data name="TaskEditor_DeadbandHint" xml:space="preserve"><value>百分比 0 – 100</value></data>
+  <data name="TaskEditor_TcpAddressLabel" xml:space="preserve"><value>TCP 地址:</value></data>
+  <data name="TaskEditor_NamePlaceholder" xml:space="preserve"><value>可选,如「1#锅炉 UA」</value></data>
+  <data name="TaskEditor_NodePlaceholder" xml:space="preserve"><value>主机名或 IP</value></data>
+  <data name="TaskEditor_UseSecurity" xml:space="preserve"><value>使用安全连接（推荐）</value></data>
+  <data name="TaskEditor_ScanSectionTitle" xml:space="preserve"><value>按 IP 扫描 OPC 服务器</value></data>
+  <data name="TaskEditor_TargetIpLabel" xml:space="preserve"><value>目标 IP:</value></data>
+  <data name="TaskEditor_ScanButton" xml:space="preserve"><value>扫描</value></data>
+  <data name="TaskEditor_DiscoveredLabel" xml:space="preserve"><value>发现:</value></data>
+  <data name="TaskEditor_AdvancedHeader" xml:space="preserve"><value>高级（CLSID 直连）</value></data>
+  <data name="TaskEditor_ClsidPlaceholder" xml:space="preserve"><value>CLSID 格式: 5CEE2576-...</value></data>
+
+  <data name="TagEditor_IsVirtual" xml:space="preserve"><value>虚拟测点(公式计算)</value></data>
+  <data name="TagEditor_ItemPlaceholder" xml:space="preserve"><value>opc 节点 ItemId</value></data>
+  <data name="TagEditor_ScaleFactorLabel" xml:space="preserve"><value>缩放系数:</value></data>
+  <data name="TagEditor_ScaleFactorName" xml:space="preserve"><value>缩放系数</value></data>
+  <data name="TagEditor_OffsetLabel" xml:space="preserve"><value>偏移量:</value></data>
+  <data name="TagEditor_OffsetName" xml:space="preserve"><value>偏移量</value></data>
+  <data name="TagEditor_ScalePlaceholder" xml:space="preserve"><value>留空=不缩放</value></data>
+  <data name="TagEditor_DataTypeLabel" xml:space="preserve"><value>数据类型:</value></data>
+  <data name="TagEditor_DataTypeName" xml:space="preserve"><value>数据类型</value></data>
+  <data name="TagEditor_NamePlaceholder" xml:space="preserve"><value>任务内唯一,作为虚拟测点标识</value></data>
+  <data name="TagEditor_FormulaNameName" xml:space="preserve"><value>公式名称</value></data>
+  <data name="TagEditor_ExpressionLabel" xml:space="preserve"><value>表达式:</value></data>
+  <data name="TagEditor_ExpressionName" xml:space="preserve"><value>表达式</value></data>
+  <data name="TagEditor_ExpressionPlaceholder" xml:space="preserve"><value>如 T * 1.8 + 32</value></data>
+  <data name="TagEditor_OutputUnitLabel" xml:space="preserve"><value>输出单位:</value></data>
+  <data name="TagEditor_OutputUnitName" xml:space="preserve"><value>输出单位</value></data>
+  <data name="TagEditor_OutputUnitPlaceholder" xml:space="preserve"><value>可选</value></data>
+  <data name="TagEditor_InputMappingLabel" xml:space="preserve"><value>输入映射:</value></data>
+
+  <data name="BrowseDialog_Title" xml:space="preserve"><value>选择 NodeId</value></data>
+  <data name="BrowseDialog_Select" xml:space="preserve"><value>选择</value></data>
+  <data name="BrowseDialog_SelectNodeFirst" xml:space="preserve"><value>请先选中一个节点</value></data>
+  <data name="BrowseDialog_LeafNodeOnly" xml:space="preserve"><value>请选择叶子节点（Variable），文件夹节点不可作为 Tag</value></data>
+
+  <data name="About_CompanyLabel" xml:space="preserve"><value>公司:</value></data>
+  <data name="About_RuntimeLabel" xml:space="preserve"><value>运行时:</value></data>
+  <data name="About_BuildDateLabel" xml:space="preserve"><value>构建时间:</value></data>
+  <data name="About_Body" xml:space="preserve"><value>通用 OPC 数据采集客户端，支持 OPC UA / DA / AE 三种协议（DA 与 AE 需 Windows + COM SDK）。序列化器和发布器解耦，broker 协议由部署方决定。</value></data>
+  <data name="About_BodyRewrite" xml:space="preserve"><value>源代码自 Wails (Go) 版本全量重写至 .NET 8 + WPF。</value></data>
+  <data name="About_Close" xml:space="preserve"><value>关闭</value></data>
 </root>

@@ -4,6 +4,7 @@
               xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:views="clr-namespace:Dc.App.Views"
         xmlns:controls="clr-namespace:Dc.App.Controls"
+        xmlns:loc="clr-namespace:Dc.App.Markup"
         Title="{Binding Title}">
     <Grid Background="#80000000">
         <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
@@ -36,15 +37,15 @@
                                Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                                FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="320" />
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="取消" Margin="0,0,8,0" IsCancel="True" Style="{StaticResource DcBtnGhostSm}" />
-                        <Button Content="保存" Click="OnSaveClick" IsDefault="True"
+                        <Button Content="{loc:Loc Common_Cancel}" Margin="0,0,8,0" IsCancel="True" Style="{StaticResource DcBtnGhostSm}" />
+                        <Button Content="{loc:Loc Common_Save}" Click="OnSaveClick" IsDefault="True"
                                 IsEnabled="{Binding CanSave}" Style="{StaticResource DcBtnPrimarySm}" />
                     </StackPanel>
                 </DockPanel>
             </Border>
             <StackPanel Margin="20,18">
                 <!-- 虚拟开关(所有模式可见) -->
-                <CheckBox Content="虚拟测点(公式计算)" Margin="0,0,0,12"
+                <CheckBox Content="{loc:Loc TagEditor_IsVirtual}" Margin="0,0,0,12"
                           IsChecked="{Binding IsVirtual}" />
 
                 <!-- 真实面板:缩放字段 -->
@@ -57,9 +58,9 @@
                         <TextBlock Grid.Column="0" Text="Item:"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <DockPanel Grid.Column="1">
-                            <Button DockPanel.Dock="Right" Content="浏览…" Width="64" Margin="6,0,0,0"
+                            <Button DockPanel.Dock="Right" Content="{loc:Loc Common_BrowseEllipsis}" Width="64" Margin="6,0,0,0"
                                     Command="{Binding BrowseCommand}" IsEnabled="{Binding CanBrowse}" />
-                            <TextBox controls:Placeholder.Text="opc 节点 ItemId"
+                            <TextBox controls:Placeholder.Text="{loc:Loc TagEditor_ItemPlaceholder}"
                                      AutomationProperties.Name="Item"
                                      Text="{Binding Item, UpdateSourceTrigger=PropertyChanged}" />
                         </DockPanel>
@@ -71,15 +72,15 @@
                             <ColumnDefinition Width="96" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="缩放系数:"
+                        <TextBlock Grid.Column="0" Text="{loc:Loc TagEditor_ScaleFactorLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" controls:Placeholder.Text="留空=不缩放"
-                                 AutomationProperties.Name="缩放系数"
+                        <TextBox Grid.Column="1" controls:Placeholder.Text="{loc:Loc TagEditor_ScalePlaceholder}"
+                                 AutomationProperties.Name="{loc:Loc TagEditor_ScaleFactorName}"
                                  Text="{Binding ScaleFactor, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Grid.Column="2" Text="偏移量:" Margin="12,0,0,0"
+                        <TextBlock Grid.Column="2" Text="{loc:Loc TagEditor_OffsetLabel}" Margin="12,0,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="3" controls:Placeholder.Text="留空=不缩放"
-                                 AutomationProperties.Name="偏移量"
+                        <TextBox Grid.Column="3" controls:Placeholder.Text="{loc:Loc TagEditor_ScalePlaceholder}"
+                                 AutomationProperties.Name="{loc:Loc TagEditor_OffsetName}"
                                  Text="{Binding Offset, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Grid Margin="0,0,0,4">
@@ -87,10 +88,10 @@
                             <ColumnDefinition Width="96" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="数据类型:"
+                        <TextBlock Grid.Column="0" Text="{loc:Loc TagEditor_DataTypeLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <ComboBox Grid.Column="1"
-                                  AutomationProperties.Name="数据类型"
+                                  AutomationProperties.Name="{loc:Loc TagEditor_DataTypeName}"
                                   ItemsSource="{Binding DataTypeOptions}" SelectedItem="{Binding DataType}" />
                     </Grid>
                 </StackPanel>
@@ -102,10 +103,10 @@
                             <ColumnDefinition Width="96" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="名称:"
+                        <TextBlock Grid.Column="0" Text="{loc:Loc Common_NameLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" controls:Placeholder.Text="任务内唯一,作为虚拟测点标识"
-                                 AutomationProperties.Name="公式名称"
+                        <TextBox Grid.Column="1" controls:Placeholder.Text="{loc:Loc TagEditor_NamePlaceholder}"
+                                 AutomationProperties.Name="{loc:Loc TagEditor_FormulaNameName}"
                                  Text="{Binding FormulaName, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Grid Margin="0,0,0,8">
@@ -113,12 +114,12 @@
                             <ColumnDefinition Width="96" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="表达式:"
+                        <TextBlock Grid.Column="0" Text="{loc:Loc TagEditor_ExpressionLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" Margin="0,6,0,0" />
                         <TextBox Grid.Column="1" MinHeight="56" AcceptsReturn="True" TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
-                                 AutomationProperties.Name="表达式"
-                                 controls:Placeholder.Text="如 T * 1.8 + 32"
+                                 AutomationProperties.Name="{loc:Loc TagEditor_ExpressionName}"
+                                 controls:Placeholder.Text="{loc:Loc TagEditor_ExpressionPlaceholder}"
                                  Text="{Binding Expression, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Grid Margin="0,0,0,8">
@@ -126,13 +127,13 @@
                             <ColumnDefinition Width="96" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="输出单位:"
+                        <TextBlock Grid.Column="0" Text="{loc:Loc TagEditor_OutputUnitLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" controls:Placeholder.Text="可选"
-                                 AutomationProperties.Name="输出单位"
+                        <TextBox Grid.Column="1" controls:Placeholder.Text="{loc:Loc TagEditor_OutputUnitPlaceholder}"
+                                 AutomationProperties.Name="{loc:Loc TagEditor_OutputUnitName}"
                                  Text="{Binding OutputUnit, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
-                    <TextBlock Text="输入映射:" Margin="0,4,0,4"
+                    <TextBlock Text="{loc:Loc TagEditor_InputMappingLabel}" Margin="0,4,0,4"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <ItemsControl ItemsSource="{Binding InputBindings}">
                         <ItemsControl.ItemTemplate>

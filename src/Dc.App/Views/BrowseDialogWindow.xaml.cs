@@ -1,5 +1,6 @@
 using System.Windows;
 using Dc.App.Services;
+using Dc.App.Services.I18n;
 using Dc.App.ViewModels;
 using Dc.Opc.Abstractions;
 
@@ -14,12 +15,12 @@ public partial class BrowseDialogWindow : Window
         if (DataContext is not BrowseViewModel vm) return;
         if (vm.SelectedNode is null)
         {
-            MessageDialog.Show(this, "提示", "请先选中一个节点", MessageDialogKind.Warning);
+            MessageDialog.Show(this, LocalizationManager.Instance["Dialog_Notice"], LocalizationManager.Instance["BrowseDialog_SelectNodeFirst"], MessageDialogKind.Warning);
             return;
         }
         if (vm.SelectedNode.Node.Kind != OpcNodeKind.Item)
         {
-            MessageDialog.Show(this, "提示", "请选择叶子节点（Variable），文件夹节点不可作为 Tag", MessageDialogKind.Warning);
+            MessageDialog.Show(this, LocalizationManager.Instance["Dialog_Notice"], LocalizationManager.Instance["BrowseDialog_LeafNodeOnly"], MessageDialogKind.Warning);
             return;
         }
         DialogResult = true;

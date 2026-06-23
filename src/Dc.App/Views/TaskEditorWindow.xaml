@@ -4,6 +4,7 @@
               xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:views="clr-namespace:Dc.App.Views"
         xmlns:controls="clr-namespace:Dc.App.Controls"
+        xmlns:loc="clr-namespace:Dc.App.Markup"
         Title="{Binding Title}">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -38,9 +39,9 @@
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="0,1,0,0">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="取消" AutomationProperties.AutomationId="TaskCancel" Width="80" Margin="0,0,8,0" IsCancel="True"
+                    <Button Content="{loc:Loc Common_Cancel}" AutomationProperties.AutomationId="TaskCancel" Width="80" Margin="0,0,8,0" IsCancel="True"
                             Style="{StaticResource DcBtnGhostSm}" />
-                    <Button x:Name="SaveButton" AutomationProperties.AutomationId="TaskSave" Content="保存" Width="80"
+                    <Button x:Name="SaveButton" AutomationProperties.AutomationId="TaskSave" Content="{loc:Loc Common_Save}" Width="80"
                             Click="OnSaveClick" IsDefault="True" IsEnabled="{Binding CanSave}"
                             Style="{StaticResource DcBtnPrimarySm}" />
                 </StackPanel>
@@ -64,14 +65,14 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="名称:"
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Loc Common_NameLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <TextBox Grid.Row="0" Grid.Column="1" AutomationProperties.AutomationId="TaskName"
                                  VerticalContentAlignment="Center"
                                  Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                                 controls:Placeholder.Text="可选,如「1#锅炉 UA」" />
+                                 controls:Placeholder.Text="{loc:Loc TaskEditor_NamePlaceholder}" />
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="协议:"
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:Loc TaskEditor_ProtocolLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <ComboBox Grid.Row="1" Grid.Column="1" AutomationProperties.AutomationId="TaskProtocol"
                                   ItemsSource="{Binding Protocols}" SelectedItem="{Binding Protocol}" />
@@ -83,39 +84,39 @@
                                  controls:Placeholder.Text="{Binding ServerPlaceholder}"
                                  ToolTip="{Binding ServerToolTip}" />
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="节点:"
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="{loc:Loc TaskEditor_NodeLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"
                                    Visibility="{Binding ShowClassicOnlyFields, Converter={StaticResource BoolToVis}}" />
                         <TextBox Grid.Row="3" Grid.Column="1" AutomationProperties.AutomationId="TaskNode" Text="{Binding Node, UpdateSourceTrigger=PropertyChanged}"
                                  VerticalContentAlignment="Center"
-                                 controls:Placeholder.Text="主机名或 IP"
+                                 controls:Placeholder.Text="{loc:Loc TaskEditor_NodePlaceholder}"
                                  Visibility="{Binding ShowClassicOnlyFields, Converter={StaticResource BoolToVis}}" />
 
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="采样间隔:" Margin="0,7,0,0"
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="{loc:Loc TaskEditor_IntervalLabel}" Margin="0,7,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" />
                         <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,6">
                             <TextBox VerticalContentAlignment="Center" AutomationProperties.AutomationId="TaskInterval" Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Text="毫秒 · 必须 &gt; 0" FontSize="11" Margin="2,3,0,0"
+                            <TextBlock Text="{loc:Loc TaskEditor_IntervalHint}" FontSize="11" Margin="2,3,0,0"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
 
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="死区:" Margin="0,7,0,0"
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="{loc:Loc TaskEditor_DeadbandLabel}" Margin="0,7,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top"
                                    Visibility="{Binding ShowClassicOnlyFields, Converter={StaticResource BoolToVis}}" />
                         <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,6"
                                     Visibility="{Binding ShowClassicOnlyFields, Converter={StaticResource BoolToVis}}">
                             <TextBox VerticalContentAlignment="Center" AutomationProperties.AutomationId="TaskDeviation" Text="{Binding Deviation, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Text="百分比 0 – 100" FontSize="11" Margin="2,3,0,0"
+                            <TextBlock Text="{loc:Loc TaskEditor_DeadbandHint}" FontSize="11" Margin="2,3,0,0"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
 
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="TCP 地址:"
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="{loc:Loc TaskEditor_TcpAddressLabel}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <TextBox Grid.Row="6" Grid.Column="1" AutomationProperties.AutomationId="TaskTcpAddress" VerticalContentAlignment="Center" Text="{Binding TcpAddress, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
 
                     <!-- 安全连接：仅 UA 协议可见 -->
-                    <CheckBox Content="使用安全连接（推荐）"
+                    <CheckBox Content="{loc:Loc TaskEditor_UseSecurity}"
                               AutomationProperties.AutomationId="TaskUseSecurity"
                               IsChecked="{Binding UseSecurity}"
                               Visibility="{Binding IsUaProtocol, Converter={StaticResource BoolToVis}}"
@@ -126,19 +127,19 @@
                             BorderThickness="0,1,0,0" Padding="0,10,0,8" Margin="0,10,0,0"
                             Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}">
                         <StackPanel>
-                            <TextBlock Text="按 IP 扫描 OPC 服务器"
+                            <TextBlock Text="{loc:Loc TaskEditor_ScanSectionTitle}"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6" />
                             <DockPanel LastChildFill="True" Margin="0,0,0,6">
-                                <TextBlock Text="目标 IP:" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                <TextBlock Text="{loc:Loc TaskEditor_TargetIpLabel}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            VerticalAlignment="Center" Width="108" DockPanel.Dock="Left" />
-                                <Button DockPanel.Dock="Right" AutomationProperties.AutomationId="ScanRun" Content="扫描" Margin="8,0,0,0"
+                                <Button DockPanel.Dock="Right" AutomationProperties.AutomationId="ScanRun" Content="{loc:Loc TaskEditor_ScanButton}" Margin="8,0,0,0"
                                         Command="{Binding ScanCommand}"
                                         Style="{StaticResource DcBtnGhostSm}" />
                                 <TextBox AutomationProperties.AutomationId="ScanHost" Text="{Binding DiscoveryHost, UpdateSourceTrigger=PropertyChanged}"
                                          VerticalAlignment="Center" controls:Placeholder.Text="localhost" />
                             </DockPanel>
                             <DockPanel LastChildFill="True" Margin="0,0,0,4">
-                                <TextBlock Text="发现:" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                <TextBlock Text="{loc:Loc TaskEditor_DiscoveredLabel}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            VerticalAlignment="Center" Width="108" DockPanel.Dock="Left" />
                                 <ComboBox AutomationProperties.AutomationId="ScanResult" ItemsSource="{Binding DiscoveredServers}" SelectedItem="{Binding SelectedDiscoveredServer}"
                                           VerticalAlignment="Center" />
@@ -147,7 +148,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Expander Header="高级（CLSID 直连）" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    <Expander Header="{loc:Loc TaskEditor_AdvancedHeader}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                               BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                               BorderThickness="0,1,0,0" Padding="0,4,0,4" Margin="0,8,0,0"
                               Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}"
@@ -157,7 +158,7 @@
                                        VerticalAlignment="Center" Width="108" DockPanel.Dock="Left" />
                             <TextBox AutomationProperties.AutomationId="TaskClsid" VerticalAlignment="Center" FontFamily="Consolas"
                                      Text="{Binding Clsid, UpdateSourceTrigger=PropertyChanged}"
-                                     controls:Placeholder.Text="CLSID 格式: 5CEE2576-..." />
+                                     controls:Placeholder.Text="{loc:Loc TaskEditor_ClsidPlaceholder}" />
                         </DockPanel>
                     </Expander>
                 </StackPanel>
