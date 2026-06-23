@@ -48,10 +48,11 @@
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Key:"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                     <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalContentAlignment="Center"
                              IsReadOnly="{Binding KeyIsReadOnly}" />
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Value:"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox Grid.Row="1" Grid.Column="1" VerticalContentAlignment="Center" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
                 </Grid>
             </StackPanel>
         </DockPanel>
