@@ -21,9 +21,9 @@ public class DaBrowserSmokeTests
         Assert.Contains(urls, u => u.Contains(_demo.DaProgId, StringComparison.OrdinalIgnoreCase));
     }
 
-    // DA-3: 连上 demo server 后浏览根，应至少包含 "Bucket Brigade" 文件夹
+    // DA-3: 连上 demo server 后浏览根，应至少包含 "SimulatedData" 文件夹
     [WindowsComFact("SampleCompany.DaSample", Timeout = 30_000)]
-    public async Task DA3_BrowseRoot_ContainsBucketBrigade()
+    public async Task DA3_BrowseRoot_ContainsSimulatedData()
     {
         var options = new OpcConnectionOptions
         {
@@ -38,7 +38,7 @@ public class DaBrowserSmokeTests
         Assert.NotEmpty(children);
         Assert.Contains(children, n =>
             n.Kind == OpcNodeKind.Folder &&
-            n.DisplayName.Equals("Bucket Brigade", StringComparison.OrdinalIgnoreCase));
+            n.DisplayName.Equals("SimulatedData", StringComparison.OrdinalIgnoreCase));
     }
 
     // DA-4: ServerClsid 给值时 vendor 拼 opcda://host/progId/{clsid}，

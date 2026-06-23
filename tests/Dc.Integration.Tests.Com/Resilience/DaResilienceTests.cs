@@ -29,7 +29,7 @@ public class DaResilienceTests
         await using (var sub1 = new OpcDaSubscriber("res-1a", options))
         {
             await sub1.ConnectAsync();
-            await sub1.SubscribeAsync(new[] { new TagDescriptor("t", "Bucket Brigade.Int4", 0) });
+            await sub1.SubscribeAsync(new[] { new TagDescriptor("t", "SimulatedData.Ramp", 0) });
             using var cts1 = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             await sub1.TagValues.ReadAsync(cts1.Token); // 收到一条就行
         }
@@ -47,11 +47,11 @@ public class DaResilienceTests
         // 第二阶段：新订阅器应能 connect 上（SCM 重启 LocalServer32），并再次收到值
         await using var sub2 = new OpcDaSubscriber("res-1b", options);
         await sub2.ConnectAsync();
-        await sub2.SubscribeAsync(new[] { new TagDescriptor("t", "Bucket Brigade.Int4", 0) });
+        await sub2.SubscribeAsync(new[] { new TagDescriptor("t", "SimulatedData.Ramp", 0) });
 
         using var cts2 = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         var v = await sub2.TagValues.ReadAsync(cts2.Token);
-        Assert.Equal("Bucket Brigade.Int4", v.Item);
+        Assert.Equal("SimulatedData.Ramp", v.Item);
     }
 
     // RES-2: 扫描不存在的主机 192.0.2.1（RFC5737 文档保留地址，永远不通），
