@@ -272,9 +272,15 @@
                                     Value="{DynamicResource AccentFillColorTertiaryBrush}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorDisabledBrush}" />
+                            <!-- 禁用态:用普通禁用文字色(非 text-on-accent,否则浅字+浅底糊成一片看不见)
+                                 + 可见边框,让「保存」等主按钮禁用时仍清晰可见(必填项填完后变回强调色可点)。
+                                 与 DcBtnGhost 禁用态视觉对齐。 -->
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorDisabledBrush}" />
                             <Setter TargetName="RootBd" Property="Background"
                                     Value="{DynamicResource ControlFillColorDisabledBrush}" />
+                            <Setter TargetName="RootBd" Property="BorderBrush"
+                                    Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                            <Setter TargetName="RootBd" Property="BorderThickness" Value="1" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
