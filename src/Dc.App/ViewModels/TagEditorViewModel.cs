@@ -28,6 +28,10 @@ public partial class TagEditorViewModel : ObservableObject
     [ObservableProperty] private string _expression = string.Empty;
     [ObservableProperty] private string _outputUnit = string.Empty;
 
+    // 实时校验:无错才可保存(对齐任务编辑器),首条错误内联红字提示。
+    [ObservableProperty] private bool _canSave;
+    [ObservableProperty] private string _validationError = string.Empty;
+
     public ObservableCollection<InputBindingRow> InputBindings { get; } = new();
     public ObservableCollection<Tag> AvailableInputTags { get; } = new();
 
@@ -113,6 +117,7 @@ public partial class TagEditorViewModel : ObservableObject
                 {
                     SelectedTag = AvailableInputTags.FirstOrDefault(t => t.Id == input.SourceTagId)
                 };
+                row.PropertyChanged += OnInputRowChanged;
                 InputBindings.Add(row);
             }
         }
@@ -120,6 +125,20 @@ public partial class TagEditorViewModel : ObservableObject
         {
             RebuildInputBindings();
         }
+        Revalidate(); // 初始态:新建真实 Tag(Item 空)→ 保存禁用,直到填合法
+    }
+
+    // 实时校验:复用 Validate(),无错才可保存,首条错误内联提示。
+    private void Revalidate()
+    {
+        var errs = Validate();
+        CanSave = errs.Count == 0;
+        ValidationError = errs.Count == 0 ? string.Empty : errs[0];
+    }
+
+    private void OnInputRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(InputBindingRow.SelectedTag)) Revalidate();
     }
 
     public bool CanBrowse => _browseDialog is not null;
@@ -169,18 +188,25 @@ public partial class TagEditorViewModel : ObservableObject
         // 分组定 → TaskId 定 → 刷新可选输入 Tag(同任务真实,排除自身虚拟)。
         OnPropertyChanged(nameof(Group));
         RefreshAvailableInputTags();
+        Revalidate();
     }
 
     partial void OnIsVirtualChanged(bool value)
     {
-        if (value) RebuildInputBindings();
-        else InputBindings.Clear();
+        if (value) RebuildInputBindings(); // 内部 Revalidate
+        else { InputBindings.Clear(); Revalidate(); }
     }
 
     partial void OnExpressionChanged(string value)
     {
-        if (IsVirtual) RebuildInputBindings();
+        if (IsVirtual) RebuildInputBindings(); // 内部 Revalidate
     }
+
+    // 实时校验:这些字段变化即重算可保存性。
+    partial void OnItemChanged(string value) => Revalidate();
+    partial void OnScaleFactorChanged(string value) => Revalidate();
+    partial void OnOffsetChanged(string value) => Revalidate();
+    partial void OnFormulaNameChanged(string value) => Revalidate();
 
     private void RefreshAvailableInputTags()
     {
@@ -195,13 +221,16 @@ public partial class TagEditorViewModel : ObservableObject
     {
         var aliases = ExtractAliases(Expression);
         var prevByAlias = InputBindings.ToDictionary(r => r.Alias, r => r.SelectedTag, StringComparer.OrdinalIgnoreCase);
+        foreach (var r in InputBindings) r.PropertyChanged -= OnInputRowChanged; // 退订旧行,避免重复触发
         InputBindings.Clear();
         foreach (var alias in aliases)
         {
             var row = new InputBindingRow(alias);
             if (prevByAlias.TryGetValue(alias, out var sel)) row.SelectedTag = sel;
+            row.PropertyChanged += OnInputRowChanged;
             InputBindings.Add(row);
         }
+        Revalidate();
     }
 
     public IReadOnlyList<string> Validate()
