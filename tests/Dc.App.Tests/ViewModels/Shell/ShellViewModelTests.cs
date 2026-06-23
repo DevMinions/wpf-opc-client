@@ -1,4 +1,5 @@
 using Dc.App.Navigation;
+using Dc.App.Services.I18n;
 using Dc.App.Services.Theme;
 using Dc.App.ViewModels.Shell;
 
@@ -8,6 +9,14 @@ public class ShellViewModelTests
 {
     private sealed class FakeDashboardVm { }
     private sealed class FakeTasksVm { }
+
+    private sealed class FakeLanguageService : ILanguageService
+    {
+        public AppLanguage Current => AppLanguage.System;
+        public event Action<AppLanguage>? LanguageChanged { add { } remove { } }
+        public void Initialize() { }
+        public void Apply(AppLanguage lang) { }
+    }
 
     private static (Mock<INavigationService> nav, Mock<IThemeService> theme, ShellViewModel vm) Build()
     {
@@ -23,7 +32,7 @@ public class ShellViewModelTests
         var theme = new Mock<IThemeService>();
         theme.SetupGet(t => t.Current).Returns(AppTheme.System);
 
-        var vm = new ShellViewModel(nav.Object, theme.Object);
+        var vm = new ShellViewModel(nav.Object, theme.Object, new ResourceLocalizer(), new FakeLanguageService());
         return (nav, theme, vm);
     }
 

@@ -53,4 +53,30 @@
   <data name="Lang_English" xml:space="preserve"><value>English</value></data>
   <data name="Lang_System" xml:space="preserve"><value>Follow system</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Nav_Workspace" xml:space="preserve"><value>Tasks</value></data>
+  <data name="Nav_Browse" xml:space="preserve"><value>Browse</value></data>
+  <data name="Nav_LiveData" xml:space="preserve"><value>Live Data</value></data>
+  <data name="Nav_Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Nav_Logs" xml:space="preserve"><value>Logs</value></data>
+  <data name="Nav_About" xml:space="preserve"><value>About</value></data>
+  <data name="NavGroup_Collection" xml:space="preserve"><value>Collection</value></data>
+  <data name="NavGroup_Monitoring" xml:space="preserve"><value>Monitoring</value></data>
+  <data name="NavGroup_System" xml:space="preserve"><value>System</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>Light</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>Dark</value></data>
+  <data name="Theme_System" xml:space="preserve"><value>System</value></data>
+  <data name="Health_AllNormal" xml:space="preserve"><value>● All normal</value></data>
+  <data name="Health_Warnings" xml:space="preserve"><value>● {0} alert(s)</value></data>
+  <data name="Shell_TitleBarFormat" xml:space="preserve"><value>Dc · OPC DAQ  ›  {0}</value></data>
+  <data name="Shell_StatusTheme" xml:space="preserve"><value>Theme · </value></data>
+  <data name="Shell_StatusDb" xml:space="preserve"><value>    ·    DB · </value></data>
+  <data name="Tray_Show" xml:space="preserve"><value>Show window</value></data>
+  <data name="Tray_ToggleTheme" xml:space="preserve"><value>Toggle theme</value></data>
+  <data name="Tray_About" xml:space="preserve"><value>About…</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Dc · OPC Data Collector</value></data>
+  <data name="Tray_BalloonTitle" xml:space="preserve"><value>Dc · OPC Data Collector is still running</value></data>
+  <data name="Tray_BalloonMessage" xml:space="preserve"><value>Minimized to system tray · double-click to restore · right-click "Exit" to quit</value></data>
 </root>

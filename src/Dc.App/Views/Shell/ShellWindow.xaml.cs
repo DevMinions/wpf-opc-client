@@ -11,16 +11,28 @@ namespace Dc.App.Views.Shell;
 public partial class ShellWindow : FluentWindow
 {
     private readonly ShellViewModel _vm;
+    private readonly Dc.App.Services.I18n.ILocalizer _loc;
     private bool _reallyExit;     // 仅托盘「退出」时置真，让关闭真正退出而非进托盘
     private bool _trayHintShown;  // 关闭进托盘的气泡提示一进程只弹一次
 
-    public ShellWindow(ShellViewModel vm)
+    public ShellWindow(ShellViewModel vm, Dc.App.Services.I18n.ILocalizer loc, Dc.App.Services.I18n.ILanguageService language)
     {
         InitializeComponent();
         _vm = vm;
+        _loc = loc;
         DataContext = vm;
 
         BuildMenuItems();
+        WireFooter();
+        // 初始选中 + 导航(仅一次,不放进 BuildMenuItems,以免重建时重复导航)
+        if (_vm.Routes.Count > 0)
+        {
+            SelectNavItemByKey(_vm.Routes[0].Key);
+            _vm.NavigateCommand.Execute(_vm.Routes[0].Key);
+        }
+        // 语言切换 → 重建导航项(文字按新 culture 取),保持当前选中
+        language.LanguageChanged += _ => Dispatcher.Invoke(RebuildMenuItems);
+
         Closing += OnClosing;   // 关闭(X) → 隐藏到托盘（最小化保持留任务栏的默认行为）
         Loaded += OnLoaded;
         Closed += OnClosed;
@@ -37,7 +49,7 @@ public partial class ShellWindow : FluentWindow
                 // 不设缩进时 wpfui 默认贴左边框，与原型不一致。
                 RootNav.MenuItems.Add(new NavigationViewItemHeader
                 {
-                    Text = route.GroupHeader,
+                    Text = _loc[route.GroupHeader],
                     Margin = new Thickness(12, 10, 0, 2),
                     FontSize = 11
                 });
@@ -45,7 +57,7 @@ public partial class ShellWindow : FluentWindow
             }
             var item = new NavigationViewItem
             {
-                Content = route.Title,
+                Content = _loc[route.Title],
                 Tag = route.Key,
                 Icon = ResolveIcon(route.Icon)
             };
@@ -54,20 +66,25 @@ public partial class ShellWindow : FluentWindow
             item.PreviewMouseLeftButtonUp += OnNavItemClicked;
             RootNav.MenuItems.Add(item);
         }
+    }
 
-        // footer「关于」item 同样挂上点击处理
+    private void WireFooter()
+    {
+        // footer「关于」item 点击处理(一次性;Content 由 XAML {loc:Loc} 实时刷,无需重建)
         foreach (var obj in RootNav.FooterMenuItems)
-        {
             if (obj is NavigationViewItem fi)
                 fi.PreviewMouseLeftButtonUp += OnNavItemClicked;
-        }
+    }
 
-        // Initial selection: select first nav item + navigate
-        if (_vm.Routes.Count > 0)
-        {
-            SelectNavItemByKey(_vm.Routes[0].Key);
-            _vm.NavigateCommand.Execute(_vm.Routes[0].Key);
-        }
+    private void RebuildMenuItems()
+    {
+        foreach (var obj in RootNav.MenuItems)
+            if (obj is NavigationViewItem nvi)
+                nvi.PreviewMouseLeftButtonUp -= OnNavItemClicked;
+        RootNav.MenuItems.Clear();
+        BuildMenuItems();
+        if (!string.IsNullOrEmpty(_vm.SelectedRouteKey))
+            SelectNavItemByKey(_vm.SelectedRouteKey);
     }
 
     private void OnNavItemClicked(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -170,8 +187,8 @@ public partial class ShellWindow : FluentWindow
         {
             _trayHintShown = true;
             TrayIcon.ShowNotification(
-                title: "Dc · OPC 数据采集仍在后台运行",
-                message: "已最小化到系统托盘 · 双击图标唤回 · 右键「退出」可彻底关闭",
+                title: _loc["Tray_BalloonTitle"],
+                message: _loc["Tray_BalloonMessage"],
                 icon: NotificationIcon.Info);
         }
     }

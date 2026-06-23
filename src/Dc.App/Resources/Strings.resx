@@ -53,4 +53,30 @@
   <data name="Lang_English" xml:space="preserve"><value>English</value></data>
   <data name="Lang_System" xml:space="preserve"><value>跟随系统</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>语言</value></data>
+  <data name="Nav_Dashboard" xml:space="preserve"><value>仪表盘</value></data>
+  <data name="Nav_Workspace" xml:space="preserve"><value>采集任务</value></data>
+  <data name="Nav_Browse" xml:space="preserve"><value>浏览节点</value></data>
+  <data name="Nav_LiveData" xml:space="preserve"><value>实时数据</value></data>
+  <data name="Nav_Diagnostics" xml:space="preserve"><value>诊断</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>设置</value></data>
+  <data name="Nav_Logs" xml:space="preserve"><value>日志</value></data>
+  <data name="Nav_About" xml:space="preserve"><value>关于</value></data>
+  <data name="NavGroup_Collection" xml:space="preserve"><value>采集</value></data>
+  <data name="NavGroup_Monitoring" xml:space="preserve"><value>全局监控</value></data>
+  <data name="NavGroup_System" xml:space="preserve"><value>系统</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>亮色</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>暗色</value></data>
+  <data name="Theme_System" xml:space="preserve"><value>跟随系统</value></data>
+  <data name="Health_AllNormal" xml:space="preserve"><value>● 全部正常</value></data>
+  <data name="Health_Warnings" xml:space="preserve"><value>● {0} 告警</value></data>
+  <data name="Shell_TitleBarFormat" xml:space="preserve"><value>Dc · OPC 数采  ›  {0}</value></data>
+  <data name="Shell_StatusTheme" xml:space="preserve"><value>主题 · </value></data>
+  <data name="Shell_StatusDb" xml:space="preserve"><value>    ·    DB · </value></data>
+  <data name="Tray_Show" xml:space="preserve"><value>显示主窗口</value></data>
+  <data name="Tray_ToggleTheme" xml:space="preserve"><value>切换主题</value></data>
+  <data name="Tray_About" xml:space="preserve"><value>关于…</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>退出</value></data>
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Dc · OPC 数据采集</value></data>
+  <data name="Tray_BalloonTitle" xml:space="preserve"><value>Dc · OPC 数据采集仍在后台运行</value></data>
+  <data name="Tray_BalloonMessage" xml:space="preserve"><value>已最小化到系统托盘 · 双击图标唤回 · 右键「退出」可彻底关闭</value></data>
 </root>

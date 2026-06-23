@@ -172,13 +172,13 @@ public static class ServiceRegistration
                 sp,
                 new[]
                 {
-                    new Dc.App.Navigation.NavigationRoute("dashboard",   "仪表盘",   "Home24",                typeof(Dc.App.ViewModels.Dashboard.DashboardViewModel)),
-                    new Dc.App.Navigation.NavigationRoute("workspace",   "采集任务", "TaskListSquareLtr24",   typeof(Dc.App.ViewModels.Workspace.TaskWorkspaceViewModel), GroupHeader: "采集"),
-                    new Dc.App.Navigation.NavigationRoute("browse",      "浏览节点", "Search24",              typeof(BrowseViewModel)),
-                    new Dc.App.Navigation.NavigationRoute("livedata",    "实时数据", "DataHistogram24",       typeof(LiveDataViewModel),       GroupHeader: "全局监控"),
-                    new Dc.App.Navigation.NavigationRoute("diagnostics", "诊断",     "Pulse24",               typeof(DiagnosticsViewModel)),
-                    new Dc.App.Navigation.NavigationRoute("settings",    "设置",     "Settings24",            typeof(SettingsViewModel),       GroupHeader: "系统"),
-                    new Dc.App.Navigation.NavigationRoute("logs",        "日志",     "DocumentText24",        typeof(LogsViewModel))
+                    new Dc.App.Navigation.NavigationRoute("dashboard",   "Nav_Dashboard",   "Home24",                typeof(Dc.App.ViewModels.Dashboard.DashboardViewModel)),
+                    new Dc.App.Navigation.NavigationRoute("workspace",   "Nav_Workspace",   "TaskListSquareLtr24",   typeof(Dc.App.ViewModels.Workspace.TaskWorkspaceViewModel), GroupHeader: "NavGroup_Collection"),
+                    new Dc.App.Navigation.NavigationRoute("browse",      "Nav_Browse",      "Search24",              typeof(BrowseViewModel)),
+                    new Dc.App.Navigation.NavigationRoute("livedata",    "Nav_LiveData",    "DataHistogram24",       typeof(LiveDataViewModel),       GroupHeader: "NavGroup_Monitoring"),
+                    new Dc.App.Navigation.NavigationRoute("diagnostics", "Nav_Diagnostics", "Pulse24",               typeof(DiagnosticsViewModel)),
+                    new Dc.App.Navigation.NavigationRoute("settings",    "Nav_Settings",    "Settings24",            typeof(SettingsViewModel),       GroupHeader: "NavGroup_System"),
+                    new Dc.App.Navigation.NavigationRoute("logs",        "Nav_Logs",        "DocumentText24",        typeof(LogsViewModel))
                 },
                 footerAbout: null));
 
