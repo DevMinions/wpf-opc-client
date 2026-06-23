@@ -49,6 +49,10 @@
 
   <data name="Common_Save" xml:space="preserve"><value>Save</value></data>
   <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common_New" xml:space="preserve"><value>New</value></data>
+  <data name="Common_Import" xml:space="preserve"><value>Import</value></data>
+  <data name="Common_Export" xml:space="preserve"><value>Export</value></data>
+  <data name="Common_Query" xml:space="preserve"><value>Query</value></data>
   <data name="Lang_ChineseSimplified" xml:space="preserve"><value>简体中文</value></data>
   <data name="Lang_English" xml:space="preserve"><value>English</value></data>
   <data name="Lang_System" xml:space="preserve"><value>Follow system</value></data>
@@ -79,4 +83,90 @@
   <data name="Tray_Tooltip" xml:space="preserve"><value>Dc · OPC Data Collector</value></data>
   <data name="Tray_BalloonTitle" xml:space="preserve"><value>Dc · OPC Data Collector is still running</value></data>
   <data name="Tray_BalloonMessage" xml:space="preserve"><value>Minimized to system tray · double-click to restore · right-click "Exit" to quit</value></data>
+
+  <data name="Tags_SearchLabel" xml:space="preserve"><value>Search:</value></data>
+  <data name="Tags_SearchPlaceholder" xml:space="preserve"><value>Keyword</value></data>
+  <data name="Tags_ColDataType" xml:space="preserve"><value>Data Type</value></data>
+  <data name="Tags_ColTask" xml:space="preserve"><value>Task</value></data>
+  <data name="Tags_ColCreatedAt" xml:space="preserve"><value>Created</value></data>
+  <data name="Tags_EmptyTitle" xml:space="preserve"><value>This task has no Tags yet</value></data>
+  <data name="Tags_EmptyHint" xml:space="preserve"><value>Go to "Browse" to select multiple nodes and add them in bulk, or create a single Tag manually.</value></data>
+  <data name="Tags_EmptyAction" xml:space="preserve"><value>Browse to add Tags</value></data>
+  <data name="Tags_EmptySecondaryAction" xml:space="preserve"><value>Create manually</value></data>
+
+  <data name="Workspace_PillRunning" xml:space="preserve"><value>Running </value></data>
+  <data name="Workspace_PillStopped" xml:space="preserve"><value>Stopped </value></data>
+  <data name="Workspace_PillAlert" xml:space="preserve"><value>Alerts </value></data>
+  <data name="Workspace_SearchPlaceholder" xml:space="preserve"><value>Search tasks…</value></data>
+  <data name="Workspace_FilterAll" xml:space="preserve"><value>All</value></data>
+  <data name="Workspace_FilterRunning" xml:space="preserve"><value>Running</value></data>
+  <data name="Workspace_FilterStopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="Workspace_NewTask" xml:space="preserve"><value>+ New</value></data>
+  <data name="Workspace_NoTagsWarn" xml:space="preserve"><value>No Tags configured</value></data>
+  <data name="Workspace_StatusRunning" xml:space="preserve"><value>Running</value></data>
+  <data name="Workspace_StatusAlert" xml:space="preserve"><value>Alert</value></data>
+  <data name="Workspace_StatusStopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="Workspace_BtnStart" xml:space="preserve"><value>▶ Start</value></data>
+  <data name="Workspace_BtnStop" xml:space="preserve"><value>■ Stop</value></data>
+  <data name="Workspace_BtnRestart" xml:space="preserve"><value>⟳ Restart</value></data>
+  <data name="Workspace_BtnEdit" xml:space="preserve"><value>✎ Edit</value></data>
+  <data name="Workspace_BtnDelete" xml:space="preserve"><value>🗑 Delete</value></data>
+  <data name="Workspace_TabOverview" xml:space="preserve"><value>Overview</value></data>
+  <data name="Workspace_TabLiveData" xml:space="preserve"><value>Live Data</value></data>
+  <data name="Workspace_TabDiagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="Workspace_TabConfig" xml:space="preserve"><value>Config</value></data>
+  <data name="Workspace_EmptyTitle" xml:space="preserve"><value>No collection tasks yet</value></data>
+  <data name="Workspace_EmptyHint" xml:space="preserve"><value>Create a task and connect to an OPC server to start collecting data</value></data>
+  <data name="Workspace_EmptyAction" xml:space="preserve"><value>+ New Task</value></data>
+
+  <data name="Overview_TotalMessages" xml:space="preserve"><value>Total Messages</value></data>
+  <data name="Overview_SubscribedTags" xml:space="preserve"><value>Active Subscriptions</value></data>
+  <data name="Overview_SendErrors" xml:space="preserve"><value>Send Errors</value></data>
+  <data name="Overview_RestartCount" xml:space="preserve"><value>Restarts</value></data>
+  <data name="Overview_Uptime" xml:space="preserve"><value>Uptime</value></data>
+  <data name="Overview_LastHeartbeat" xml:space="preserve"><value>Last Heartbeat</value></data>
+  <data name="Overview_MessageRate" xml:space="preserve"><value>Message Rate (last 60s)</value></data>
+
+  <data name="Config_Server" xml:space="preserve"><value>Server</value></data>
+  <data name="Config_Node" xml:space="preserve"><value>Node</value></data>
+  <data name="Config_Protocol" xml:space="preserve"><value>Protocol</value></data>
+  <data name="Config_TcpAddress" xml:space="preserve"><value>TCP Address</value></data>
+  <data name="Config_Interval" xml:space="preserve"><value>Sampling Interval (ms)</value></data>
+  <data name="Config_Deadband" xml:space="preserve"><value>Deadband (%)</value></data>
+  <data name="Config_EditButton" xml:space="preserve"><value>Edit Task Parameters</value></data>
+
+  <data name="Browse_Title" xml:space="preserve"><value>Browse Nodes</value></data>
+  <data name="Browse_Subtitle" xml:space="preserve"><value>Connect to an OPC server, browse the address space, and add selected nodes as Tags (or copy the NodeId)</value></data>
+  <data name="Browse_Connect" xml:space="preserve"><value>Connect</value></data>
+  <data name="Browse_Disconnect" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="Browse_ProgIdTooltip" xml:space="preserve"><value>OPC ProgID — DA e.g.: SampleCompany.DaSample; AE e.g.: SampleCompany.AeSample</value></data>
+  <data name="Browse_ServerUriTooltip" xml:space="preserve"><value>UA: opc.tcp://host:port    DA/AE: hostname/IP</value></data>
+  <data name="Browse_ScanByIp" xml:space="preserve"><value>Scan by IP:</value></data>
+  <data name="Browse_DiscoveryHostTooltip" xml:space="preserve"><value>Target hostname or IP (e.g. 192.168.1.10); remote hosts require OPCEnum + DCOM</value></data>
+  <data name="Browse_ScanServers" xml:space="preserve"><value>Scan OPC Servers</value></data>
+  <data name="Browse_DiscoveredLabel" xml:space="preserve"><value>Found:</value></data>
+  <data name="Browse_DiscoveredTooltip" xml:space="preserve"><value>Selecting auto-fills Host and ProgID</value></data>
+  <data name="Browse_AdvancedClsidHeader" xml:space="preserve"><value>Advanced (use CLSID direct connect when OPCEnum is unavailable)</value></data>
+  <data name="Browse_ClsidTooltip" xml:space="preserve"><value>Like {5CEE2576-AA37-4D54-B02D-ECABE09A1C1E}. When provided, skips OPCEnum and calls CoCreateInstance directly.</value></data>
+  <data name="Browse_BtnBack" xml:space="preserve"><value>← Back</value></data>
+  <data name="Browse_BtnEnter" xml:space="preserve"><value>Enter ▸</value></data>
+  <data name="Browse_BtnEnterTooltip" xml:space="preserve"><value>Enter the selected folder (same as double-click)</value></data>
+  <data name="Browse_BtnRefreshValues" xml:space="preserve"><value>Refresh Values</value></data>
+  <data name="Browse_ColName" xml:space="preserve"><value>Name</value></data>
+  <data name="Browse_ColValue" xml:space="preserve"><value>Value</value></data>
+  <data name="Browse_ColType" xml:space="preserve"><value>Type</value></data>
+  <data name="Browse_EmptyTitle" xml:space="preserve"><value>Not connected to an OPC server</value></data>
+  <data name="Browse_EmptyHint" xml:space="preserve"><value>Enter an endpoint address, click Connect to browse the address space and copy NodeIds</value></data>
+  <data name="Browse_DetailHeader" xml:space="preserve"><value>Node Details</value></data>
+  <data name="Browse_DetailDisplayName" xml:space="preserve"><value>Display Name</value></data>
+  <data name="Browse_DetailNodeClass" xml:space="preserve"><value>Node Class</value></data>
+  <data name="Browse_DetailDataType" xml:space="preserve"><value>Data Type</value></data>
+  <data name="Browse_DetailCurrentValue" xml:space="preserve"><value>Current Value</value></data>
+  <data name="Browse_CopyNodeId" xml:space="preserve"><value>Copy NodeId</value></data>
+  <data name="Browse_SelectedPrefix" xml:space="preserve"><value>Selected </value></data>
+  <data name="Browse_NodesSuffix" xml:space="preserve"><value> node(s)</value></data>
+  <data name="Browse_BulkHint" xml:space="preserve"><value>Data type included automatically, no grouping needed</value></data>
+  <data name="Browse_TargetTaskTooltip" xml:space="preserve"><value>Target collection task</value></data>
+  <data name="Browse_AddAsTag" xml:space="preserve"><value>Add as Tag</value></data>
+  <data name="Browse_NewTask" xml:space="preserve"><value>+ New Task</value></data>
 </root>

@@ -4,7 +4,8 @@
              xmlns:controls="clr-namespace:Dc.App.Controls"
              xmlns:ws="clr-namespace:Dc.App.ViewModels.Workspace"
              xmlns:wsv="clr-namespace:Dc.App.Views.Workspace"
-             xmlns:conv="clr-namespace:Dc.App.Views.Converters">
+             xmlns:conv="clr-namespace:Dc.App.Views.Converters"
+             xmlns:loc="clr-namespace:Dc.App.Markup">
     <UserControl.Resources>
         <conv:EnumMatchConverter x:Key="EnumMatch" />
     </UserControl.Resources>
@@ -21,19 +22,19 @@
             <!-- Pills -->
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
                 <Border Background="{DynamicResource SystemFillColorSuccessBackgroundBrush}" CornerRadius="999" Padding="9,2" Margin="0,0,6,0">
-                    <TextBlock FontSize="11" Foreground="{DynamicResource SystemFillColorSuccessBrush}"><Run Text="运行 " /><Run Text="{Binding RunningCount, Mode=OneWay}" /></TextBlock>
+                    <TextBlock FontSize="11" Foreground="{DynamicResource SystemFillColorSuccessBrush}"><Run Text="{loc:Loc Workspace_PillRunning}" /><Run Text="{Binding RunningCount, Mode=OneWay}" /></TextBlock>
                 </Border>
                 <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}" CornerRadius="999" Padding="9,2" Margin="0,0,6,0">
-                    <TextBlock FontSize="11" Foreground="{DynamicResource SystemFillColorCriticalBrush}"><Run Text="停 " /><Run Text="{Binding StoppedCount, Mode=OneWay}" /></TextBlock>
+                    <TextBlock FontSize="11" Foreground="{DynamicResource SystemFillColorCriticalBrush}"><Run Text="{loc:Loc Workspace_PillStopped}" /><Run Text="{Binding StoppedCount, Mode=OneWay}" /></TextBlock>
                 </Border>
                 <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" CornerRadius="999" Padding="9,2">
-                    <TextBlock FontSize="11" Foreground="{DynamicResource SystemFillColorCautionBrush}"><Run Text="告警 " /><Run Text="{Binding AlertCount, Mode=OneWay}" /></TextBlock>
+                    <TextBlock FontSize="11" Foreground="{DynamicResource SystemFillColorCautionBrush}"><Run Text="{loc:Loc Workspace_PillAlert}" /><Run Text="{Binding AlertCount, Mode=OneWay}" /></TextBlock>
                 </Border>
             </StackPanel>
 
             <!-- Search -->
             <TextBox DockPanel.Dock="Top"
-                     controls:Placeholder.Text="搜索任务…"
+                     controls:Placeholder.Text="{loc:Loc Workspace_SearchPlaceholder}"
                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                      Margin="0,0,0,6"
                      Background="{DynamicResource ControlFillColorDefaultBrush}"
@@ -46,19 +47,19 @@
                     HorizontalAlignment="Stretch">
                 <!-- 三段平分宽度；IsChecked TwoWay 绑 StatusFilter，视图永远反映 VM（重建/重导航不失同步）-->
                 <UniformGrid Columns="3">
-                    <RadioButton Content="全部" Style="{StaticResource DcSegRadio}"
+                    <RadioButton Content="{loc:Loc Workspace_FilterAll}" Style="{StaticResource DcSegRadio}"
                                  IsChecked="{Binding StatusFilter, Converter={StaticResource EnumMatch}, ConverterParameter=All, Mode=TwoWay}" />
-                    <RadioButton Content="运行中" Style="{StaticResource DcSegRadio}"
+                    <RadioButton Content="{loc:Loc Workspace_FilterRunning}" Style="{StaticResource DcSegRadio}"
                                  IsChecked="{Binding StatusFilter, Converter={StaticResource EnumMatch}, ConverterParameter=Running, Mode=TwoWay}" />
-                    <RadioButton Content="已停止" Style="{StaticResource DcSegRadio}"
+                    <RadioButton Content="{loc:Loc Workspace_FilterStopped}" Style="{StaticResource DcSegRadio}"
                                  IsChecked="{Binding StatusFilter, Converter={StaticResource EnumMatch}, ConverterParameter=Stopped, Mode=TwoWay}" />
                 </UniformGrid>
             </Border>
 
             <!-- Action buttons -->
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
-                <Button Content="+ 新建" Margin="0,0,6,0" Style="{StaticResource DcBtnPrimarySm}" Click="OnNewTask" />
-                <Button Content="导入" Style="{StaticResource DcBtnGhostSm}" Click="OnImport" />
+                <Button Content="{loc:Loc Workspace_NewTask}" Margin="0,0,6,0" Style="{StaticResource DcBtnPrimarySm}" Click="OnNewTask" />
+                <Button Content="{loc:Loc Common_Import}" Style="{StaticResource DcBtnGhostSm}" Click="OnImport" />
             </StackPanel>
 
             <!-- Task list with accent indicator -->
@@ -138,7 +139,7 @@
                                      </TextBlock.Style>
                                  </TextBlock>
                                  <!-- TagCount==0:显示「未配置 Tag」警示,避免「0/s」被误读为采集器坏 -->
-                                 <TextBlock FontSize="10" Text="未配置 Tag" Margin="0,0,0,0"
+                                 <TextBlock FontSize="10" Text="{loc:Loc Workspace_NoTagsWarn}" Margin="0,0,0,0"
                                             Foreground="{DynamicResource SystemFillColorCautionBrush}">
                                      <TextBlock.Style>
                                          <Style TargetType="TextBlock">
@@ -238,7 +239,7 @@
                         </Style>
                     </StackPanel.Style>
                     <!-- ▶ 启动：仅 IsRunning=False 时可见 -->
-                    <Button Content="▶ 启动" Margin="0,0,6,0" Click="OnStart">
+                    <Button Content="{loc:Loc Workspace_BtnStart}" Margin="0,0,6,0" Click="OnStart">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource DcBtnStart}">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -251,7 +252,7 @@
                         </Button.Style>
                     </Button>
                     <!-- ■ 停止：仅 IsRunning=True 时可见 -->
-                    <Button Content="■ 停止" Margin="0,0,6,0" Click="OnStop">
+                    <Button Content="{loc:Loc Workspace_BtnStop}" Margin="0,0,6,0" Click="OnStop">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource DcBtnGhostSm}">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -264,7 +265,7 @@
                         </Button.Style>
                     </Button>
                     <!-- ⟳ 重启：仅 IsRunning=True 时可见 -->
-                    <Button Content="⟳ 重启" Click="OnRestart">
+                    <Button Content="{loc:Loc Workspace_BtnRestart}" Click="OnRestart">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource DcBtnGhostSm}">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -277,8 +278,8 @@
                         </Button.Style>
                     </Button>
                     <!-- ✎ 编辑 / 🗑 删除：常驻，不随 IsRunning 切换可见 -->
-                    <Button Content="✎ 编辑" Margin="6,0,6,0" Click="OnEdit" Style="{StaticResource DcBtnGhostSm}" />
-                    <Button Content="🗑 删除" Click="OnDelete" Style="{StaticResource DcBtnGhostSm}" />
+                    <Button Content="{loc:Loc Workspace_BtnEdit}" Margin="6,0,6,0" Click="OnEdit" Style="{StaticResource DcBtnGhostSm}" />
+                    <Button Content="{loc:Loc Workspace_BtnDelete}" Click="OnDelete" Style="{StaticResource DcBtnGhostSm}" />
                 </StackPanel>
             </Grid>
 
@@ -287,7 +288,7 @@
                     BorderThickness="0,0,0,1" Margin="0,0,0,14">
                 <!-- IsChecked TwoWay 绑 SelectedTab，重建/重导航不失同步 -->
                 <StackPanel Orientation="Horizontal">
-                    <RadioButton Content="概览" Style="{StaticResource DcTabRadio}"
+                    <RadioButton Content="{loc:Loc Workspace_TabOverview}" Style="{StaticResource DcTabRadio}"
                                  IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=overview, Mode=TwoWay}" />
                     <RadioButton Style="{StaticResource DcTabRadio}"
                                  IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=tags, Mode=TwoWay}">
@@ -309,11 +310,11 @@
                             </Border>
                         </StackPanel>
                     </RadioButton>
-                    <RadioButton Content="实时数据" Style="{StaticResource DcTabRadio}"
+                    <RadioButton Content="{loc:Loc Workspace_TabLiveData}" Style="{StaticResource DcTabRadio}"
                                  IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=livedata, Mode=TwoWay}" />
-                    <RadioButton Content="诊断" Style="{StaticResource DcTabRadio}"
+                    <RadioButton Content="{loc:Loc Workspace_TabDiagnostics}" Style="{StaticResource DcTabRadio}"
                                  IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=diagnostics, Mode=TwoWay}" />
-                    <RadioButton Content="配置" Style="{StaticResource DcTabRadio}"
+                    <RadioButton Content="{loc:Loc Workspace_TabConfig}" Style="{StaticResource DcTabRadio}"
                                  IsChecked="{Binding SelectedTab, Converter={StaticResource EnumMatch}, ConverterParameter=config, Mode=TwoWay}" />
                 </StackPanel>
             </Border>
@@ -331,9 +332,9 @@
         <!-- 空状态：无任何采集任务时覆盖整页，主 CTA 居中 -->
         <controls:EmptyState Grid.Column="0" Grid.ColumnSpan="3"
                              Icon="TaskListSquareLtr24"
-                             Title="还没有采集任务"
-                             Hint="新建任务，连接 OPC 服务器开始采集数据"
-                             ActionText="+ 新建任务"
+                             Title="{loc:Loc Workspace_EmptyTitle}"
+                             Hint="{loc:Loc Workspace_EmptyHint}"
+                             ActionText="{loc:Loc Workspace_EmptyAction}"
                              ActionCommand="{Binding NewTaskCommand}"
                              Visibility="{Binding AllTasks.Count, Converter={StaticResource CountToVis}}" />
     </Grid>

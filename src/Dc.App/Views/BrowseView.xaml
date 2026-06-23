@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:controls="clr-namespace:Dc.App.Controls">
+             xmlns:controls="clr-namespace:Dc.App.Controls"
+             xmlns:loc="clr-namespace:Dc.App.Markup">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <!-- 代理:让不在可视树的 DataGridColumn 也能绑 VM 的 ShowBulkAdd(对话框单点取用时隐藏多选列) -->
@@ -31,8 +32,8 @@
 
         <!-- ═══ Row 0: Page header ═══ -->
         <StackPanel Grid.Row="0" Margin="20,16,20,4">
-            <TextBlock Text="浏览节点" Style="{StaticResource DcPageTitle}" />
-            <TextBlock Text="连接 OPC 服务器，浏览地址空间，勾选节点一键「加为 Tag」（或复制 NodeId）"
+            <TextBlock Text="{loc:Loc Browse_Title}" Style="{StaticResource DcPageTitle}" />
+            <TextBlock Text="{loc:Loc Browse_Subtitle}"
                        Style="{StaticResource DcPageSub}" />
         </StackPanel>
 
@@ -48,7 +49,7 @@
 
                     <!-- Connect -->
                     <ui:Button DockPanel.Dock="Right"
-                               Content="连接"
+                               Content="{loc:Loc Browse_Connect}"
                                Command="{Binding ConnectCommand}"
                                Appearance="Primary"
                                Margin="8,0,0,0"
@@ -56,7 +57,7 @@
 
                     <!-- Disconnect -->
                     <Button DockPanel.Dock="Right"
-                            Content="断开"
+                            Content="{loc:Loc Browse_Disconnect}"
                             Command="{Binding DisconnectCommand}"
                             Style="{StaticResource DcBtnGhostSm}"
                             Margin="8,0,0,0"
@@ -68,14 +69,14 @@
                                 Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}"
                                 Text="{Binding ServerProgId, UpdateSourceTrigger=PropertyChanged}"
                                 controls:Placeholder.Text="ProgID (DA/AE)"
-                                ToolTip="OPC ProgID — DA 例: SampleCompany.DaSample；AE 例: SampleCompany.AeSample" />
+                                ToolTip="{loc:Loc Browse_ProgIdTooltip}" />
 
                     <!-- Server URI -->
                     <TextBox AutomationProperties.AutomationId="BrowseServerUri"
                                 Text="{Binding ServerUri, UpdateSourceTrigger=PropertyChanged}"
                                 VerticalAlignment="Center"
                                 controls:Placeholder.Text="opc.tcp://host:port"
-                                ToolTip="UA: opc.tcp://host:port    DA/AE: 主机名/IP" />
+                                ToolTip="{loc:Loc Browse_ServerUriTooltip}" />
                 </DockPanel>
             </Border>
         </Border>
@@ -85,7 +86,7 @@
                 Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}">
             <Border Style="{StaticResource DcCard}">
                 <DockPanel LastChildFill="True">
-                    <TextBlock Text="按 IP 扫描："
+                    <TextBlock Text="{loc:Loc Browse_ScanByIp}"
                                Style="{StaticResource DcMuted}"
                                VerticalAlignment="Center"
                                DockPanel.Dock="Left" Margin="0,0,8,0" />
@@ -94,26 +95,26 @@
                                 DockPanel.Dock="Left"
                                 Text="{Binding DiscoveryHost, UpdateSourceTrigger=PropertyChanged}"
                                 controls:Placeholder.Text="192.168.1.10"
-                                ToolTip="目标主机名或 IP（如 192.168.1.10），跨机需 OPCEnum + DCOM" />
-                    <Button Content="扫描 OPC 服务器"
+                                ToolTip="{loc:Loc Browse_DiscoveryHostTooltip}" />
+                    <Button Content="{loc:Loc Browse_ScanServers}"
                                 Command="{Binding ScanServersCommand}"
                                 Style="{StaticResource DcBtnGhostSm}"
                                 DockPanel.Dock="Left" Margin="0,0,12,0" />
-                    <TextBlock Text="发现："
+                    <TextBlock Text="{loc:Loc Browse_DiscoveredLabel}"
                                Style="{StaticResource DcMuted}"
                                VerticalAlignment="Center"
                                DockPanel.Dock="Left" Margin="0,0,4,0" />
                     <ComboBox ItemsSource="{Binding DiscoveredServers}"
                               SelectedItem="{Binding SelectedDiscoveredServer}"
                               VerticalAlignment="Center"
-                              ToolTip="选中后自动填充 Host 与 ProgID" />
+                              ToolTip="{loc:Loc Browse_DiscoveredTooltip}" />
                 </DockPanel>
             </Border>
         </Border>
 
         <!-- ═══ Row 3: Classic OPC advanced — CLSID fallback ═══ -->
         <Expander Grid.Row="3" Margin="20,0,20,8"
-                  Header="高级（OPCEnum 不可用时使用 CLSID 直连）"
+                  Header="{loc:Loc Browse_AdvancedClsidHeader}"
                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                   Visibility="{Binding IsClassicOpcProtocol, Converter={StaticResource BoolToVis}}"
                   IsExpanded="False">
@@ -127,25 +128,25 @@
                                 FontFamily="Consolas"
                                 Text="{Binding ServerClsid, UpdateSourceTrigger=PropertyChanged}"
                                 controls:Placeholder.Text="{}{5CEE2576-...}"
-                                ToolTip="形如 {5CEE2576-AA37-4D54-B02D-ECABE09A1C1E}。给值时跳过 OPCEnum，直接 CoCreateInstance。" />
+                                ToolTip="{loc:Loc Browse_ClsidTooltip}" />
                 </DockPanel>
             </Border>
         </Expander>
 
         <!-- ═══ Row 4: Breadcrumb + 状态提示 ═══ -->
         <DockPanel Grid.Row="4" Margin="20,0,20,10" LastChildFill="True">
-            <Button Content="← 返回"
+            <Button Content="{loc:Loc Browse_BtnBack}"
                     DockPanel.Dock="Left"
                     Command="{Binding GoBackCommand}"
                     Style="{StaticResource DcBtnGhostSm}"
                     Margin="0,0,8,0" />
-            <Button Content="进入 ▸"
+            <Button Content="{loc:Loc Browse_BtnEnter}"
                     DockPanel.Dock="Left"
                     Command="{Binding DrillDownCommand}"
                     Style="{StaticResource DcBtnGhostSm}"
                     Margin="0,0,8,0"
-                    ToolTip="进入选中的文件夹（等同双击）" />
-            <Button Content="刷新值"
+                    ToolTip="{loc:Loc Browse_BtnEnterTooltip}" />
+            <Button Content="{loc:Loc Browse_BtnRefreshValues}"
                     DockPanel.Dock="Left"
                     Command="{Binding RefreshValuesCommand}"
                     Style="{StaticResource DcBtnGhostSm}"
@@ -253,7 +254,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="名称" Binding="{Binding Node.DisplayName}" Width="*">
+                            <DataGridTextColumn Header="{loc:Loc Browse_ColName}" Binding="{Binding Node.DisplayName}" Width="*">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center" />
@@ -269,7 +270,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="值" Binding="{Binding ValueText}" Width="140">
+                            <DataGridTextColumn Header="{loc:Loc Browse_ColValue}" Binding="{Binding ValueText}" Width="140">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center" />
@@ -285,7 +286,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="类型" Binding="{Binding DataTypeText}" Width="84">
+                            <DataGridTextColumn Header="{loc:Loc Browse_ColType}" Binding="{Binding DataTypeText}" Width="84">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center" />
@@ -300,9 +301,9 @@
                 <!-- EmptyState overlay: visible when not connected and not loading -->
                 <controls:EmptyState
                     Icon="Search24"
-                    Title="未连接到 OPC 服务器"
-                    Hint="填入端点地址，点连接浏览地址空间并复制 NodeId"
-                    ActionText="连接"
+                    Title="{loc:Loc Browse_EmptyTitle}"
+                    Hint="{loc:Loc Browse_EmptyHint}"
+                    ActionText="{loc:Loc Browse_Connect}"
                     ActionCommand="{Binding ConnectCommand}"
                     Visibility="{Binding ShowConnectPrompt, Converter={StaticResource BoolToVis}}" />
             </Grid>
@@ -310,7 +311,7 @@
             <!-- Right: Detail card -->
             <Border Grid.Column="2" Style="{StaticResource DcCard}">
                 <StackPanel>
-                    <TextBlock Text="节点详情" Style="{StaticResource DcCardHeader}" />
+                    <TextBlock Text="{loc:Loc Browse_DetailHeader}" Style="{StaticResource DcCardHeader}" />
 
                     <!-- NodeId -->
                     <TextBlock Text="NodeId"
@@ -321,25 +322,25 @@
                                FontSize="12" TextWrapping="Wrap" />
 
                     <!-- Display Name -->
-                    <TextBlock Text="显示名"
+                    <TextBlock Text="{loc:Loc Browse_DetailDisplayName}"
                                Style="{StaticResource DcMuted}" FontSize="11" Margin="0,10,0,2" />
                     <TextBlock Text="{Binding SelectedNode.Node.DisplayName, FallbackValue='—'}"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
 
                     <!-- 节点类 -->
-                    <TextBlock Text="节点类"
+                    <TextBlock Text="{loc:Loc Browse_DetailNodeClass}"
                                Style="{StaticResource DcMuted}" FontSize="11" Margin="0,10,0,2" />
                     <TextBlock Text="{Binding SelectedNodeClass}"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
 
                     <!-- 数据类型（mock，待接真实节点读取后替换） -->
-                    <TextBlock Text="数据类型"
+                    <TextBlock Text="{loc:Loc Browse_DetailDataType}"
                                Style="{StaticResource DcMuted}" FontSize="11" Margin="0,10,0,2" />
                     <TextBlock Text="{Binding SelectedNodeDataType}"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
 
                     <!-- 当前值（mock，待接真实节点读取后替换） -->
-                    <TextBlock Text="当前值"
+                    <TextBlock Text="{loc:Loc Browse_DetailCurrentValue}"
                                Style="{StaticResource DcMuted}" FontSize="11" Margin="0,10,0,2" />
                     <TextBlock Text="{Binding SelectedNodeValue}"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="13" />
@@ -347,7 +348,7 @@
                     <!-- Action buttons: 仅保留「复制 NodeId」。新建 Tag 的入口在 Tag 编辑器的「浏览…」按钮,
                          那里会预填 Item 并真正落库;此处再加一个只复制 NodeId 的「加入 Tag」属重复误导。 -->
                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                        <Button Content="复制 NodeId"
+                        <Button Content="{loc:Loc Browse_CopyNodeId}"
                                 Command="{Binding CopyNodeIdCommand}"
                                 Style="{StaticResource DcBtnPrimarySm}" />
                     </StackPanel>
@@ -362,22 +363,22 @@
                 <DockPanel LastChildFill="False">
                     <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}">
-                        <Run Text="已选 " /><Run Text="{Binding CheckedCount, Mode=OneWay}" /><Run Text=" 个节点" />
+                        <Run Text="{loc:Loc Browse_SelectedPrefix}" /><Run Text="{Binding CheckedCount, Mode=OneWay}" /><Run Text="{loc:Loc Browse_NodesSuffix}" />
                     </TextBlock>
                     <TextBlock DockPanel.Dock="Left" Margin="10,0,0,0" VerticalAlignment="Center"
-                               Style="{StaticResource DcMuted}" Text="自动带数据类型，无需分组" />
+                               Style="{StaticResource DcMuted}" Text="{loc:Loc Browse_BulkHint}" />
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                         <ComboBox Width="200" VerticalAlignment="Center"
                                   ItemsSource="{Binding AvailableTasks}"
                                   SelectedItem="{Binding SelectedTaskForAdd}"
                                   DisplayMemberPath="Display"
-                                  ToolTip="目标采集任务" />
-                        <Button Content="加为 Tag"
+                                  ToolTip="{loc:Loc Browse_TargetTaskTooltip}" />
+                        <Button Content="{loc:Loc Browse_AddAsTag}"
                                 Command="{Binding AddToTaskCommand}"
                                 Style="{StaticResource DcBtnPrimarySm}" Margin="8,0,0,0" />
                         <Border Width="1" Margin="12,3,12,3"
                                 Background="{DynamicResource CardStrokeColorDefaultBrush}" />
-                        <Button Content="+ 新建任务"
+                        <Button Content="{loc:Loc Browse_NewTask}"
                                 Command="{Binding AddToNewTaskCommand}"
                                 Style="{StaticResource DcBtnGhostSm}" />
                     </StackPanel>

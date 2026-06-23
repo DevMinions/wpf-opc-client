@@ -49,6 +49,10 @@
 
   <data name="Common_Save" xml:space="preserve"><value>保存</value></data>
   <data name="Common_Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Common_New" xml:space="preserve"><value>新建</value></data>
+  <data name="Common_Import" xml:space="preserve"><value>导入</value></data>
+  <data name="Common_Export" xml:space="preserve"><value>导出</value></data>
+  <data name="Common_Query" xml:space="preserve"><value>查询</value></data>
   <data name="Lang_ChineseSimplified" xml:space="preserve"><value>简体中文</value></data>
   <data name="Lang_English" xml:space="preserve"><value>English</value></data>
   <data name="Lang_System" xml:space="preserve"><value>跟随系统</value></data>
@@ -79,4 +83,90 @@
   <data name="Tray_Tooltip" xml:space="preserve"><value>Dc · OPC 数据采集</value></data>
   <data name="Tray_BalloonTitle" xml:space="preserve"><value>Dc · OPC 数据采集仍在后台运行</value></data>
   <data name="Tray_BalloonMessage" xml:space="preserve"><value>已最小化到系统托盘 · 双击图标唤回 · 右键「退出」可彻底关闭</value></data>
+
+  <data name="Tags_SearchLabel" xml:space="preserve"><value>搜索:</value></data>
+  <data name="Tags_SearchPlaceholder" xml:space="preserve"><value>关键词</value></data>
+  <data name="Tags_ColDataType" xml:space="preserve"><value>数据类型</value></data>
+  <data name="Tags_ColTask" xml:space="preserve"><value>任务</value></data>
+  <data name="Tags_ColCreatedAt" xml:space="preserve"><value>创建时间</value></data>
+  <data name="Tags_EmptyTitle" xml:space="preserve"><value>这个任务还没有 Tag</value></data>
+  <data name="Tags_EmptyHint" xml:space="preserve"><value>到「浏览节点」勾选多个点位一键批量加入,或手动新建单个采集点位。</value></data>
+  <data name="Tags_EmptyAction" xml:space="preserve"><value>浏览节点添加 Tag</value></data>
+  <data name="Tags_EmptySecondaryAction" xml:space="preserve"><value>手动新建</value></data>
+
+  <data name="Workspace_PillRunning" xml:space="preserve"><value>运行 </value></data>
+  <data name="Workspace_PillStopped" xml:space="preserve"><value>停 </value></data>
+  <data name="Workspace_PillAlert" xml:space="preserve"><value>告警 </value></data>
+  <data name="Workspace_SearchPlaceholder" xml:space="preserve"><value>搜索任务…</value></data>
+  <data name="Workspace_FilterAll" xml:space="preserve"><value>全部</value></data>
+  <data name="Workspace_FilterRunning" xml:space="preserve"><value>运行中</value></data>
+  <data name="Workspace_FilterStopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="Workspace_NewTask" xml:space="preserve"><value>+ 新建</value></data>
+  <data name="Workspace_NoTagsWarn" xml:space="preserve"><value>未配置 Tag</value></data>
+  <data name="Workspace_StatusRunning" xml:space="preserve"><value>运行中</value></data>
+  <data name="Workspace_StatusAlert" xml:space="preserve"><value>告警</value></data>
+  <data name="Workspace_StatusStopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="Workspace_BtnStart" xml:space="preserve"><value>▶ 启动</value></data>
+  <data name="Workspace_BtnStop" xml:space="preserve"><value>■ 停止</value></data>
+  <data name="Workspace_BtnRestart" xml:space="preserve"><value>⟳ 重启</value></data>
+  <data name="Workspace_BtnEdit" xml:space="preserve"><value>✎ 编辑</value></data>
+  <data name="Workspace_BtnDelete" xml:space="preserve"><value>🗑 删除</value></data>
+  <data name="Workspace_TabOverview" xml:space="preserve"><value>概览</value></data>
+  <data name="Workspace_TabLiveData" xml:space="preserve"><value>实时数据</value></data>
+  <data name="Workspace_TabDiagnostics" xml:space="preserve"><value>诊断</value></data>
+  <data name="Workspace_TabConfig" xml:space="preserve"><value>配置</value></data>
+  <data name="Workspace_EmptyTitle" xml:space="preserve"><value>还没有采集任务</value></data>
+  <data name="Workspace_EmptyHint" xml:space="preserve"><value>新建任务，连接 OPC 服务器开始采集数据</value></data>
+  <data name="Workspace_EmptyAction" xml:space="preserve"><value>+ 新建任务</value></data>
+
+  <data name="Overview_TotalMessages" xml:space="preserve"><value>累计消息</value></data>
+  <data name="Overview_SubscribedTags" xml:space="preserve"><value>运行订阅</value></data>
+  <data name="Overview_SendErrors" xml:space="preserve"><value>发送错误</value></data>
+  <data name="Overview_RestartCount" xml:space="preserve"><value>重启次数</value></data>
+  <data name="Overview_Uptime" xml:space="preserve"><value>运行时长</value></data>
+  <data name="Overview_LastHeartbeat" xml:space="preserve"><value>最后心跳</value></data>
+  <data name="Overview_MessageRate" xml:space="preserve"><value>消息速率 (最近 60s)</value></data>
+
+  <data name="Config_Server" xml:space="preserve"><value>服务器</value></data>
+  <data name="Config_Node" xml:space="preserve"><value>节点</value></data>
+  <data name="Config_Protocol" xml:space="preserve"><value>协议</value></data>
+  <data name="Config_TcpAddress" xml:space="preserve"><value>TCP 地址</value></data>
+  <data name="Config_Interval" xml:space="preserve"><value>采样间隔 (ms)</value></data>
+  <data name="Config_Deadband" xml:space="preserve"><value>死区 (%)</value></data>
+  <data name="Config_EditButton" xml:space="preserve"><value>编辑任务参数</value></data>
+
+  <data name="Browse_Title" xml:space="preserve"><value>浏览节点</value></data>
+  <data name="Browse_Subtitle" xml:space="preserve"><value>连接 OPC 服务器，浏览地址空间，勾选节点一键「加为 Tag」（或复制 NodeId）</value></data>
+  <data name="Browse_Connect" xml:space="preserve"><value>连接</value></data>
+  <data name="Browse_Disconnect" xml:space="preserve"><value>断开</value></data>
+  <data name="Browse_ProgIdTooltip" xml:space="preserve"><value>OPC ProgID — DA 例: SampleCompany.DaSample；AE 例: SampleCompany.AeSample</value></data>
+  <data name="Browse_ServerUriTooltip" xml:space="preserve"><value>UA: opc.tcp://host:port    DA/AE: 主机名/IP</value></data>
+  <data name="Browse_ScanByIp" xml:space="preserve"><value>按 IP 扫描：</value></data>
+  <data name="Browse_DiscoveryHostTooltip" xml:space="preserve"><value>目标主机名或 IP（如 192.168.1.10），跨机需 OPCEnum + DCOM</value></data>
+  <data name="Browse_ScanServers" xml:space="preserve"><value>扫描 OPC 服务器</value></data>
+  <data name="Browse_DiscoveredLabel" xml:space="preserve"><value>发现：</value></data>
+  <data name="Browse_DiscoveredTooltip" xml:space="preserve"><value>选中后自动填充 Host 与 ProgID</value></data>
+  <data name="Browse_AdvancedClsidHeader" xml:space="preserve"><value>高级（OPCEnum 不可用时使用 CLSID 直连）</value></data>
+  <data name="Browse_ClsidTooltip" xml:space="preserve"><value>形如 {5CEE2576-AA37-4D54-B02D-ECABE09A1C1E}。给值时跳过 OPCEnum，直接 CoCreateInstance。</value></data>
+  <data name="Browse_BtnBack" xml:space="preserve"><value>← 返回</value></data>
+  <data name="Browse_BtnEnter" xml:space="preserve"><value>进入 ▸</value></data>
+  <data name="Browse_BtnEnterTooltip" xml:space="preserve"><value>进入选中的文件夹（等同双击）</value></data>
+  <data name="Browse_BtnRefreshValues" xml:space="preserve"><value>刷新值</value></data>
+  <data name="Browse_ColName" xml:space="preserve"><value>名称</value></data>
+  <data name="Browse_ColValue" xml:space="preserve"><value>值</value></data>
+  <data name="Browse_ColType" xml:space="preserve"><value>类型</value></data>
+  <data name="Browse_EmptyTitle" xml:space="preserve"><value>未连接到 OPC 服务器</value></data>
+  <data name="Browse_EmptyHint" xml:space="preserve"><value>填入端点地址，点连接浏览地址空间并复制 NodeId</value></data>
+  <data name="Browse_DetailHeader" xml:space="preserve"><value>节点详情</value></data>
+  <data name="Browse_DetailDisplayName" xml:space="preserve"><value>显示名</value></data>
+  <data name="Browse_DetailNodeClass" xml:space="preserve"><value>节点类</value></data>
+  <data name="Browse_DetailDataType" xml:space="preserve"><value>数据类型</value></data>
+  <data name="Browse_DetailCurrentValue" xml:space="preserve"><value>当前值</value></data>
+  <data name="Browse_CopyNodeId" xml:space="preserve"><value>复制 NodeId</value></data>
+  <data name="Browse_SelectedPrefix" xml:space="preserve"><value>已选 </value></data>
+  <data name="Browse_NodesSuffix" xml:space="preserve"><value> 个节点</value></data>
+  <data name="Browse_BulkHint" xml:space="preserve"><value>自动带数据类型，无需分组</value></data>
+  <data name="Browse_TargetTaskTooltip" xml:space="preserve"><value>目标采集任务</value></data>
+  <data name="Browse_AddAsTag" xml:space="preserve"><value>加为 Tag</value></data>
+  <data name="Browse_NewTask" xml:space="preserve"><value>+ 新建任务</value></data>
 </root>
