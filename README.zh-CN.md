@@ -93,6 +93,7 @@ docker logs -f dc-collector
 
 - **两种形态、一套引擎** —— Windows 桌面（UA/DA/AE）与无头 `Dc.Cli`（Linux/Docker,仅 UA）;均 **self-contained**（目标机无需预装 .NET 运行时）。
 - **配置备份/恢复** —— 把**全部任务·Tag·配置**导出/导入为 JSON（合并或替换）,以及 `appsettings.json` 外部化。
+- **双语界面** —— 完整 **English / 简体中文** 界面,**运行时切换**(设置 → 语言)免重启,或**跟随系统语言**;选择持久化到 `appsettings.json`。(只切界面语言 —— 数值/日期格式与 OPC 数值解析保持稳定。)
 - **桌面体验** —— Fluent UI,**亮/暗/跟随系统主题**、主题化弹窗、**实时输入校验**、系统托盘 + 单实例锁。
 
 持久化为 EF Core + SQLite（表:任务 / Tag / 公式 / 系统配置）。路线图见 [`ROADMAP.md`](./ROADMAP.md)。
@@ -224,6 +225,8 @@ docker run -d --name dc-collector -v "$PWD/data:/data" -p 9090:9090 ghcr.io/devm
 ```json
 {
   "Database": { "Path": "sqlite.db" },
+  "Theme": "System",
+  "Language": "System",
   "Messaging": { "Format": "msgpack" },
   "Orchestrator": { "WatchdogIntervalSeconds": 30, "HeartbeatTimeoutSeconds": 120 },
   "Diagnostics": {

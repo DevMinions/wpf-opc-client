@@ -93,6 +93,7 @@ docker logs -f dc-collector
 
 - **Two forms, one engine** — Windows desktop (UA/DA/AE) and headless `Dc.Cli` (Linux/Docker, UA); both **self-contained** (no .NET runtime needed on the target).
 - **Config backup/restore** — export/import **all tasks · tags · config** as a JSON bundle (merge or replace), plus `appsettings.json` externalization.
+- **Bilingual UI** — full **English / 简体中文** interface, **switchable at runtime** (Settings → Language) with no restart, or **follow the OS language**; the choice persists to `appsettings.json`. (Only the UI culture switches — number/date formats and OPC value parsing stay stable.)
 - **Desktop niceties** — Fluent UI with **light/dark/system theme**, themed dialogs, **live input validation**, system tray + single-instance lock.
 
 Persistence is EF Core + SQLite (tables: tasks / tags / formulas / system config). See the roadmap in [`ROADMAP.md`](./ROADMAP.md).
@@ -224,6 +225,8 @@ The image has a built-in `HEALTHCHECK` (calls `Dc.Cli --healthcheck` to probe `/
 ```json
 {
   "Database": { "Path": "sqlite.db" },
+  "Theme": "System",
+  "Language": "System",
   "Messaging": { "Format": "msgpack" },
   "Orchestrator": { "WatchdogIntervalSeconds": 30, "HeartbeatTimeoutSeconds": 120 },
   "Diagnostics": {
