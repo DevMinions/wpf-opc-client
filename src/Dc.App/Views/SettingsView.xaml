@@ -1,7 +1,8 @@
 <UserControl x:Class="Dc.App.Views.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:conv="clr-namespace:Dc.App.Views.Converters">
+             xmlns:conv="clr-namespace:Dc.App.Views.Converters"
+             xmlns:loc="clr-namespace:Dc.App.Markup">
     <UserControl.Resources>
         <conv:EnumMatchConverter x:Key="EnumMatch" />
     </UserControl.Resources>
@@ -63,6 +64,41 @@
                             <RadioButton Content="跟随系统"
                                          GroupName="apptheme"
                                          IsChecked="{Binding SelectedTheme,
+                                             Converter={StaticResource EnumMatch},
+                                             ConverterParameter=System}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- 语言 row -->
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="{loc:Loc Settings_Language}"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1"
+                                    DataContext="{Binding Language}"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <RadioButton Content="{loc:Loc Lang_ChineseSimplified}"
+                                         GroupName="applang"
+                                         Margin="0,0,16,0"
+                                         IsChecked="{Binding SelectedLanguage,
+                                             Converter={StaticResource EnumMatch},
+                                             ConverterParameter=ChineseSimplified}" />
+                            <RadioButton Content="{loc:Loc Lang_English}"
+                                         GroupName="applang"
+                                         Margin="0,0,16,0"
+                                         IsChecked="{Binding SelectedLanguage,
+                                             Converter={StaticResource EnumMatch},
+                                             ConverterParameter=English}" />
+                            <RadioButton Content="{loc:Loc Lang_System}"
+                                         GroupName="applang"
+                                         IsChecked="{Binding SelectedLanguage,
                                              Converter={StaticResource EnumMatch},
                                              ConverterParameter=System}" />
                         </StackPanel>

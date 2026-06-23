@@ -3,6 +3,7 @@ using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dc.App.Services;
+using Dc.App.Services.I18n;
 using Dc.App.Services.Theme;
 using Dc.Domain.Entities;
 using Dc.Infrastructure.Backup;
@@ -24,19 +25,22 @@ public partial class SettingsViewModel : ObservableObject
 
     public ObservableCollection<ConfigEntry> Entries { get; } = new();
     public ThemeSettingsViewModel Theme { get; }
+    public LanguageSettingsViewModel Language { get; }
 
     public SettingsViewModel(
         IDbContextFactory<DcDbContext> dbFactory,
         IConfigEditorDialog editor,
         IConfigBackupService backup,
         IFilePicker filePicker,
-        IThemeService theme)
+        IThemeService theme,
+        ILanguageService language)
     {
         _dbFactory = dbFactory;
         _editor = editor;
         _backup = backup;
         _filePicker = filePicker;
         Theme = new ThemeSettingsViewModel(theme);
+        Language = new LanguageSettingsViewModel(language);
         _ = LoadAsync();
     }
 
