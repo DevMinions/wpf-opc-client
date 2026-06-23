@@ -24,14 +24,12 @@ public static class TaskStore
         await db.SaveChangesAsync();
     }
 
-    // 安全删除：一个事务里按 task_id 删 tags → groups → task。tag 同时挂 task 与 group，
-    // 按 task_id 删可一网打尽（含分组下的），不留孤儿。EF 关系是 NoAction + ForeignKeys=false，
-    // 故必须显式删子项。
+    // 安全删除：一个事务里按 task_id 删 tags → task,不留孤儿。
+    // EF 关系是 NoAction + ForeignKeys=false，故必须显式删子项。
     public static async Task DeleteCascadeAsync(DcDbContext db, string taskId)
     {
         await using var tx = await db.Database.BeginTransactionAsync();
         await db.Tags.Where(t => t.TaskId == taskId).ExecuteDeleteAsync();
-        await db.Groups.Where(g => g.TaskId == taskId).ExecuteDeleteAsync();
         await db.Tasks.Where(t => t.Id == taskId).ExecuteDeleteAsync();
         await tx.CommitAsync();
     }

@@ -20,34 +20,23 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     private readonly ITagExcelService _excel;
     private readonly IFilePicker _filePicker;
     private readonly TaskOrchestrator _orchestrator;
+    private readonly Action<string>? _navigate; // 导航到其它页(空状态「浏览节点」CTA → "browse")
 
     [ObservableProperty] private string _title = "Tag 管理";
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private TagRow? _selectedTag;
-    [ObservableProperty] private Group? _groupFilter;
     [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private bool _isEmbedded;
     [ObservableProperty] private string? _taskScope;
 
-    /// <inheritdoc />
-    public event Action? NavigateToGroupsRequested;
-
     // 嵌入主从视图时隐藏标题 + 筛选区域，避免把右侧按钮挤出视区
     public bool ShowFullToolbar => !IsEmbedded;
-    // 分组层已对用户隐藏(Tag 直接挂任务),嵌入态只显「Tag」。
+    // 分组层已去除(Tag 直接挂任务),嵌入态只显「Tag」。
     public string EmbeddedTitle => "Tag";
 
-    // 无分组时无法新建 Tag——禁用「新建」并用空状态引导,而非弹阻塞 MessageBox 把用户挡在死路上。
-    // CTA 仅内嵌模式显示(有「分组」页签可跳);独立页只给文字引导。
-    public string? CreateGroupCtaText => IsEmbedded ? "去创建分组" : null;
-    partial void OnIsEmbeddedChanged(bool value)
-    {
-        OnPropertyChanged(nameof(ShowFullToolbar));
-        OnPropertyChanged(nameof(CreateGroupCtaText));
-    }
+    partial void OnIsEmbeddedChanged(bool value) => OnPropertyChanged(nameof(ShowFullToolbar));
 
     public ObservableCollection<TagRow> Tags { get; } = new();
-    public ObservableCollection<Group> AvailableGroups { get; } = new();
     private readonly Dictionary<string, CollectorTask> _taskById = new();
 
     public TagsViewModel(
@@ -55,15 +44,21 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         ITagEditorDialog editor,
         ITagExcelService excel,
         IFilePicker filePicker,
-        TaskOrchestrator orchestrator)
+        TaskOrchestrator orchestrator,
+        Action<string>? navigate = null)
     {
         _dbFactory = dbFactory;
         _editor = editor;
         _excel = excel;
         _filePicker = filePicker;
         _orchestrator = orchestrator;
+        _navigate = navigate;
         _ = LoadAsync();
     }
+
+    // 空状态主 CTA:跳到「浏览节点」(发现→批量加 Tag 主路径)。
+    [RelayCommand]
+    private void BrowseNodes() => _navigate?.Invoke("browse");
 
     private bool IsTaskRunning(string taskId) =>
         _orchestrator.RunningTaskIds.Contains(taskId);
@@ -94,15 +89,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync();
-            // 分组按当前任务 TaskScope 过滤——否则 Tag 编辑器的所属分组下拉会列出其它任务的分组，
-            // 选中后 tag.TaskId 取自该分组的 TaskId（见 TagEditorViewModel.Build），导致 Tag 静默落到错误任务下、永不订阅。
-            var groupsQuery = db.Groups.AsNoTracking().AsQueryable();
-            if (TaskScope is not null) groupsQuery = groupsQuery.Where(g => g.TaskId == TaskScope);
-            var groups = await groupsQuery.OrderBy(g => g.CreatedAt).ToListAsync();
-            AvailableGroups.Clear();
-            foreach (var g in groups) AvailableGroups.Add(g);
-            NewCommand.NotifyCanExecuteChanged(); // 分组数变化 → 「新建」可用性 + 空状态刷新
-            var groupNameById = groups.ToDictionary(g => g.Id, g => g.Name);
+            NewCommand.NotifyCanExecuteChanged(); // 任务上下文变化 → 「新建」可用性 + 空状态刷新
 
             var tasks = await db.Tasks.AsNoTracking().ToListAsync();
             _taskById.Clear();
@@ -113,7 +100,6 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
 
             var q = db.Tags.AsNoTracking().AsQueryable();
             if (TaskScope is not null) q = q.Where(t => t.TaskId == TaskScope);
-            if (GroupFilter is not null) q = q.Where(t => t.GroupId == GroupFilter.Id);
             if (!string.IsNullOrWhiteSpace(SearchText))
             {
                 var pattern = $"%{SearchText.Trim()}%";
@@ -122,10 +108,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
             var list = await q.OrderBy(t => t.Item).Take(500).ToListAsync();
             Tags.Clear();
             foreach (var t in list)
-            {
-                var gName = groupNameById.TryGetValue(t.GroupId, out var gn) ? gn : t.GroupId;
-                Tags.Add(new TagRow(t, gName, TaskName(t.TaskId)));
-            }
+                Tags.Add(new TagRow(t, TaskName(t.TaskId)));
         }
         finally
         {
@@ -133,17 +116,14 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         }
     }
 
-    // Tag 直接挂任务:有任务上下文即可新建。分组层已隐藏,新建时自动落到任务的「默认分组」。
+    // Tag 直接挂任务:有任务上下文即可新建。
     private bool CanNew => TaskScope is not null;
 
     [RelayCommand(CanExecute = nameof(CanNew))]
     private async Task NewAsync()
     {
         if (TaskScope is null) return;
-        // 确保当前任务有「默认分组」并作为默认传给编辑器 → 编辑器隐藏分组选择器,Tag 自动落到该任务。
-        var defaultGroup = await DefaultTaskGroup.EnsureAsync(_dbFactory, TaskScope);
-        if (AvailableGroups.All(g => g.Id != defaultGroup.Id)) AvailableGroups.Add(defaultGroup);
-        var result = await EditTagAsync(existing: null, defaultGroup: defaultGroup);
+        var result = await EditTagAsync(existing: null);
         if (result is null) return;
         await PersistNewAsync(result);
     }
@@ -197,17 +177,23 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         Tags.Remove(row);
     }
 
-    // Tag → TagRow:分组名/任务名解析与 LoadAsync 同口径。
+    // Tag → TagRow:任务名解析与 LoadAsync 同口径。
     private TagRow ToRow(Tag t)
     {
-        var gName = AvailableGroups.FirstOrDefault(g => g.Id == t.GroupId)?.Name ?? t.GroupId;
         var taskName = _taskById.TryGetValue(t.TaskId, out var tk) ? tk.DisplayName : t.TaskId;
-        return new TagRow(t, gName, taskName);
+        return new TagRow(t, taskName);
     }
 
     [RelayCommand]
     public async Task ImportAsync()
     {
+        // Tag 直接挂任务:导入落到当前任务(TaskScope)。无任务上下文(独立页)则无法导入。
+        if (TaskScope is null)
+        {
+            MessageDialog.Show("无法导入", "请先在采集任务里选中一个任务再导入 Tag。", MessageDialogKind.Warning);
+            return;
+        }
+
         var path = _filePicker.PickOpenFile("Excel 工作簿|*.xlsx", "导入 Tag");
         if (path is null) return;
 
@@ -224,27 +210,16 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         }
 
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var groups = await db.Groups.AsNoTracking().ToDictionaryAsync(g => g.Name, g => g);
 
         var inserted = 0;
         var errors = new List<string>();
-        var batch = new List<Tag>();
-        foreach (var row in rows)
+        var batch = rows.Select(row => new Tag
         {
-            if (!groups.TryGetValue(row.GroupName, out var grp))
-            {
-                errors.Add($"未知分组: {row.GroupName} (Item={row.Item})");
-                continue;
-            }
-            batch.Add(new Tag
-            {
-                Id = UlidGenerator.NewId(),
-                Item = row.Item,
-                DataType = row.DataType,
-                GroupId = grp.Id,
-                TaskId = grp.TaskId
-            });
-        }
+            Id = UlidGenerator.NewId(),
+            Item = row.Item,
+            DataType = row.DataType,
+            TaskId = TaskScope
+        }).ToList();
 
         if (batch.Count > 0)
         {
@@ -286,10 +261,9 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         if (path is null) return;
 
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var groupMap = await db.Groups.AsNoTracking().ToDictionaryAsync(g => g.Id, g => g.Name);
 
         var q = db.Tags.AsNoTracking().AsQueryable();
-        if (GroupFilter is not null) q = q.Where(t => t.GroupId == GroupFilter.Id);
+        if (TaskScope is not null) q = q.Where(t => t.TaskId == TaskScope);
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var pattern = $"%{SearchText.Trim()}%";
@@ -300,7 +274,7 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         try
         {
             await using var fs = File.Create(path);
-            _excel.Write(list, groupMap, fs);
+            _excel.Write(list, fs);
             MessageDialog.Show("导出成功", $"已导出 {list.Count} 条到 {path}", MessageDialogKind.Success);
         }
         catch (Exception ex)
@@ -309,32 +283,18 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
         }
     }
 
-    // 空状态 CTA:请求宿主(采集任务工作区)切到「分组」页签。独立页无宿主,事件无人订阅→按钮不显示。
-    [RelayCommand]
-    private void GoCreateGroup() => NavigateToGroupsRequested?.Invoke();
-
-    partial void OnGroupFilterChanged(Group? value)
-    {
-        OnPropertyChanged(nameof(EmbeddedTitle));
-        _ = LoadAsync();
-    }
-
-    // 供 NewAsync/EditAsync 调用。defaultGroup:新建时传任务的默认分组(编辑器据此隐藏分组选择器)。
-    private async Task<TagEditResult?> EditTagAsync(Tag? existing, Group? defaultGroup = null)
+    // 供 NewAsync/EditAsync 调用。
+    private async Task<TagEditResult?> EditTagAsync(Tag? existing)
     {
         // 任务上下文:优先当前工作台 TaskScope;独立页(无 TaskScope)编辑现有 Tag 时用其 TaskId。
-        // 独立页新建虚拟测点无任务上下文 → AvailableInputTags 为空,虚拟创建受限(已知限制)。
         string? taskId = TaskScope ?? existing?.TaskId;
-        IReadOnlyCollection<Tag>? taskTags = null;
+        if (taskId is null) return null; // 无任务上下文无法编辑
+        var taskTags = await LoadTaskTagsAsync(taskId);
         IReadOnlyCollection<Formula>? existingFormulas = null;
-        if (taskId is not null)
-        {
-            taskTags = await LoadTaskTagsAsync(taskId);
-            if (existing is not null && existing.IsVirtual)
-                existingFormulas = await LoadTaskFormulasAsync(taskId);
-        }
+        if (existing is not null && existing.IsVirtual)
+            existingFormulas = await LoadTaskFormulasAsync(taskId);
 
-        return _editor.Edit(AvailableGroups, existing, defaultGroup ?? GroupFilter,
+        return _editor.Edit(taskId, existing,
             taskIdLookup => _taskById.TryGetValue(taskIdLookup, out var t) ? t : null,
             taskTags, existingFormulas);
     }
@@ -413,7 +373,6 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
 
         entity.Item = result.Tag.Item;
         entity.DataType = result.Tag.DataType;
-        entity.GroupId = result.Tag.GroupId;
         entity.TaskId = result.Tag.TaskId;
         entity.IsVirtual = result.Tag.IsVirtual;
         entity.ScaleFactor = result.Tag.ScaleFactor;

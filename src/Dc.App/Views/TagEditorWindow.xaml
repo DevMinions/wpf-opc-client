@@ -29,10 +29,18 @@
             <Border DockPanel.Dock="Bottom" Padding="14,14"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="0,1,0,0">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="取消" Margin="0,0,8,0" IsCancel="True" Style="{StaticResource DcBtnGhostSm}" />
-                    <Button Content="保存" Click="OnSaveClick" IsDefault="True" Style="{StaticResource DcBtnPrimarySm}" />
-                </StackPanel>
+                <DockPanel LastChildFill="False">
+                    <!-- 实时校验:首条错误内联红字,保存按钮随 CanSave 禁用 -->
+                    <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center"
+                               Text="{Binding ValidationError}"
+                               Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                               FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="320" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="取消" Margin="0,0,8,0" IsCancel="True" Style="{StaticResource DcBtnGhostSm}" />
+                        <Button Content="保存" Click="OnSaveClick" IsDefault="True"
+                                IsEnabled="{Binding CanSave}" Style="{StaticResource DcBtnPrimarySm}" />
+                    </StackPanel>
+                </DockPanel>
             </Border>
             <StackPanel Margin="20,18">
                 <!-- 虚拟开关(所有模式可见) -->
@@ -152,26 +160,6 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <!-- 分组选择器(两种模式共享) -->
-                <Grid Margin="0,8,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="96" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="所属分组:"
-                               Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1"
-                              AutomationProperties.Name="所属分组"
-                              Visibility="{Binding ShowGroupSelector, Converter={StaticResource BoolToVis}}"
-                              ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding SelectedGroupRow}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Display}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </Grid>
             </StackPanel>
         </DockPanel>
             </Border>

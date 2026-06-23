@@ -142,7 +142,6 @@ public static class ServiceRegistration
         // SnackbarPresenter 在 App 启动 Show 前经 SetSnackbarPresenter 接线（见 App.xaml.cs）。
         services.AddSingleton<Wpf.Ui.ISnackbarService, Wpf.Ui.SnackbarService>();
         services.AddSingleton<Dc.App.Services.INotificationService, Dc.App.Services.SnackbarNotificationService>();
-        services.AddSingleton<IGroupEditorDialog, GroupEditorDialog>();
         services.AddSingleton<ITagEditorDialog, TagEditorDialog>();
         services.AddSingleton<IConfigEditorDialog, ConfigEditorDialog>();
         services.AddSingleton<ITagExcelService, ClosedXmlTagExcelService>();
@@ -199,9 +198,6 @@ public static class ServiceRegistration
             new Dc.App.ViewModels.Workspace.WorkspaceOverviewViewModel(
                 sp.GetRequiredService<Dc.App.ViewModels.Dashboard.IDashboardOrchestratorView>(),
                 () => DateTimeOffset.UtcNow));
-        // GroupsViewModel 仅工作台用（无全局导航路由），复用单例即可
-        services.AddSingleton<Dc.App.ViewModels.Workspace.IEmbeddableGroupPanel>(
-            sp => sp.GetRequiredService<GroupsViewModel>());
         // 全局监控分离（S4）：LiveData/Diagnostics 同时挂「全局监控」导航与工作台 tab，
         // 工作台用独立实例，避免工作台设的 TaskFilter/TaskScope 污染全局视图。
         services.AddSingleton<Dc.App.ViewModels.Workspace.IEmbeddableLivePanel>(
@@ -224,7 +220,6 @@ public static class ServiceRegistration
                 sp.GetRequiredService<TagsViewModel>(),
                 sp.GetRequiredService<TaskOrchestrator>(),
                 sp.GetRequiredService<Dc.App.Services.ITaskEditorDialog>(),
-                sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableGroupPanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableLivePanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.IEmbeddableDiagPanel>(),
                 sp.GetRequiredService<Dc.App.ViewModels.Workspace.WorkspaceConfigViewModel>(),
@@ -235,8 +230,14 @@ public static class ServiceRegistration
         services.AddSingleton<System.Windows.Threading.Dispatcher>(
             _ => System.Windows.Application.Current?.Dispatcher
                  ?? System.Windows.Threading.Dispatcher.CurrentDispatcher);
-        services.AddSingleton<GroupsViewModel>();
-        services.AddSingleton<TagsViewModel>();
+        services.AddSingleton<TagsViewModel>(sp => new TagsViewModel(
+            sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
+            sp.GetRequiredService<ITagEditorDialog>(),
+            sp.GetRequiredService<ITagExcelService>(),
+            sp.GetRequiredService<IFilePicker>(),
+            sp.GetRequiredService<TaskOrchestrator>(),
+            // 空状态「浏览节点添加 Tag」CTA → 切到浏览页(发现→批量加 Tag 主路径)
+            navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>().NavigateCommand.Execute(key)));
         services.AddSingleton<LiveDataViewModel>(sp => new LiveDataViewModel(
             sp.GetRequiredService<TaskOrchestrator>(),
             System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher,
@@ -244,7 +245,16 @@ public static class ServiceRegistration
                 .NavigateCommand.Execute(key),
             showNavigateCta: true,
             dbFactory: sp.GetRequiredService<IDbContextFactory<DcDbContext>>()));
-        services.AddSingleton<BrowseViewModel>();
+        services.AddSingleton<BrowseViewModel>(sp => new BrowseViewModel(
+            sp.GetServices<IOpcBrowserFactory>(),
+            sp.GetRequiredService<IDbContextFactory<DcDbContext>>(),
+            sp.GetRequiredService<Dc.App.Services.ITaskEditorDialog>(),
+            // 批量加 Tag 后:选中目标任务 + 跳到「采集任务」(发现→配置→看数据 一条线)。
+            onTagsAdded: taskId =>
+            {
+                sp.GetRequiredService<Dc.App.ViewModels.Workspace.TaskWorkspaceViewModel>().RequestSelect(taskId);
+                sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>().NavigateCommand.Execute("workspace");
+            }));
         services.AddSingleton<DiagnosticsViewModel>(sp => new DiagnosticsViewModel(
             sp.GetRequiredService<TaskOrchestrator>(),
             navigate: key => sp.GetRequiredService<Dc.App.ViewModels.Shell.ShellViewModel>()

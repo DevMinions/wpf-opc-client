@@ -6,12 +6,12 @@ using CommunityToolkit.Mvvm.Input;
 using Dc.App.Services;
 using Dc.Domain.Entities;
 using Dc.Infrastructure.Orchestration;
-using Group = Dc.Domain.Entities.Group;
 
 namespace Dc.App.ViewModels;
 
 public partial class TagEditorViewModel : ObservableObject
 {
+    private readonly string _taskId; // 分组层已去除:Tag 直接挂任务,编辑器固定此任务
     private readonly IBrowseDialog? _browseDialog;
     private readonly Func<string, CollectorTask?>? _taskLookup;
     private readonly IReadOnlyCollection<Tag>? _taskTags;
@@ -28,52 +28,35 @@ public partial class TagEditorViewModel : ObservableObject
     [ObservableProperty] private string _expression = string.Empty;
     [ObservableProperty] private string _outputUnit = string.Empty;
 
+    // 实时校验:无错才可保存(对齐任务编辑器),首条错误内联红字提示。
+    [ObservableProperty] private bool _canSave;
+    [ObservableProperty] private string _validationError = string.Empty;
+
     public ObservableCollection<InputBindingRow> InputBindings { get; } = new();
     public ObservableCollection<Tag> AvailableInputTags { get; } = new();
 
-    // 下拉项包装：Group 实体 + 人类可读 Display。此前 ItemTemplate 直接绑 {TaskId}(26 位 ULID),
-    // 折叠态显示「组名 — 01KVAS6GHVSDC5B62ZTXXY596Z」。现 Display 用任务显示名;同任务下只显组名。
-    public ObservableCollection<GroupRow> AvailableGroups { get; } = new();
-    [ObservableProperty] private GroupRow? _selectedGroupRow;
-
-    public Group? Group => SelectedGroupRow?.Group;
-
     public string? OriginalId { get; }
     public IReadOnlyList<OpcDataTypeOption> DataTypeOptions => OpcDataTypeOption.All;
-    public bool ShowGroupSelector { get; }
 
     public TagEditorViewModel(
-        IEnumerable<Group> groups,
+        string taskId,
         Tag? existing,
-        Group? defaultGroup = null,
         IBrowseDialog? browseDialog = null,
         Func<string, CollectorTask?>? taskLookup = null,
         IReadOnlyCollection<Tag>? taskTags = null,
         IReadOnlyCollection<Formula>? existingFormulas = null,
         IFormulaValidator? formulaValidator = null)
     {
+        _taskId = taskId;
         _taskTags = taskTags;
         _existingFormulas = existingFormulas;
         _formulaValidator = formulaValidator;
         _browseDialog = browseDialog;
         _taskLookup = taskLookup;
 
-        // 任务名解析:用 CollectorTask.DisplayName(Name → Server → Id);无 taskLookup 则回退空(只显组名)。
-        var rows = groups.Select(g =>
-        {
-            var task = taskLookup?.Invoke(g.TaskId);
-            var taskName = task is not null ? task.DisplayName : null;
-            return new GroupRow(g, taskName);
-        }).ToList();
-        var multiTask = rows.Select(r => r.Group.TaskId).Distinct().Count() > 1;
-        foreach (var r in rows) r.FinalizeDisplay(multiTask);
-        foreach (var r in rows) AvailableGroups.Add(r);
-
-        GroupRow? selected;
         if (existing is null)
         {
-            selected = defaultGroup is null ? null : rows.FirstOrDefault(r => r.Group.Id == defaultGroup.Id);
-            _title = "新建 Tag"; // 分组层已对用户隐藏,标题不再带分组名
+            _title = "新建 Tag";
         }
         else
         {
@@ -84,10 +67,8 @@ public partial class TagEditorViewModel : ObservableObject
                 ? existing.ScaleFactor.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
             _offset = existing.Offset.HasValue
                 ? existing.Offset.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
-            selected = rows.FirstOrDefault(r => r.Group.Id == existing.GroupId);
-            _title = "编辑 Tag"; // 分组层已对用户隐藏,标题不再带分组名
+            _title = "编辑 Tag";
         }
-        _selectedGroupRow = selected;
 
         Formula? existingVirtualFormula = null;
         // 编辑已存在虚拟 Tag:回填公式字段并预选输入。
@@ -103,7 +84,6 @@ public partial class TagEditorViewModel : ObservableObject
             }
         }
 
-        ShowGroupSelector = selected is null;
         RefreshAvailableInputTags();
         if (existingVirtualFormula is not null)
         {
@@ -113,6 +93,7 @@ public partial class TagEditorViewModel : ObservableObject
                 {
                     SelectedTag = AvailableInputTags.FirstOrDefault(t => t.Id == input.SourceTagId)
                 };
+                row.PropertyChanged += OnInputRowChanged;
                 InputBindings.Add(row);
             }
         }
@@ -120,6 +101,20 @@ public partial class TagEditorViewModel : ObservableObject
         {
             RebuildInputBindings();
         }
+        Revalidate(); // 初始态:新建真实 Tag(Item 空)→ 保存禁用,直到填合法
+    }
+
+    // 实时校验:复用 Validate(),无错才可保存,首条错误内联提示。
+    private void Revalidate()
+    {
+        var errs = Validate();
+        CanSave = errs.Count == 0;
+        ValidationError = errs.Count == 0 ? string.Empty : errs[0];
+    }
+
+    private void OnInputRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(InputBindingRow.SelectedTag)) Revalidate();
     }
 
     public bool CanBrowse => _browseDialog is not null;
@@ -154,38 +149,34 @@ public partial class TagEditorViewModel : ObservableObject
     {
         if (_browseDialog is null) return;
         string? initialUri = null;
-        if (Group is not null && _taskLookup is not null)
-        {
-            var task = _taskLookup(Group.TaskId);
-            if (task is not null && !string.IsNullOrWhiteSpace(task.Node))
-                initialUri = task.Node;
-        }
+        var task = _taskLookup?.Invoke(_taskId);
+        if (task is not null && !string.IsNullOrWhiteSpace(task.Node))
+            initialUri = task.Node;
         var nodeId = _browseDialog.PickNodeId(initialUri);
         if (!string.IsNullOrWhiteSpace(nodeId)) Item = nodeId;
     }
 
-    partial void OnSelectedGroupRowChanged(GroupRow? value)
-    {
-        // 分组定 → TaskId 定 → 刷新可选输入 Tag(同任务真实,排除自身虚拟)。
-        OnPropertyChanged(nameof(Group));
-        RefreshAvailableInputTags();
-    }
-
     partial void OnIsVirtualChanged(bool value)
     {
-        if (value) RebuildInputBindings();
-        else InputBindings.Clear();
+        if (value) RebuildInputBindings(); // 内部 Revalidate
+        else { InputBindings.Clear(); Revalidate(); }
     }
 
     partial void OnExpressionChanged(string value)
     {
-        if (IsVirtual) RebuildInputBindings();
+        if (IsVirtual) RebuildInputBindings(); // 内部 Revalidate
     }
+
+    // 实时校验:这些字段变化即重算可保存性。
+    partial void OnItemChanged(string value) => Revalidate();
+    partial void OnScaleFactorChanged(string value) => Revalidate();
+    partial void OnOffsetChanged(string value) => Revalidate();
+    partial void OnFormulaNameChanged(string value) => Revalidate();
 
     private void RefreshAvailableInputTags()
     {
         AvailableInputTags.Clear();
-        if (_taskTags is null || Group is null) return;
+        if (_taskTags is null) return;
         foreach (var t in _taskTags.Where(t => !t.IsVirtual && t.Id != OriginalId))
             AvailableInputTags.Add(t);
     }
@@ -195,19 +186,21 @@ public partial class TagEditorViewModel : ObservableObject
     {
         var aliases = ExtractAliases(Expression);
         var prevByAlias = InputBindings.ToDictionary(r => r.Alias, r => r.SelectedTag, StringComparer.OrdinalIgnoreCase);
+        foreach (var r in InputBindings) r.PropertyChanged -= OnInputRowChanged; // 退订旧行,避免重复触发
         InputBindings.Clear();
         foreach (var alias in aliases)
         {
             var row = new InputBindingRow(alias);
             if (prevByAlias.TryGetValue(alias, out var sel)) row.SelectedTag = sel;
+            row.PropertyChanged += OnInputRowChanged;
             InputBindings.Add(row);
         }
+        Revalidate();
     }
 
     public IReadOnlyList<string> Validate()
     {
         var errors = new List<string>();
-        if (Group is null) errors.Add("必须选择所属分组");
 
         if (!IsVirtual)
         {
@@ -255,8 +248,7 @@ public partial class TagEditorViewModel : ObservableObject
             Id = OriginalId ?? string.Empty,
             Item = IsVirtual ? FormulaName.Trim() : Item.Trim(),
             DataType = DataType.Code,
-            GroupId = Group!.Id,
-            TaskId = Group!.TaskId,
+            TaskId = _taskId,
             IsVirtual = IsVirtual,
             ScaleFactor = IsVirtual ? null : ParseDouble(ScaleFactor),
             Offset = IsVirtual ? null : ParseDouble(Offset)
@@ -272,7 +264,7 @@ public partial class TagEditorViewModel : ObservableObject
             Expression = Expression,
             OutputTagId = tag.Id, // 调用方在持久化时回填真实 Id
             OutputUnit = string.IsNullOrWhiteSpace(OutputUnit) ? null : OutputUnit.Trim(),
-            TaskId = Group!.TaskId
+            TaskId = _taskId
         };
         var inputs = InputBindings
             .Where(r => r.SelectedTag is not null)
@@ -289,31 +281,6 @@ public partial class TagEditorViewModel : ObservableObject
 
     private static double? ParseDouble(string s)
         => double.TryParse(s?.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : null;
-}
-
-/// <summary>
-/// 分组下拉项:Group 实体 + 可读 Display。Display 在 FinalizeDisplay 后确定:
-/// 跨任务(独立 Tag 管理页)显示「组名 — 任务名」,同任务(嵌入工作区)只显组名。
-/// </summary>
-public sealed class GroupRow
-{
-    public Group Group { get; }
-    public string Display { get; private set; }
-    private readonly string? _taskName;
-
-    public GroupRow(Group group, string? taskName)
-    {
-        Group = group;
-        _taskName = taskName;
-        Display = group.Name;
-    }
-
-    internal void FinalizeDisplay(bool multiTask)
-    {
-        Display = multiTask && !string.IsNullOrWhiteSpace(_taskName)
-            ? $"{Group.Name} — {_taskName}"
-            : Group.Name;
-    }
 }
 
 /// <summary>

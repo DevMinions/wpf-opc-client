@@ -8,7 +8,6 @@ public class DcDbContext : DbContext
     public DcDbContext(DbContextOptions<DcDbContext> options) : base(options) { }
 
     public DbSet<Tag> Tags => Set<Tag>();
-    public DbSet<Group> Groups => Set<Group>();
     public DbSet<CollectorTask> Tasks => Set<CollectorTask>();
     public DbSet<ConfigEntry> Configs => Set<ConfigEntry>();
     public DbSet<Formula> Formulas => Set<Formula>();
@@ -22,21 +21,14 @@ public class DcDbContext : DbContext
         {
             e.ToTable("dc_tags");
             e.HasKey(x => x.Id);
-            e.HasIndex(x => new { x.Item, x.TaskId, x.GroupId }).IsUnique().HasDatabaseName("udx_name");
-        });
-
-        modelBuilder.Entity<Group>(e =>
-        {
-            e.ToTable("dc_groups");
-            e.HasKey(x => x.Id);
-            e.HasMany(x => x.Tags).WithOne().HasForeignKey(t => t.GroupId).OnDelete(DeleteBehavior.NoAction);
+            // 分组层已去除:Tag 直接挂任务,任务内 Item 唯一。
+            e.HasIndex(x => new { x.Item, x.TaskId }).IsUnique().HasDatabaseName("udx_name");
         });
 
         modelBuilder.Entity<CollectorTask>(e =>
         {
             e.ToTable("dc_tasks");
             e.HasKey(x => x.Id);
-            e.HasMany(x => x.Groups).WithOne().HasForeignKey(g => g.TaskId).OnDelete(DeleteBehavior.NoAction);
             e.HasMany(x => x.Tags).WithOne().HasForeignKey(t => t.TaskId).OnDelete(DeleteBehavior.NoAction);
         });
 

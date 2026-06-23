@@ -5,5 +5,5 @@ namespace Dc.Infrastructure.Excel;
 public interface ITagExcelService
 {
     IReadOnlyList<TagImportRow> Read(Stream excelStream);
-    void Write(IEnumerable<Tag> tags, IReadOnlyDictionary<string, string> groupIdToName, Stream output);
+    void Write(IEnumerable<Tag> tags, Stream output);
 }

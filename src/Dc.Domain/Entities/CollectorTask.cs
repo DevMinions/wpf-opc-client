@@ -27,8 +27,5 @@ public class CollectorTask : EntityBase
     public bool UseSecurity { get; set; } = true;
 
     [JsonIgnore]
-    public List<Group> Groups { get; set; } = new();
-
-    [JsonIgnore]
     public List<Tag> Tags { get; set; } = new();
 }

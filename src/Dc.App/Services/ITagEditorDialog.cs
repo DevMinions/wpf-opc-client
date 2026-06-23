@@ -5,9 +5,8 @@ namespace Dc.App.Services;
 public interface ITagEditorDialog
 {
     TagEditResult? Edit(
-        IEnumerable<Group> availableGroups,
+        string taskId,
         Tag? existing,
-        Group? defaultGroup = null,
         Func<string, CollectorTask?>? taskLookup = null,
         IReadOnlyCollection<Tag>? taskTags = null,
         IReadOnlyCollection<Formula>? existingFormulas = null);

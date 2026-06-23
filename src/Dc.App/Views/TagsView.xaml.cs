@@ -9,11 +9,6 @@ public partial class TagsView : UserControl
 {
     public TagsView() => InitializeComponent();
 
-    private void OnClearFilter(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is TagsViewModel vm) vm.GroupFilter = null;
-    }
-
     private void OnSearchKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter && DataContext is TagsViewModel vm)
