@@ -1,7 +1,13 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Dc.App.Services;
+using Dc.App.ViewModels.Workspace;
+using Dc.Domain.Entities;
+using Dc.Infrastructure.Persistence;
 using Dc.Opc.Abstractions;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
 namespace Dc.App.ViewModels;
@@ -9,6 +15,9 @@ namespace Dc.App.ViewModels;
 public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
 {
     private readonly Dictionary<OpcProtocol, IOpcBrowserFactory> _factories;
+    // 可空:导航页注入(走 DI)→ 启用批量「加为 Tag」;Tag 编辑器内嵌的单点取用对话框传 null → 不启用。
+    private readonly IDbContextFactory<DcDbContext>? _dbFactory;
+    private readonly ITaskEditorDialog? _taskEditor;
     private IOpcBrowser? _browser;
     private readonly Stack<(string? Id, string Name)> _path = new();
 
@@ -44,12 +53,137 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     // DA 和 AE 都是 classic COM/DCOM 流：ProgID 字段、扫描发现、CLSID 兜底三件套对二者都适用
     public bool IsClassicOpcProtocol => Protocol == OpcProtocol.Da || Protocol == OpcProtocol.Ae;
 
-    public BrowseViewModel(IEnumerable<IOpcBrowserFactory> browserFactories)
+    public BrowseViewModel(
+        IEnumerable<IOpcBrowserFactory> browserFactories,
+        IDbContextFactory<DcDbContext>? dbFactory = null,
+        ITaskEditorDialog? taskEditor = null)
     {
         _factories = browserFactories.ToDictionary(f => f.Protocol);
+        _dbFactory = dbFactory;
+        _taskEditor = taskEditor;
         // 暴露注册的所有协议；DI 顺序 = UA, DA → UI 下拉同序
         AvailableProtocols = _factories.Keys.ToArray();
+        if (_dbFactory is not null) _ = LoadTasksAsync();
     }
+
+    // ── 批量「加为 Tag」(发现→多选→加为 Tag,主配置入口;单点取用对话框不启用) ─────────
+    public ObservableCollection<TaskPick> AvailableTasks { get; } = new();
+    [ObservableProperty] private TaskPick? _selectedTaskForAdd;
+    [ObservableProperty] private int _checkedCount;
+    public bool HasCheckedNodes => CheckedCount > 0;
+    // 仅导航页(注入了 dbFactory/taskEditor)启用批量加 Tag;对话框单点取用不显示复选框/动作条。
+    public bool ShowBulkAdd => _dbFactory is not null && _taskEditor is not null;
+    public bool ShowActionBar => ShowBulkAdd && HasCheckedNodes;
+
+    partial void OnCheckedCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasCheckedNodes));
+        OnPropertyChanged(nameof(ShowActionBar));
+        AddToTaskCommand.NotifyCanExecuteChanged();
+        AddToNewTaskCommand.NotifyCanExecuteChanged();
+    }
+    partial void OnSelectedTaskForAddChanged(TaskPick? value) => AddToTaskCommand.NotifyCanExecuteChanged();
+
+    public async Task LoadTasksAsync()
+    {
+        if (_dbFactory is null) return;
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var tasks = await db.Tasks.AsNoTracking().OrderBy(t => t.CreatedAt).ToListAsync();
+        var prev = SelectedTaskForAdd?.Id;
+        AvailableTasks.Clear();
+        foreach (var t in tasks) AvailableTasks.Add(new TaskPick(t.Id, t.DisplayName));
+        SelectedTaskForAdd = AvailableTasks.FirstOrDefault(p => p.Id == prev) ?? AvailableTasks.FirstOrDefault();
+    }
+
+    private void RecomputeChecked() => CheckedCount = Children.Count(r => r.IsItem && r.IsChecked);
+
+    private void OnRowChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(BrowseNodeRowViewModel.IsChecked)) RecomputeChecked();
+    }
+
+    private bool CanAddToTask() => ShowBulkAdd && CheckedCount > 0 && SelectedTaskForAdd is not null;
+    private bool CanAddToNew() => ShowBulkAdd && CheckedCount > 0;
+
+    [RelayCommand(CanExecute = nameof(CanAddToTask))]
+    private async Task AddToTaskAsync()
+    {
+        if (SelectedTaskForAdd is null) return;
+        await AddCheckedAsTagsAsync(SelectedTaskForAdd.Id, SelectedTaskForAdd.Display);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanAddToNew))]
+    private async Task AddToNewTaskAsync()
+    {
+        if (_taskEditor is null || _dbFactory is null) return;
+        var created = _taskEditor.Edit(null);
+        if (created is null) return;
+        created.Id = UlidGenerator.NewId();
+        await using (var db = await _dbFactory.CreateDbContextAsync())
+        {
+            db.Tasks.Add(created);
+            await db.SaveChangesAsync();
+        }
+        await LoadTasksAsync();
+        SelectedTaskForAdd = AvailableTasks.FirstOrDefault(p => p.Id == created.Id);
+        await AddCheckedAsTagsAsync(created.Id, created.DisplayName);
+    }
+
+    // 把勾选的叶子节点批量建成 Tag,落到任务的默认分组(分组层隐藏);同任务已存在的 Item 跳过。
+    private async Task AddCheckedAsTagsAsync(string taskId, string taskDisplay)
+    {
+        if (_dbFactory is null) return;
+        var picked = Children.Where(r => r.IsItem && r.IsChecked).ToList();
+        if (picked.Count == 0) return;
+
+        var group = await DefaultTaskGroup.EnsureAsync(_dbFactory, taskId);
+
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var existing = (await db.Tags.AsNoTracking().Where(t => t.TaskId == taskId)
+            .Select(t => t.Item).ToListAsync()).ToHashSet(StringComparer.Ordinal);
+
+        var toAdd = picked
+            .Where(r => existing.Add(r.Node.Id))   // Add 返回 false = 已存在 → 跳过
+            .Select(r => new Tag
+            {
+                Id = UlidGenerator.NewId(),
+                Item = r.Node.Id,
+                DataType = MapDataType(r.DataTypeText),
+                TaskId = taskId,
+                GroupId = group.Id
+            })
+            .ToList();
+
+        if (toAdd.Count > 0)
+        {
+            db.Tags.AddRange(toAdd);
+            await db.SaveChangesAsync();
+        }
+
+        foreach (var r in picked) r.IsChecked = false; // 清勾选(触发 RecomputeChecked)
+
+        var skipped = picked.Count - toAdd.Count;
+        var msg = $"已添加 {toAdd.Count} 个 Tag 到「{taskDisplay}」"
+            + (skipped > 0 ? $",跳过 {skipped} 个重复 Item" : "")
+            + "。去「采集任务」启动即可采集。";
+        MessageDialog.Show("加为 Tag", msg, MessageDialogKind.Success);
+    }
+
+    // 浏览到的数据类型名(UA: Float/Double/...; 或选项 DisplayName)→ Tag.DataType 码;认不出落 0(默认/自动)。
+    private static int MapDataType(string t) => t.Trim() switch
+    {
+        "Boolean" or "Bool" => 11,
+        "SByte" or "Int8" => 16,
+        "Byte" or "UInt8" => 17,
+        "Int16" => 2, "UInt16" => 18,
+        "Int32" => 3, "UInt32" => 19,
+        "Int64" => 20, "UInt64" => 21,
+        "Float" or "Single" or "Float32" => 4,
+        "Double" or "Float64" => 5,
+        "String" => 8,
+        "DateTime" => 7,
+        _ => 0
+    };
 
     [RelayCommand]
     private async Task ConnectAsync()
@@ -75,6 +209,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             _path.Push((null, "(根)"));
             CurrentPath = "(根)";
             await LoadChildrenAsync(null);
+            _ = LoadTasksAsync(); // 刷新「加为 Tag」的任务下拉(可能在工作台新建过任务)
             StatusMessage = $"已连接 {options.ServerUri}" + (string.IsNullOrEmpty(options.ServerProgId) ? "" : $" / {options.ServerProgId}");
         }
         catch (Exception ex)
@@ -223,9 +358,11 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         try
         {
             var list = await _browser.BrowseAsync(parentId);
+            foreach (var old in Children) old.PropertyChanged -= OnRowChanged;
             Children.Clear();
             var rows = new List<BrowseNodeRowViewModel>(list.Count);
-            foreach (var n in list) { var r = new BrowseNodeRowViewModel(n); Children.Add(r); rows.Add(r); }
+            foreach (var n in list) { var r = new BrowseNodeRowViewModel(n); r.PropertyChanged += OnRowChanged; Children.Add(r); rows.Add(r); }
+            CheckedCount = 0; // 切目录重置多选(多选限当前目录视图内)
             _ = LoadValuesAsync(rows);
         }
         catch (Exception ex)
@@ -266,7 +403,9 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
             _browser = null;
         }
         Connected = false;
+        foreach (var old in Children) old.PropertyChanged -= OnRowChanged;
         Children.Clear();
+        CheckedCount = 0;
     }
 
     private bool CanDrill() => SelectedNode?.Node is { Kind: OpcNodeKind.Folder } && Connected;
@@ -346,3 +485,6 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
 
     public ValueTask DisposeAsync() => new(DisposeBrowserAsync());
 }
+
+/// <summary>「加为 Tag」任务下拉项:任务 Id + 可读名(DisplayName)。</summary>
+public sealed record TaskPick(string Id, string Display);

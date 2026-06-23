@@ -5,6 +5,8 @@
              xmlns:controls="clr-namespace:Dc.App.Controls">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <!-- 代理:让不在可视树的 DataGridColumn 也能绑 VM 的 ShowBulkAdd(对话框单点取用时隐藏多选列) -->
+        <controls:BindingProxy x:Key="VmProxy" Data="{Binding}" />
     </UserControl.Resources>
 
     <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
@@ -23,12 +25,14 @@
             <RowDefinition Height="Auto" />
             <!-- split: node list + detail -->
             <RowDefinition Height="*" />
+            <!-- bulk add-as-tag action bar -->
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- ═══ Row 0: Page header ═══ -->
         <StackPanel Grid.Row="0" Margin="20,16,20,4">
             <TextBlock Text="浏览节点" Style="{StaticResource DcPageTitle}" />
-            <TextBlock Text="连接 OPC 服务器，浏览地址空间并复制 NodeId"
+            <TextBlock Text="连接 OPC 服务器，浏览地址空间，勾选节点一键「加为 Tag」（或复制 NodeId）"
                        Style="{StaticResource DcPageSub}" />
         </StackPanel>
 
@@ -67,7 +71,8 @@
                                 ToolTip="OPC ProgID — DA 例: SampleCompany.DaSample；AE 例: SampleCompany.AeSample" />
 
                     <!-- Server URI -->
-                    <TextBox Text="{Binding ServerUri, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox AutomationProperties.AutomationId="BrowseServerUri"
+                                Text="{Binding ServerUri, UpdateSourceTrigger=PropertyChanged}"
                                 VerticalAlignment="Center"
                                 controls:Placeholder.Text="opc.tcp://host:port"
                                 ToolTip="UA: opc.tcp://host:port    DA/AE: 主机名/IP" />
@@ -134,6 +139,12 @@
                     Command="{Binding GoBackCommand}"
                     Style="{StaticResource DcBtnGhostSm}"
                     Margin="0,0,8,0" />
+            <Button Content="进入 ▸"
+                    DockPanel.Dock="Left"
+                    Command="{Binding DrillDownCommand}"
+                    Style="{StaticResource DcBtnGhostSm}"
+                    Margin="0,0,8,0"
+                    ToolTip="进入选中的文件夹（等同双击）" />
             <Button Content="刷新值"
                     DockPanel.Dock="Left"
                     Command="{Binding RefreshValuesCommand}"
@@ -203,6 +214,18 @@
                             </Style>
                         </DataGrid.ColumnHeaderStyle>
                         <DataGrid.Columns>
+                            <!-- 多选列：仅叶子(Variable)可勾，批量「加为 Tag」；对话框单点取用时整列隐藏 -->
+                            <DataGridTemplateColumn Header="" Width="36" CanUserSort="False"
+                                Visibility="{Binding Data.ShowBulkAdd, Source={StaticResource VmProxy}, Converter={StaticResource BoolToVis}}">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Visibility="{Binding IsItem, Converter={StaticResource BoolToVis}}"
+                                                  AutomationProperties.Name="{Binding Node.DisplayName, StringFormat=勾选 {0}}"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <!-- 图标列：📁 Folder / 🔢 Variable（对齐原型 emoji 首列） -->
                             <DataGridTemplateColumn Header="" Width="40" CanUserSort="False">
                                 <DataGridTemplateColumn.CellTemplate>
@@ -231,7 +254,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="值" Binding="{Binding ValueText}" Width="160">
+                            <DataGridTextColumn Header="值" Binding="{Binding ValueText}" Width="140">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
@@ -243,6 +266,13 @@
                                                 <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="类型" Binding="{Binding DataTypeText}" Width="84">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -307,6 +337,36 @@
                 </StackPanel>
             </Border>
         </Grid>
+
+        <!-- ═══ Row 7: 批量「加为 Tag」动作条（勾选节点后出现；对话框单点取用不显示） ═══ -->
+        <Border Grid.Row="7" Margin="20,0,20,12"
+                Visibility="{Binding ShowActionBar, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource DcCard}">
+                <DockPanel LastChildFill="False">
+                    <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                        <Run Text="已选 " /><Run Text="{Binding CheckedCount, Mode=OneWay}" /><Run Text=" 个节点" />
+                    </TextBlock>
+                    <TextBlock DockPanel.Dock="Left" Margin="10,0,0,0" VerticalAlignment="Center"
+                               Style="{StaticResource DcMuted}" Text="自动带数据类型，无需分组" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ComboBox Width="200" VerticalAlignment="Center"
+                                  ItemsSource="{Binding AvailableTasks}"
+                                  SelectedItem="{Binding SelectedTaskForAdd}"
+                                  DisplayMemberPath="Display"
+                                  ToolTip="目标采集任务" />
+                        <Button Content="加为 Tag"
+                                Command="{Binding AddToTaskCommand}"
+                                Style="{StaticResource DcBtnPrimarySm}" Margin="8,0,0,0" />
+                        <Border Width="1" Margin="12,3,12,3"
+                                Background="{DynamicResource CardStrokeColorDefaultBrush}" />
+                        <Button Content="+ 新建任务"
+                                Command="{Binding AddToNewTaskCommand}"
+                                Style="{StaticResource DcBtnGhostSm}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </Border>
 
     </Grid>
 </UserControl>

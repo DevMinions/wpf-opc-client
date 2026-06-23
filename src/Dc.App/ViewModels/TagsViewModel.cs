@@ -37,9 +37,6 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     // 分组层已对用户隐藏(Tag 直接挂任务),嵌入态只显「Tag」。
     public string EmbeddedTitle => "Tag";
 
-    // 自动「默认分组」名:每个任务隐式持有一个,承载该任务所有 Tag;对用户不可见。
-    private const string DefaultGroupName = "默认分组";
-
     // 无分组时无法新建 Tag——禁用「新建」并用空状态引导,而非弹阻塞 MessageBox 把用户挡在死路上。
     // CTA 仅内嵌模式显示(有「分组」页签可跳);独立页只给文字引导。
     public string? CreateGroupCtaText => IsEmbedded ? "去创建分组" : null;
@@ -144,27 +141,11 @@ public partial class TagsViewModel : ObservableObject, IEmbeddableTagPanel
     {
         if (TaskScope is null) return;
         // 确保当前任务有「默认分组」并作为默认传给编辑器 → 编辑器隐藏分组选择器,Tag 自动落到该任务。
-        var defaultGroup = await EnsureDefaultGroupAsync(TaskScope);
+        var defaultGroup = await DefaultTaskGroup.EnsureAsync(_dbFactory, TaskScope);
         if (AvailableGroups.All(g => g.Id != defaultGroup.Id)) AvailableGroups.Add(defaultGroup);
         var result = await EditTagAsync(existing: null, defaultGroup: defaultGroup);
         if (result is null) return;
         await PersistNewAsync(result);
-    }
-
-    // 取当前任务最早的分组作「默认分组」;没有则建一个。承载该任务全部 Tag,对用户隐藏。
-    private async Task<Group> EnsureDefaultGroupAsync(string taskId)
-    {
-        await using var db = await _dbFactory.CreateDbContextAsync();
-        var existing = await db.Groups.AsNoTracking()
-            .Where(g => g.TaskId == taskId)
-            .OrderBy(g => g.CreatedAt)
-            .FirstOrDefaultAsync();
-        if (existing is not null) return existing;
-
-        var grp = new Group { Id = UlidGenerator.NewId(), Name = DefaultGroupName, TaskId = taskId };
-        db.Groups.Add(grp);
-        await db.SaveChangesAsync(); // SaveChanges 自动补 CreatedAt/UpdatedAt
-        return grp;
     }
 
     [RelayCommand(CanExecute = nameof(HasSelection))]
