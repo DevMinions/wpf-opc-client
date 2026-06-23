@@ -5,6 +5,7 @@
              xmlns:conv="clr-namespace:Dc.App.Views.Dashboard"
              xmlns:wsv="clr-namespace:Dc.App.Views.Workspace"
              xmlns:dashboard="clr-namespace:Dc.App.Dashboard"
+             xmlns:loc="clr-namespace:Dc.App.Markup"
              Background="{DynamicResource ApplicationBackgroundBrush}">
     <UserControl.Resources>
         <conv:HealthScoreToColorConverter x:Key="HealthColor" />
@@ -40,9 +41,9 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="22,18">
-            <TextBlock Text="仪表盘" Style="{StaticResource DcPageTitle}" />
+            <TextBlock Text="{loc:Loc Dashboard_Title}" Style="{StaticResource DcPageTitle}" />
             <TextBlock Style="{StaticResource DcPageSub}">
-                <Run Text="{Binding RunningTasksDisplay, Mode=OneWay}" /><Run Text=" 个任务运行 · " /><Run Text="{Binding TotalTasksDisplay, Mode=OneWay}" /><Run Text=" 总计 · 每秒刷新" />
+                <Run Text="{Binding RunningTasksDisplay, Mode=OneWay}" /><Run Text="{loc:Loc Dashboard_TasksRunningSuffix}" /><Run Text="{Binding TotalTasksDisplay, Mode=OneWay}" /><Run Text="{loc:Loc Dashboard_TotalSuffix}" />
             </TextBlock>
 
             <!-- ═══ 4-column KPI row ═══ -->
@@ -51,14 +52,14 @@
                     <StackPanel>
                         <TextBlock Style="{StaticResource KpiValue}" Foreground="{DynamicResource SystemFillColorSuccessBrush}"
                                    Text="{Binding RunningTasksDisplay}" />
-                        <TextBlock Style="{StaticResource KpiLabel}" Text="运行中任务" />
+                        <TextBlock Style="{StaticResource KpiLabel}" Text="{loc:Loc Dashboard_KpiRunningTasks}" />
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource DcCard}" Margin="0,0,7,0">
                     <StackPanel>
                         <TextBlock Style="{StaticResource KpiValue}" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                    Text="{Binding ActiveTags}" />
-                        <TextBlock Style="{StaticResource KpiLabel}" Text="活跃 Tag" />
+                        <TextBlock Style="{StaticResource KpiLabel}" Text="{loc:Loc Dashboard_KpiActiveTags}" />
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource DcCard}" Margin="0,0,7,0">
@@ -66,7 +67,7 @@
                         <TextBlock Style="{StaticResource KpiValue}" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                             <Run Text="{Binding MessagesPerSecondDisplay, Mode=OneWay}" /><Run Text="/s" FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                         </TextBlock>
-                        <TextBlock Style="{StaticResource KpiLabel}" Text="消息速率" />
+                        <TextBlock Style="{StaticResource KpiLabel}" Text="{loc:Loc Dashboard_KpiMessageRate}" />
                         <!-- Sparkline -->
                         <Polyline Stroke="{DynamicResource AccentTextFillColorPrimaryBrush}"
                                   StrokeThickness="1.5" Height="30"
@@ -79,7 +80,7 @@
                     <StackPanel>
                         <TextBlock Style="{StaticResource KpiValue}" Foreground="{DynamicResource SystemFillColorCautionBrush}"
                                    Text="{Binding ErrorsTotalDisplay}" />
-                        <TextBlock Style="{StaticResource KpiLabel}" Text="错误 / 小时 · 阈值 10" />
+                        <TextBlock Style="{StaticResource KpiLabel}" Text="{loc:Loc Dashboard_KpiErrors}" />
                     </StackPanel>
                 </Border>
             </UniformGrid>
@@ -115,7 +116,7 @@
                                                    FontSize="32" FontWeight="SemiBold" LineHeight="36"
                                                    Foreground="{Binding HealthScore, Converter={StaticResource HealthColor}}"
                                                    HorizontalAlignment="Center" />
-                                        <TextBlock Text="健康评分"
+                                        <TextBlock Text="{loc:Loc Dashboard_HealthScore}"
                                                    FontSize="9"
                                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                                    HorizontalAlignment="Center" />
@@ -125,37 +126,37 @@
                                     <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="0,0,4,4">
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Style="{StaticResource RingValue}" Text="{Binding RunningTasksDisplay}" />
-                                            <TextBlock Style="{StaticResource RingLabel}" Text="运行" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="{loc:Loc Dashboard_RingRunning}" />
                                         </StackPanel>
                                     </Border>
                                     <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="2,0,2,4">
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Style="{StaticResource RingValue}" Text="{Binding ActiveTags}" />
-                                            <TextBlock Style="{StaticResource RingLabel}" Text="Tag" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="{loc:Loc Dashboard_RingTag}" />
                                         </StackPanel>
                                     </Border>
                                     <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="4,0,0,4">
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Style="{StaticResource RingValue}" Text="{Binding MessagesPerSecondDisplay, StringFormat={}{0}/s}" />
-                                            <TextBlock Style="{StaticResource RingLabel}" Text="速率" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="{loc:Loc Dashboard_RingRate}" />
                                         </StackPanel>
                                     </Border>
                                     <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="0,4,4,0">
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Style="{StaticResource RingValue}" Foreground="{DynamicResource SystemFillColorCautionBrush}" Text="{Binding ErrorsTotalDisplay}" />
-                                            <TextBlock Style="{StaticResource RingLabel}" Text="错误/h" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="{loc:Loc Dashboard_RingErrorsPerHour}" />
                                         </StackPanel>
                                     </Border>
                                     <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="2,4,2,0">
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Style="{StaticResource RingValue}" Text="0" />
-                                            <TextBlock Style="{StaticResource RingLabel}" Text="队列" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="{loc:Loc Dashboard_RingQueue}" />
                                         </StackPanel>
                                     </Border>
                                     <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="9" Margin="4,4,0,0">
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Style="{StaticResource RingValue}" Text="{Binding UptimeDisplay}" />
-                                            <TextBlock Style="{StaticResource RingLabel}" Text="运行" />
+                                            <TextBlock Style="{StaticResource RingLabel}" Text="{loc:Loc Dashboard_RingRunning}" />
                                         </StackPanel>
                                     </Border>
                                 </UniformGrid>
@@ -167,8 +168,7 @@
                     <Border Style="{StaticResource DcCard}">
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Top" Style="{StaticResource DcCardHeader}">
-                                任务状态
-                                <Run Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontWeight="Normal"
+                                <Run Text="{loc:Loc Dashboard_TaskStatus}" /><Run Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontWeight="Normal"
                                      Text="{Binding RunningTasksDisplay, Mode=OneWay, StringFormat=' · {0}'}" />
                             </TextBlock>
                             <ItemsControl ItemsSource="{Binding Tasks}">
@@ -200,14 +200,13 @@
                 <Border Grid.Column="1" Style="{StaticResource DcCard}" Margin="7,0,0,0">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Top" Style="{StaticResource DcCardHeader}">
-                            当前告警
-                            <Run Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontWeight="Normal"
+                            <Run Text="{loc:Loc Dashboard_CurrentAlerts}" /><Run Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontWeight="Normal"
                                  Text="{Binding Alerts.Count, Mode=OneWay, StringFormat=' · {0}'}" />
                         </TextBlock>
                         <TextBlock DockPanel.Dock="Top"
                                    Visibility="{Binding Alerts.Count, Converter={x:Static conv:ZeroToVisibleConverter.Default}}"
                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                   FontSize="12">无告警 · 全部正常</TextBlock>
+                                   FontSize="12" Text="{loc:Loc Dashboard_NoAlerts}" />
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding Alerts}">
                                 <ItemsControl.ItemTemplate>

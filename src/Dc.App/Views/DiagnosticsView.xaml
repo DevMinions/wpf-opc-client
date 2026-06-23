@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:conv="clr-namespace:Dc.App.Views.Dashboard"
              xmlns:wsv="clr-namespace:Dc.App.Views.Workspace"
-             xmlns:controls="clr-namespace:Dc.App.Controls">
+             xmlns:controls="clr-namespace:Dc.App.Controls"
+             xmlns:loc="clr-namespace:Dc.App.Markup">
     <UserControl.Resources>
         <conv:BoolInverseConverter x:Key="BoolInverse" />
         <wsv:SparklineConverter x:Key="Sparkline" />
@@ -108,14 +109,14 @@
 
                 <!-- Page title + sub -->
                 <TextBlock Text="{Binding Title}" Style="{StaticResource DcPageTitle}" />
-                <TextBlock Text="每任务运行时诊断 · 1 秒刷新" Style="{StaticResource DcPageSub}" />
+                <TextBlock Text="{loc:Loc Diagnostics_Subtitle}" Style="{StaticResource DcPageSub}" />
 
                 <!-- 汇总指标卡 -->
                 <UniformGrid Rows="1" Columns="4" Margin="0,4,0,14">
                     <!-- 活跃任务 -->
                     <Border Style="{StaticResource DcCard}" Margin="0,0,6,0">
                         <StackPanel>
-                            <TextBlock Text="活跃任务" FontSize="12"
+                            <TextBlock Text="{loc:Loc Diagnostics_ActiveTasks}" FontSize="12"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             <TextBlock Text="{Binding ActiveTaskCount}" FontSize="26" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
@@ -124,7 +125,7 @@
                     <!-- 总速率/s -->
                     <Border Style="{StaticResource DcCard}" Margin="6,0,6,0">
                         <StackPanel>
-                            <TextBlock Text="总速率 /s" FontSize="12"
+                            <TextBlock Text="{loc:Loc Diagnostics_TotalRate}" FontSize="12"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             <TextBlock Text="{Binding TotalRate, StringFormat={}{0:F1}}" FontSize="26" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
@@ -133,7 +134,7 @@
                     <!-- 发送错误：>0 critical -->
                     <Border Style="{StaticResource DcCard}" Margin="6,0,6,0">
                         <StackPanel>
-                            <TextBlock Text="发送错误" FontSize="12"
+                            <TextBlock Text="{loc:Loc Diagnostics_SendErrors}" FontSize="12"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             <!-- 颜色全由下方 Style 决定（值=0 中性、>0 红）：本地 Foreground 会盖过
                                  Style 触发器导致 0 也恒红，故移除；与右侧「重启次数」卡做法一致。 -->
@@ -154,7 +155,7 @@
                     <!-- 重启：>0 caution -->
                     <Border Style="{StaticResource DcCard}" Margin="6,0,0,0">
                         <StackPanel>
-                            <TextBlock Text="重启次数" FontSize="12"
+                            <TextBlock Text="{loc:Loc Diagnostics_RestartCount}" FontSize="12"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             <TextBlock Text="{Binding TotalRestarts}" FontSize="26" FontWeight="SemiBold">
                                 <TextBlock.Style>
@@ -178,12 +179,12 @@
                     <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1" CornerRadius="6">
                         <StackPanel Orientation="Horizontal">
-                            <ToggleButton Content="自动刷新"
+                            <ToggleButton Content="{loc:Loc Diagnostics_AutoRefresh}"
                                           IsChecked="{Binding AutoRefresh}"
                                           Style="{StaticResource SegButton}" />
                             <Rectangle Width="1"
                                        Fill="{DynamicResource CardStrokeColorDefaultBrush}" />
-                            <ToggleButton Content="暂停"
+                            <ToggleButton Content="{loc:Loc Diagnostics_Pause}"
                                           IsChecked="{Binding AutoRefresh, Converter={StaticResource BoolInverse}}"
                                           Style="{StaticResource SegButton}" />
                         </StackPanel>
@@ -193,14 +194,14 @@
                     <TextBlock VerticalAlignment="Center" Margin="10,0,0,0"
                                FontSize="12"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                        <Run Text="间隔 " /><Run Text="{Binding RefreshIntervalSec, Mode=OneWay}" /><Run Text="s" />
+                        <Run Text="{loc:Loc Diagnostics_IntervalPrefix}" /><Run Text="{Binding RefreshIntervalSec, Mode=OneWay}" /><Run Text="s" />
                     </TextBlock>
 
                     <!-- Spacer -->
                     <Border HorizontalAlignment="Stretch" Margin="8,0" />
 
                      <!-- 立即刷新 button -->
-                     <Button Content="⟳  立即刷新"
+                     <Button Content="{loc:Loc Diagnostics_RefreshNow}"
                              Command="{Binding RefreshCommand}"
                              Style="{StaticResource DcBtnGhostSm}" />
                 </StackPanel>
@@ -273,14 +274,14 @@
                             </DataGridTemplateColumn>
 
                             <!-- 任务列弹性：吸收剩余宽度，其余列固定 → 表格自适应窗宽、右侧列不被截 -->
-                            <DataGridTextColumn Header="任务"
+                            <DataGridTextColumn Header="{loc:Loc Diagnostics_ColTask}"
                                                 Binding="{Binding TaskName}"
                                                 Width="*" MinWidth="140" />
 
                             <!-- 连接状态徽章 pill（对齐 LiveDataView 质量 pill 风格：软底 + 同色 SemiBold 文字）。
                                  默认 Running 绿；DataTrigger 按 ConnectionState 枚举成员名切文案/色。
                                  「✓ 已恢复」绿闪标由 JustRecovered 控制可见（5 刷新帧瞬态，见 DiagnosticsRowViewModel）。 -->
-                            <DataGridTemplateColumn Header="状态" Width="120" SortMemberPath="State">
+                            <DataGridTemplateColumn Header="{loc:Loc Diagnostics_ColState}" Width="120" SortMemberPath="State">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -325,7 +326,7 @@
                                                 </TextBlock>
                                             </Border>
                                             <!-- 已恢复绿闪标（5 帧瞬态，JustRecovered 控制可见性） -->
-                                            <TextBlock Text="✓ 已恢复" FontSize="11" FontWeight="SemiBold"
+                                            <TextBlock Text="{loc:Loc Diagnostics_Recovered}" FontSize="11" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource SystemFillColorSuccessBrush}"
                                                        VerticalAlignment="Center" Margin="6,0,0,0"
                                                        Visibility="{Binding JustRecovered, Converter={StaticResource BoolToVis}}" />
@@ -334,23 +335,23 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="启动"
+                            <DataGridTextColumn Header="{loc:Loc Diagnostics_ColStarted}"
                                                 Binding="{Binding StartedAt, StringFormat={}{0:HH:mm:ss}}"
                                                 Width="80"
                                                 CellStyle="{StaticResource MutedCell}" />
-                            <DataGridTextColumn Header="运行时长"
+                            <DataGridTextColumn Header="{loc:Loc Diagnostics_ColUptime}"
                                                 Binding="{Binding Uptime, StringFormat={}{0:hh\\:mm\\:ss}}"
                                                 Width="90"
                                                 CellStyle="{StaticResource MutedCell}" />
-                            <DataGridTextColumn Header="累计值"
+                            <DataGridTextColumn Header="{loc:Loc Diagnostics_ColValueCount}"
                                                 Binding="{Binding ValueCount}"
                                                 Width="100" />
-                            <DataGridTextColumn Header="速率/s"
+                            <DataGridTextColumn Header="{loc:Loc Diagnostics_ColRate}"
                                                 Binding="{Binding ValuesPerSecond, StringFormat={}{0:F1}}"
                                                 Width="80"
                                                 CellStyle="{StaticResource RateCell}" />
                             <!-- 速率趋势 sparkline（复用 SparklineConverter；Viewbox 把 200x40 坐标缩放进单元格） -->
-                            <DataGridTemplateColumn Header="趋势" Width="130" CanUserSort="False">
+                            <DataGridTemplateColumn Header="{loc:Loc Diagnostics_ColTrend}" Width="130" CanUserSort="False">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Viewbox Width="110" Height="22" Stretch="Fill"
@@ -363,19 +364,19 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="发送错误"
+                            <DataGridTextColumn Header="{loc:Loc Diagnostics_ColSendErrors}"
                                                 Binding="{Binding PublishErrorCount}"
                                                 Width="80"
                                                 CellStyle="{StaticResource ErrorCell}" />
-                            <DataGridTextColumn Header="重启"
+                            <DataGridTextColumn Header="{loc:Loc Diagnostics_ColRestart}"
                                                 Binding="{Binding RestartCount}"
                                                 Width="70"
                                                 CellStyle="{StaticResource RestartCell}" />
-                             <DataGridTextColumn Header="最后心跳"
+                             <DataGridTextColumn Header="{loc:Loc Diagnostics_ColLastHeartbeat}"
                                                  Binding="{Binding LastHeartbeatAt, StringFormat={}{0:HH:mm:ss}}"
                                                  Width="90"
                                                  CellStyle="{StaticResource HeartbeatCell}" />
-                            <DataGridTextColumn Header="Tag 数"
+                            <DataGridTextColumn Header="{loc:Loc Diagnostics_ColTagCount}"
                                                 Binding="{Binding SubscribedTagCount}"
                                                 Width="70"
                                                 CellStyle="{StaticResource MutedCell}" />
@@ -384,8 +385,8 @@
                 </Border>
                 <controls:EmptyState
                     Icon="Pulse24"
-                    Title="暂无运行中的任务"
-                    Hint="启动采集任务后这里显示运行诊断"
+                    Title="{loc:Loc Diagnostics_EmptyTitle}"
+                    Hint="{loc:Loc Diagnostics_EmptyHint}"
                     ActionText="{Binding NavigateCtaText}"
                     ActionCommand="{Binding NavigateToWorkspaceCommand}"
                     Visibility="{Binding Rows.Count, Converter={StaticResource CountToVis}}" />

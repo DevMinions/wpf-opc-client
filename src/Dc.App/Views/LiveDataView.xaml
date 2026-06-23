@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:controls="clr-namespace:Dc.App.Controls">
+             xmlns:controls="clr-namespace:Dc.App.Controls"
+             xmlns:loc="clr-namespace:Dc.App.Markup">
     <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -13,7 +14,7 @@
         <!-- ===== Page header ===== -->
         <StackPanel Grid.Row="0" Margin="20,20,20,4">
             <TextBlock Text="{Binding Title}" Style="{StaticResource DcPageTitle}" />
-            <TextBlock Text="跨任务实时值流 · 质量码着色" Style="{StaticResource DcPageSub}" />
+            <TextBlock Text="{loc:Loc LiveData_Subtitle}" Style="{StaticResource DcPageSub}" />
         </StackPanel>
 
         <!-- ===== Toolbar ===== -->
@@ -27,7 +28,7 @@
             <DockPanel LastChildFill="False">
                 <!-- Task filter -->
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,8,0">
-                    <TextBlock Text="任务筛选:"
+                    <TextBlock Text="{loc:Loc LiveData_TaskFilter}"
                                Style="{StaticResource DcMuted}"
                                VerticalAlignment="Center"
                                Margin="0,0,6,0" />
@@ -37,7 +38,7 @@
                               SelectedValuePath="Id"
                               SelectedValue="{Binding TaskFilter}"
                               VerticalAlignment="Center" />
-                    <Button Content="清除"
+                    <Button Content="{loc:Loc LiveData_ClearFilter}"
                                 Margin="6,0,0,0"
                                 Style="{StaticResource DcBtnGhostSm}"
                                 Command="{Binding ClearFilterCommand}"
@@ -46,7 +47,7 @@
 
                 <!-- Search by Item -->
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                    <TextBlock Text="搜索:" Style="{StaticResource DcMuted}"
+                    <TextBlock Text="{loc:Loc LiveData_Search}" Style="{StaticResource DcMuted}"
                                VerticalAlignment="Center" Margin="0,0,6,0" />
                     <TextBox Width="200" VerticalAlignment="Center"
                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
@@ -56,7 +57,7 @@
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
                     <TextBlock VerticalAlignment="Center" Margin="0,0,12,0"
                                Style="{StaticResource DcMuted}">
-                        <Run Text="{Binding RowCount, Mode=OneWay}" /><Run Text=" 行 · " /><Run Text="{Binding UpdatesPerSecond, Mode=OneWay, StringFormat=F0}" /><Run Text="/s" />
+                        <Run Text="{Binding RowCount, Mode=OneWay}" /><Run Text="{loc:Loc LiveData_RowsSuffix}" /><Run Text="{Binding UpdatesPerSecond, Mode=OneWay, StringFormat=F0}" /><Run Text="/s" />
                     </TextBlock>
                     <ToggleButton IsChecked="{Binding Paused}"
                                   Padding="12,5"
@@ -73,7 +74,7 @@
                             </Style>
                         </ToggleButton.Style>
                     </ToggleButton>
-                    <Button Content="清空"
+                    <Button Content="{loc:Loc Common_Clear}"
                                 Command="{Binding ClearCommand}"
                                 Style="{StaticResource DcBtnGhostSm}"
                                 VerticalAlignment="Center" />
@@ -136,7 +137,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Task -->
-                    <DataGridTextColumn Header="任务" Binding="{Binding TaskName}" Width="180">
+                    <DataGridTextColumn Header="{loc:Loc LiveData_ColTask}" Binding="{Binding TaskName}" Width="180">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -147,7 +148,7 @@
                     </DataGridTextColumn>
 
                     <!-- Value -->
-                    <DataGridTextColumn Header="值" Binding="{Binding Value}" Width="160">
+                    <DataGridTextColumn Header="{loc:Loc LiveData_ColValue}" Binding="{Binding Value}" Width="160">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
@@ -159,7 +160,7 @@
                     </DataGridTextColumn>
 
                     <!-- Quality pill -->
-                    <DataGridTemplateColumn Header="质量" Width="100" SortMemberPath="Quality">
+                    <DataGridTemplateColumn Header="{loc:Loc LiveData_ColQuality}" Width="100" SortMemberPath="Quality">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <!-- 三态质量（Good/Uncertain/Bad），软底 + 同色文字（对齐原型 pill 风格） -->
@@ -207,7 +208,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Timestamp (monospace, muted) -->
-                    <DataGridTemplateColumn Header="时间戳" Width="130" SortMemberPath="Timestamp">
+                    <DataGridTemplateColumn Header="{loc:Loc LiveData_ColTimestamp}" Width="130" SortMemberPath="Timestamp">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Timestamp, StringFormat={}{0:HH:mm:ss.fff}}"
@@ -221,7 +222,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Update count (muted) -->
-                    <DataGridTextColumn Header="更新数" Binding="{Binding UpdateCount}" Width="80">
+                    <DataGridTextColumn Header="{loc:Loc LiveData_ColUpdateCount}" Binding="{Binding UpdateCount}" Width="80">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
@@ -237,8 +238,8 @@
 
         <controls:EmptyState Grid.Row="2"
             Icon="DataHistogram24"
-            Title="暂无实时数据"
-            Hint="运行采集任务后，这里实时显示订阅值"
+            Title="{loc:Loc LiveData_EmptyTitle}"
+            Hint="{loc:Loc LiveData_EmptyHint}"
             ActionText="{Binding NavigateCtaText}"
             ActionCommand="{Binding NavigateToWorkspaceCommand}"
             Visibility="{Binding Rows.Count, Converter={StaticResource CountToVis}}" />
