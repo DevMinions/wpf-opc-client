@@ -28,12 +28,12 @@ internal static class HealthCheck
             using var resp = await http.GetAsync($"http://localhost:{port}/healthz").ConfigureAwait(false);
             if (resp.IsSuccessStatusCode) return 0;
 
-            await Console.Error.WriteLineAsync($"healthcheck: /healthz 返回 {(int)resp.StatusCode}").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync($"healthcheck: /healthz returned {(int)resp.StatusCode}").ConfigureAwait(false);
             return 1;
         }
         catch (Exception ex)
         {
-            await Console.Error.WriteLineAsync($"healthcheck 失败: {ex.Message}").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync($"healthcheck failed: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
     }

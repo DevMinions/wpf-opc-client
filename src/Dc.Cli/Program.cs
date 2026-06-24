@@ -124,13 +124,13 @@ try
         DbSchemaInitializer.EnsureCreated(db);
     }
 
-    Log.Information("Dc.Cli 启动，数据库 {DbPath}", dbPath);
+    Log.Information("Dc.Cli starting, database {DbPath}", dbPath);
     await host.RunAsync();
     return 0;
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Dc.Cli 致命错误");
+    Log.Fatal(ex, "Dc.Cli fatal error");
     return 1;
 }
 finally

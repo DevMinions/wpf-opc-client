@@ -24,16 +24,16 @@ internal sealed class CollectorRunnerService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("无头采集启动（仅 UA；DA/AE 需 Windows COM 构建）…");
+        _logger.LogInformation("Headless collector starting (UA only; DA/AE require a Windows COM build)…");
         try
         {
             var (started, skipped) = await _launcher.StartAllAsync(Supported, stoppingToken).ConfigureAwait(false);
-            _logger.LogInformation("启动完成：已启动 {Started}，跳过 {Skipped}。按 Ctrl+C 退出。", started, skipped);
+            _logger.LogInformation("Startup complete: started {Started}, skipped {Skipped}. Press Ctrl+C to exit.", started, skipped);
         }
         catch (OperationCanceledException) { /* 启动过程中被关停 */ }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "加载/启动任务失败");
+            _logger.LogError(ex, "Failed to load/start tasks");
         }
         // ExecuteAsync 返回后宿主继续运行：orchestrator 的采集管线/看门狗在后台跑，直到关停信号。
     }

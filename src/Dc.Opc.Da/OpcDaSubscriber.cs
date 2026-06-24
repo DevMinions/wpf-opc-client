@@ -58,7 +58,7 @@ public sealed class OpcDaSubscriber : IOpcSubscriber
             _subscription = (TsCDaSubscription)_server.CreateSubscription(state);
             _subscription.DataChangedEvent += OnDataChanged;
         }
-        _logger?.LogInformation("OPC DA 已连接 {Url}（{ChannelId}）", BuildOpcDaUrl(), ChannelId);
+        _logger?.LogInformation("OPC DA connected {Url} ({ChannelId})", BuildOpcDaUrl(), ChannelId);
         _heartbeatTask = HeartbeatLoopAsync(_disposeCts.Token);
         return Task.CompletedTask;
     }
@@ -89,9 +89,9 @@ public sealed class OpcDaSubscriber : IOpcSubscriber
                 if (added.Result.IsSuccess()) { _subscribedTags[added.ItemName] = 0; ok++; }
                 else failed++;
             }
-            _logger?.LogInformation("OPC DA 新增监控项 成功 {Ok}、失败 {Failed}（{ChannelId}）", ok, failed, ChannelId);
+            _logger?.LogInformation("OPC DA added monitored items: {Ok} ok, {Failed} failed ({ChannelId})", ok, failed, ChannelId);
             if (failed > 0)
-                _logger?.LogWarning("OPC DA 有 {Failed} 个监控项 AddItems 失败（{ChannelId}）", failed, ChannelId);
+                _logger?.LogWarning("OPC DA {Failed} monitored item(s) failed AddItems ({ChannelId})", failed, ChannelId);
         }
         return Task.CompletedTask;
     }
@@ -103,7 +103,7 @@ public sealed class OpcDaSubscriber : IOpcSubscriber
         // 增加内存结构和并发同步复杂度。当前热卸载场景少，先用"再连一次"兜底。
         // 若使用方频繁热卸载，再补 RemoveItems 实现。
         foreach (var item in tagItems) _subscribedTags.TryRemove(item, out _);
-        _logger?.LogInformation("OPC DA 移除监控项 {Count}（{ChannelId}）", tagItems.Count, ChannelId);
+        _logger?.LogInformation("OPC DA removed {Count} monitored item(s) ({ChannelId})", tagItems.Count, ChannelId);
         return Task.CompletedTask;
     }
 
@@ -165,7 +165,7 @@ public sealed class OpcDaSubscriber : IOpcSubscriber
         }
         catch (Exception ex)
         {
-            _logger?.LogDebug(ex, "OPC DA 探活失败(疑似断连)（{ChannelId}）", ChannelId);
+            _logger?.LogDebug(ex, "OPC DA liveness probe failed (likely disconnected) ({ChannelId})", ChannelId);
             return false;
         }
     }

@@ -76,14 +76,14 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         catch (Exception ex)
         {
             // 端口被占 / URL ACL 缺失等：诊断端点非核心，降级为禁用而不崩采集进程。
-            _logger?.LogWarning(ex, "诊断 HTTP 端点启动失败（前缀 {Prefix}），已禁用 /healthz /metrics", _options.Prefix);
+            _logger?.LogWarning(ex, "Diagnostics HTTP endpoint failed to start (prefix {Prefix}); /healthz /metrics disabled", _options.Prefix);
             _listener = null;
             return Task.CompletedTask;
         }
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _loop = Task.Run(() => AcceptLoopAsync(_cts.Token));
-        _logger?.LogInformation("诊断 HTTP 端点已监听 {Prefix} （/healthz /readyz /metrics{Shot}{Stress}{Fault}）",
+        _logger?.LogInformation("Diagnostics HTTP endpoint listening on {Prefix} (/healthz /readyz /metrics{Shot}{Stress}{Fault})",
             _options.Prefix,
             _screenshotProvider is not null ? " /screenshot" : "",
             _stressRunner is not null ? " /debug/stress" : "",
@@ -113,10 +113,10 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
             HttpListenerContext ctx;
             try { ctx = await listener.GetContextAsync().ConfigureAwait(false); }
             catch (Exception) when (ct.IsCancellationRequested) { return; } // Stop() 触发的正常退出
-            catch (Exception ex) { _logger?.LogDebug(ex, "诊断 HTTP 接受连接失败"); continue; }
+            catch (Exception ex) { _logger?.LogDebug(ex, "Diagnostics HTTP accept failed"); continue; }
 
             try { Handle(ctx); }
-            catch (Exception ex) { _logger?.LogDebug(ex, "诊断 HTTP 处理请求失败"); }
+            catch (Exception ex) { _logger?.LogDebug(ex, "Diagnostics HTTP request handling failed"); }
         }
     }
 

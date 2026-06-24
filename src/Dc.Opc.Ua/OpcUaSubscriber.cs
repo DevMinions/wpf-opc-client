@@ -55,7 +55,7 @@ public sealed class OpcUaSubscriber : IOpcSubscriber
             _options.ServerUri,
             useSecurity: _options.UseSecurity && OpcUaApplicationConfig.UseSecurity);
 
-        _logger?.LogInformation("OPC UA 连接 {ServerUri}，安全策略 {Policy}/{Mode}（{ChannelId}）",
+        _logger?.LogInformation("OPC UA connecting {ServerUri}, security {Policy}/{Mode} ({ChannelId})",
             _options.ServerUri, endpointDescription.SecurityPolicyUri, endpointDescription.SecurityMode, ChannelId);
 
         var configuredEndpoint = new ConfiguredEndpoint(
@@ -119,7 +119,7 @@ public sealed class OpcUaSubscriber : IOpcSubscriber
             if (newItems.Count > 0)
             {
                 _subscription.ApplyChanges();
-                _logger?.LogInformation("OPC UA 新增监控项 {Count}（{ChannelId}）", newItems.Count, ChannelId);
+                _logger?.LogInformation("OPC UA added {Count} monitored item(s) ({ChannelId})", newItems.Count, ChannelId);
             }
         }
         return Task.CompletedTask;
@@ -144,7 +144,7 @@ public sealed class OpcUaSubscriber : IOpcSubscriber
             if (changed)
             {
                 _subscription.ApplyChanges();
-                _logger?.LogInformation("OPC UA 移除监控项 {Count}（{ChannelId}）", tagItems.Count, ChannelId);
+                _logger?.LogInformation("OPC UA removed {Count} monitored item(s) ({ChannelId})", tagItems.Count, ChannelId);
             }
         }
         return Task.CompletedTask;
@@ -176,7 +176,7 @@ public sealed class OpcUaSubscriber : IOpcSubscriber
         lock (_reconnectLock)
         {
             if (_disposed || _reconnectHandler is not null) return;   // 已在重连中
-            _logger?.LogWarning("OPC UA KeepAlive 异常 {Status}，启动自动重连（{ChannelId}）", e.Status, ChannelId);
+            _logger?.LogWarning("OPC UA KeepAlive fault {Status}, starting auto-reconnect ({ChannelId})", e.Status, ChannelId);
             _reconnectHandler = new SessionReconnectHandler();
             _reconnectHandler.BeginReconnect(
                 _session!, (int)_options.ReconnectPeriod.TotalMilliseconds, OnReconnectComplete);
@@ -216,7 +216,7 @@ public sealed class OpcUaSubscriber : IOpcSubscriber
                     if (!string.IsNullOrEmpty(mi.DisplayName)) _items[mi.DisplayName] = mi;
                 }
             }
-            _logger?.LogInformation("OPC UA 自动重连完成（{ChannelId}），监控项 {Count}", ChannelId, _items.Count);
+            _logger?.LogInformation("OPC UA auto-reconnect complete ({ChannelId}), {Count} monitored items", ChannelId, _items.Count);
         }
     }
 

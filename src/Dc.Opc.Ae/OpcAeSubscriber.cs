@@ -73,7 +73,7 @@ public sealed class OpcAeSubscriber : IOpcSubscriber
                 _subscription = (TsCAeSubscription)_server.CreateSubscription(state);
                 _subscription.DataChangedEvent += OnEvents;
             }
-            _logger?.LogInformation("OPC AE 已连接 {Url}（{ChannelId}）", BuildOpcAeUrl(), ChannelId);
+            _logger?.LogInformation("OPC AE connected {Url} ({ChannelId})", BuildOpcAeUrl(), ChannelId);
             _heartbeatTask = HeartbeatLoopAsync(_disposeCts.Token);
         }, ct);
     }
@@ -87,7 +87,7 @@ public sealed class OpcAeSubscriber : IOpcSubscriber
             if (t.Item.Trim() == "*") _acceptAll = true;
             else _allowedSources[t.Item.Trim()] = 0;
         }
-        _logger?.LogInformation("OPC AE 订阅更新：acceptAll={AcceptAll}，源白名单 {Count} 项（{ChannelId}）",
+        _logger?.LogInformation("OPC AE subscription update: acceptAll={AcceptAll}, source whitelist {Count} ({ChannelId})",
             _acceptAll, _allowedSources.Count, ChannelId);
         return Task.CompletedTask;
     }
@@ -171,7 +171,7 @@ public sealed class OpcAeSubscriber : IOpcSubscriber
         }
         catch (Exception ex)
         {
-            _logger?.LogDebug(ex, "OPC AE 探活失败(疑似断连)（{ChannelId}）", ChannelId);
+            _logger?.LogDebug(ex, "OPC AE liveness probe failed (likely disconnected) ({ChannelId})", ChannelId);
             return false;
         }
     }

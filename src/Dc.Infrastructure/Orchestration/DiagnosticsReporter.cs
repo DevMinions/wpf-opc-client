@@ -127,7 +127,7 @@ public sealed class DiagnosticsReporter : IHostedService, IAsyncDisposable
             try { await Task.Delay(_options.ReportInterval, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { return; }
             try { LogOnce(); }
-            catch (Exception ex) { _logger?.LogDebug(ex, "诊断日志输出失败"); }
+            catch (Exception ex) { _logger?.LogDebug(ex, "Diagnostics log output failed"); }
         }
     }
 
@@ -140,14 +140,14 @@ public sealed class DiagnosticsReporter : IHostedService, IAsyncDisposable
         LogDropEdges(snap);
         if (snap.Count == 0)
         {
-            _logger.LogInformation("诊断：当前无运行任务");
+            _logger.LogInformation("Diagnostics: no running tasks");
             return;
         }
         foreach (var d in snap)
         {
             var hbAge = d.LastHeartbeatAt is { } hb ? $"{(now - hb).TotalSeconds:F0}" : "—";
             _logger.LogInformation(
-                "诊断 task={TaskId} 运行={UpSeconds:F0}s 值={Values} 发布错误={PublishErrors} 重启={Restarts} 订阅Tag={Tags} 心跳龄={HeartbeatAge}s 积压={QueueBytes}B 丢弃={Dropped}",
+                "Diagnostics task={TaskId} up={UpSeconds:F0}s values={Values} publishErrors={PublishErrors} restarts={Restarts} subscribedTags={Tags} heartbeatAge={HeartbeatAge}s backlog={QueueBytes}B dropped={Dropped}",
                 d.TaskId, (now - d.StartedAt).TotalSeconds, d.ValueCount, d.PublishErrorCount,
                 d.RestartCount, d.SubscribedTagCount, hbAge, d.QueuePendingBytes, d.DroppedFrameCount);
         }
@@ -167,12 +167,12 @@ public sealed class DiagnosticsReporter : IHostedService, IAsyncDisposable
                 {
                     if (cur > st.Last && !st.Dropping)
                     {
-                        _logger!.LogWarning("诊断 task={TaskId} 离线队列溢出，开始丢弃最旧帧（累计丢 {Dropped}）", d.TaskId, cur);
+                        _logger!.LogWarning("Diagnostics task={TaskId} offline queue overflow, dropping oldest frames (total dropped {Dropped})", d.TaskId, cur);
                         _dropState[d.TaskId] = (cur, true);
                     }
                     else if (cur == st.Last && st.Dropping)
                     {
-                        _logger!.LogInformation("诊断 task={TaskId} 队列停止丢弃（累计丢 {Dropped}）", d.TaskId, cur);
+                        _logger!.LogInformation("Diagnostics task={TaskId} queue stopped dropping (total dropped {Dropped})", d.TaskId, cur);
                         _dropState[d.TaskId] = (cur, false);
                     }
                     else if (cur < st.Last)
@@ -188,7 +188,7 @@ public sealed class DiagnosticsReporter : IHostedService, IAsyncDisposable
                 {
                     _dropState[d.TaskId] = (cur, cur > 0);
                     if (cur > 0)
-                        _logger!.LogWarning("诊断 task={TaskId} 离线队列溢出，开始丢弃最旧帧（累计丢 {Dropped}）", d.TaskId, cur);
+                        _logger!.LogWarning("Diagnostics task={TaskId} offline queue overflow, dropping oldest frames (total dropped {Dropped})", d.TaskId, cur);
                 }
             }
             // 清理快照里已消失的任务，防字典无界增长。

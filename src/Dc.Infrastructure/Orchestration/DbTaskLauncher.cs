@@ -124,13 +124,13 @@ public sealed class DbTaskLauncher
             var protocol = (OpcProtocol)task.Type;
             if (!supportedProtocols.Contains(protocol))
             {
-                _logger?.LogWarning("跳过任务 {Id}（{Node}）：协议 {Protocol} 当前构建不支持", task.Id, task.Node, protocol);
+                _logger?.LogWarning("Skipping task {Id} ({Node}): protocol {Protocol} not supported in this build", task.Id, task.Node, protocol);
                 skipped++;
                 continue;
             }
             if (task.Tags.Count == 0)
             {
-                _logger?.LogWarning("跳过任务 {Id}（{Node}）：无 Tag", task.Id, task.Node);
+                _logger?.LogWarning("Skipping task {Id} ({Node}): no tags", task.Id, task.Node);
                 skipped++;
                 continue;
             }
@@ -139,12 +139,12 @@ public sealed class DbTaskLauncher
                 await _orchestrator.StartAsync(
                     ToStartRequest(task, formulasByTask[task.Id].ToList()), ct).ConfigureAwait(false);
                 started++;
-                _logger?.LogInformation("已启动任务 {Id}：{Node} → {Tcp}（{Tags} tags）",
+                _logger?.LogInformation("Started task {Id}: {Node} → {Tcp} ({Tags} tags)",
                     task.Id, task.Node, task.TcpAddress, task.Tags.Count);
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "启动任务 {Id} 失败", task.Id);
+                _logger?.LogError(ex, "Failed to start task {Id}", task.Id);
                 skipped++;
             }
         }
