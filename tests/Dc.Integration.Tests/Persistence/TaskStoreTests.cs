@@ -42,7 +42,7 @@ public class TaskStoreTests
             await using (var db = new DcDbContext(opts))
                 created = (await db.Tasks.FindAsync("task1"))!.CreatedAt;
 
-            var edited = new CollectorTask { Id = "task1", Server = "新名", Node = "opc.tcp://y",
+            var edited = new CollectorTask { Id = "task1", Name = "炉温1号", Server = "新名", Node = "opc.tcp://y",
                 Type = 2, Interval = 2000, Deviation = 5, TcpAddress = "1.2.3.4:9", UseSecurity = false };
 
             await using (var db = new DcDbContext(opts))
@@ -51,7 +51,8 @@ public class TaskStoreTests
             await using (var db = new DcDbContext(opts))
             {
                 var t = await db.Tasks.FindAsync("task1");
-                Assert.Equal("新名", t!.Server);
+                Assert.Equal("炉温1号", t!.Name);   // 回归:编辑保存可读名称(原 UpdateAsync 漏拷 Name)
+                Assert.Equal("新名", t.Server);
                 Assert.Equal(2000, t.Interval);
                 Assert.False(t.UseSecurity);
                 Assert.Equal(created, t.CreatedAt);

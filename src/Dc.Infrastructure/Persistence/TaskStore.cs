@@ -13,6 +13,7 @@ public static class TaskStore
     {
         var existing = await db.Tasks.FirstOrDefaultAsync(t => t.Id == task.Id);
         if (existing is null) return;
+        existing.Name = task.Name;          // 可读名称(可空):编辑时漏拷会导致填了名又存不进去
         existing.Server = task.Server;
         existing.Node = task.Node;
         existing.Clsid = task.Clsid;
