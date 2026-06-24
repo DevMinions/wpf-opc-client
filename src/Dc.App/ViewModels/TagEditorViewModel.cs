@@ -153,10 +153,10 @@ public partial class TagEditorViewModel : ObservableObject
     {
         if (_browseDialog is null) return;
         var task = _taskLookup?.Invoke(_taskId);
-        string? nodeId;
+        BrowsePick? pick;
         if (task is null)
         {
-            nodeId = _browseDialog.PickNodeId();
+            pick = _browseDialog.PickNodeId();
         }
         else
         {
@@ -170,9 +170,14 @@ public partial class TagEditorViewModel : ObservableObject
                 serverUri = task.Server;
                 progId = null;
             }
-            nodeId = _browseDialog.PickNodeId(protocol, serverUri, progId, task.Clsid, task.UseSecurity);
+            pick = _browseDialog.PickNodeId(protocol, serverUri, progId, task.Clsid, task.UseSecurity);
         }
-        if (!string.IsNullOrWhiteSpace(nodeId)) Item = nodeId;
+        if (pick is not null && !string.IsNullOrWhiteSpace(pick.NodeId))
+        {
+            Item = pick.NodeId;
+            // 自动回填节点真实类型(与批量加 Tag 一致);未识别(0)则不动用户当前选择
+            if (pick.DataType != 0) DataType = OpcDataTypeOption.FromCode(pick.DataType);
+        }
     }
 
     partial void OnIsVirtualChanged(bool value)

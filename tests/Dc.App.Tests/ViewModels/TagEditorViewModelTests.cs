@@ -20,11 +20,12 @@ public class TagEditorViewModelTests
     private sealed class CapturingBrowseDialog : IBrowseDialog
     {
         public bool LastUseSecurity = true;
-        public string? PickNodeId(OpcProtocol? protocol = null, string? serverUri = null,
+        public BrowsePick? Result;   // 测试预置:返回给取点的结果(默认 null=取消)
+        public BrowsePick? PickNodeId(OpcProtocol? protocol = null, string? serverUri = null,
             string? serverProgId = null, string? serverClsid = null, bool useSecurity = true)
         {
             LastUseSecurity = useSecurity;
-            return null;   // 不选节点
+            return Result;
         }
     }
 
@@ -40,6 +41,17 @@ public class TagEditorViewModelTests
         var vm = new TagEditorViewModel("t1", existing: null, browseDialog: dlg, taskLookup: _ => task);
         vm.BrowseCommand.Execute(null);
         Assert.False(dlg.LastUseSecurity);   // 任务无安全 → 浏览也应无安全
+    }
+
+    [Fact]
+    public void Browse_AutofillsDataType_FromPickedNode()
+    {
+        // 单选浏览取点应自动回填节点真实类型(与批量加 Tag 一致),不再停留「默认」(0)
+        var dlg = new CapturingBrowseDialog { Result = new BrowsePick("ns=2;s=Temp", 5) }; // 5=Double/Float64
+        var vm = new TagEditorViewModel("t1", existing: null, browseDialog: dlg, taskLookup: _ => null);
+        vm.BrowseCommand.Execute(null);
+        Assert.Equal("ns=2;s=Temp", vm.Item);
+        Assert.Equal(5, vm.DataType.Code);
     }
 
     [Fact]

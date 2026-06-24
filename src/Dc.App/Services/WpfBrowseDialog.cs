@@ -14,7 +14,7 @@ public sealed class WpfBrowseDialog : IBrowseDialog
         _factories = factories;
     }
 
-    public string? PickNodeId(
+    public BrowsePick? PickNodeId(
         OpcProtocol? protocol = null,
         string? serverUri = null,
         string? serverProgId = null,
@@ -41,8 +41,11 @@ public sealed class WpfBrowseDialog : IBrowseDialog
             vm.ConnectCommand.Execute(null);
 
         var ok = window.ShowDialog() == true;
-        var nodeId = ok ? vm.SelectedNode?.Node.Id : null;
+        // 带回 NodeId + 节点真实类型码(复用 BrowseViewModel.MapDataType),单选取点与批量加 Tag 一样自动填类型
+        BrowsePick? pick = ok && vm.SelectedNode is not null
+            ? new BrowsePick(vm.SelectedNode.Node.Id, vm.SelectedNodeDataTypeCode)
+            : null;
         try { vm.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(2)); } catch { }
-        return nodeId;
+        return pick;
     }
 }

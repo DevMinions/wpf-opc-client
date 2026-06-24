@@ -197,6 +197,9 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         _ => 0
     };
 
+    // 选中节点的数据类型码(复用 MapDataType):单选浏览取点把真实类型带回 Tag 编辑器,与批量加 Tag 一致;认不出落 0。
+    public int SelectedNodeDataTypeCode => SelectedNode is null ? 0 : MapDataType(SelectedNode.DataTypeText);
+
     [RelayCommand]
     private async Task ConnectAsync()
     {
