@@ -100,10 +100,21 @@ jobs:
         run: |
           PRERELEASE=""
           [[ "${{ steps.ver.outputs.version }}" == *-* ]] && PRERELEASE="--prerelease"
+          # Release 说明优先取 CHANGELOG.md 里本版本段落（## vX.Y.Z 到下一个 ## 之间）；
+          # 抽不到（无对应段落）则回退 GitHub 自动生成（PR 列表）。
+          VER="${{ steps.ver.outputs.version }}"
+          awk -v h="## v$VER " 'index($0,h)==1{f=1;print;next} f&&/^## /{f=0} f{print}' CHANGELOG.md > RELEASE_NOTES.md || true
+          if [[ -s RELEASE_NOTES.md ]]; then
+            echo "Release 说明来自 CHANGELOG.md 的 v$VER 段落"
+            NOTES=(--notes-file RELEASE_NOTES.md)
+          else
+            echo "CHANGELOG.md 无 v$VER 段落，回退自动生成说明"
+            NOTES=(--generate-notes)
+          fi
           gh release create "${GITHUB_REF_NAME}" \
             "${{ steps.zip.outputs.name }}" \
             --title "${GITHUB_REF_NAME}" \
-            --generate-notes \
+            "${NOTES[@]}" \
             $PRERELEASE
 
   linux:

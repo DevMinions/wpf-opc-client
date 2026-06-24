@@ -5,7 +5,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Dc.Cli</RootNamespace>
     <AssemblyName>Dc.Cli</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>1.2.0</Version>
     <Product>Dc — OPC 数据采集（无头）</Product>
   </PropertyGroup>
 
