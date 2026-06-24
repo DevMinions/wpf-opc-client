@@ -277,7 +277,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="NodeId" Binding="{Binding Node.Id}" Width="280">
+                            <DataGridTextColumn Header="NodeId" Binding="{Binding Node.Id}" Width="1.4*">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center" />
@@ -286,7 +286,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="{loc:Loc Browse_ColValue}" Binding="{Binding ValueText}" Width="140">
+                            <DataGridTextColumn Header="{loc:Loc Browse_ColValue}" Binding="{Binding ValueText}" Width="100">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center" />
@@ -302,7 +302,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="{loc:Loc Browse_ColType}" Binding="{Binding DataTypeText}" Width="84">
+                            <DataGridTextColumn Header="{loc:Loc Browse_ColType}" Binding="{Binding DataTypeText}" Width="76">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center" />
