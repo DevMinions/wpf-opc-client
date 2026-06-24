@@ -153,8 +153,8 @@ public class DiagnosticsReporterTests
         dropped = 5; reporter.LogOnce();   // tick2：开始丢 → WARN
         dropped = 5; reporter.LogOnce();   // tick3：停止丢 → INFO
 
-        Assert.Single(logger.Entries, e => e.Level == Microsoft.Extensions.Logging.LogLevel.Warning && e.Message.Contains("开始丢弃"));
-        Assert.Single(logger.Entries, e => e.Level == Microsoft.Extensions.Logging.LogLevel.Information && e.Message.Contains("停止丢弃"));
+        Assert.Single(logger.Entries, e => e.Level == Microsoft.Extensions.Logging.LogLevel.Warning && e.Message.Contains("dropping oldest frames"));
+        Assert.Single(logger.Entries, e => e.Level == Microsoft.Extensions.Logging.LogLevel.Information && e.Message.Contains("stopped dropping"));
     }
 
     // 无运行任务：tasks.running == 0，不抛
