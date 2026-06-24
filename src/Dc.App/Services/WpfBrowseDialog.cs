@@ -18,7 +18,8 @@ public sealed class WpfBrowseDialog : IBrowseDialog
         OpcProtocol? protocol = null,
         string? serverUri = null,
         string? serverProgId = null,
-        string? serverClsid = null)
+        string? serverClsid = null,
+        bool useSecurity = true)
     {
         var vm = new BrowseViewModel(_factories);
         if (protocol is not null && vm.AvailableProtocols.Contains(protocol.Value))
@@ -26,6 +27,7 @@ public sealed class WpfBrowseDialog : IBrowseDialog
         if (!string.IsNullOrWhiteSpace(serverUri)) vm.ServerUri = serverUri;
         if (!string.IsNullOrWhiteSpace(serverProgId)) vm.ServerProgId = serverProgId;
         if (!string.IsNullOrWhiteSpace(serverClsid)) vm.ServerClsid = serverClsid;
+        vm.UseSecurity = useSecurity;   // 与任务安全设置同步:无安全任务浏览也走无安全,否则报安全错
 
         var window = new BrowseDialogWindow
         {

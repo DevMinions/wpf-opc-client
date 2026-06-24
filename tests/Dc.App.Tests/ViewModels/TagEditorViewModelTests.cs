@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using System.Globalization;
 using Dc.App.ViewModels;
+using Dc.App.Services;
 using Dc.App.Services.I18n;
 using Dc.Domain.Entities;
 using Dc.Infrastructure.Orchestration;
+using Dc.Opc.Abstractions;
 
 namespace Dc.App.Tests.ViewModels;
 
@@ -13,6 +15,32 @@ public class TagEditorViewModelTests
     // 本地化后标题/校验消息按 culture 取值;断言中文字面量须锁定中文(非中文 OS 否则取英文)。
     public TagEditorViewModelTests() =>
         LocalizationManager.Instance.SetCulture(new CultureInfo("zh-CN"));
+
+    // 回归:加 Tag 浏览节点时,必须把任务的 UseSecurity 带进浏览对话框,否则无安全 UA 任务浏览会报安全错。
+    private sealed class CapturingBrowseDialog : IBrowseDialog
+    {
+        public bool LastUseSecurity = true;
+        public string? PickNodeId(OpcProtocol? protocol = null, string? serverUri = null,
+            string? serverProgId = null, string? serverClsid = null, bool useSecurity = true)
+        {
+            LastUseSecurity = useSecurity;
+            return null;   // 不选节点
+        }
+    }
+
+    [Fact]
+    public void Browse_PassesTaskUseSecurity_ToDialog()
+    {
+        var dlg = new CapturingBrowseDialog();
+        var task = new CollectorTask
+        {
+            Id = "t1", Type = (byte)OpcProtocol.Ua, Server = "opc.tcp://h:4840",
+            Node = "opc.tcp://h:4840", UseSecurity = false
+        };
+        var vm = new TagEditorViewModel("t1", existing: null, browseDialog: dlg, taskLookup: _ => task);
+        vm.BrowseCommand.Execute(null);
+        Assert.False(dlg.LastUseSecurity);   // 任务无安全 → 浏览也应无安全
+    }
 
     [Fact]
     public void Create_New_TitlePlain_AttachesToTask()

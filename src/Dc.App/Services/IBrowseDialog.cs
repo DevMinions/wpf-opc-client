@@ -12,5 +12,6 @@ public interface IBrowseDialog
         OpcProtocol? protocol = null,
         string? serverUri = null,
         string? serverProgId = null,
-        string? serverClsid = null);
+        string? serverClsid = null,
+        bool useSecurity = true);
 }

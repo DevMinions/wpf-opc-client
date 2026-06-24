@@ -170,7 +170,7 @@ public partial class TagEditorViewModel : ObservableObject
                 serverUri = task.Server;
                 progId = null;
             }
-            nodeId = _browseDialog.PickNodeId(protocol, serverUri, progId, task.Clsid);
+            nodeId = _browseDialog.PickNodeId(protocol, serverUri, progId, task.Clsid, task.UseSecurity);
         }
         if (!string.IsNullOrWhiteSpace(nodeId)) Item = nodeId;
     }

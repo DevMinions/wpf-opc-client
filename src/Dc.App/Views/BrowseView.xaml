@@ -74,6 +74,12 @@
                                 controls:Placeholder.Text="ProgID (DA/AE)"
                                 ToolTip="{loc:Loc Browse_ProgIdTooltip}" />
 
+                    <!-- 安全连接(仅 UA):无安全 server(如 Prosys None)取消勾选 -->
+                    <CheckBox DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Center"
+                              Content="{loc:Loc TaskEditor_UseSecurity}"
+                              IsChecked="{Binding UseSecurity}"
+                              Visibility="{Binding IsUaProtocol, Converter={StaticResource BoolToVis}}" />
+
                     <!-- Server URI -->
                     <TextBox AutomationProperties.AutomationId="BrowseServerUri"
                                 Text="{Binding ServerUri, UpdateSourceTrigger=PropertyChanged}"

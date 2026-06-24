@@ -29,6 +29,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     [ObservableProperty] private string _serverUri = "opc.tcp://localhost:4840";
     [ObservableProperty] private string _serverProgId = string.Empty; // DA only: 如 Technosoftware.DaSample
     [ObservableProperty] private string _serverClsid = string.Empty;  // DA 兜底: 显式 CLSID，给值时绕过 OPCEnum
+    [ObservableProperty] private bool _useSecurity = true;            // 仅 UA:默认安全;加 Tag 浏览时从任务带入,浏览页可勾选
     [ObservableProperty] private string _discoveryHost = "localhost"; // DA only: 扫描的目标 IP/主机
     [ObservableProperty] private string? _selectedDiscoveredServer;   // 用户从扫描结果中选中的 opcda:// URL
     [ObservableProperty] private bool _connected;
@@ -55,6 +56,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     public bool IsDaProtocol => Protocol == OpcProtocol.Da;
     // DA 和 AE 都是 classic COM/DCOM 流：ProgID 字段、扫描发现、CLSID 兜底三件套对二者都适用
     public bool IsClassicOpcProtocol => Protocol == OpcProtocol.Da || Protocol == OpcProtocol.Ae;
+    public bool IsUaProtocol => Protocol == OpcProtocol.Ua;   // 安全连接复选框仅 UA 显示
 
     public BrowseViewModel(
         IEnumerable<IOpcBrowserFactory> browserFactories,
@@ -312,6 +314,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
     {
         OnPropertyChanged(nameof(IsDaProtocol));
         OnPropertyChanged(nameof(IsClassicOpcProtocol));
+        OnPropertyChanged(nameof(IsUaProtocol));
         // 切换协议时给个合理默认 ServerUri
         if (value == OpcProtocol.Ua && !ServerUri.StartsWith("opc.tcp", StringComparison.OrdinalIgnoreCase))
             ServerUri = "opc.tcp://localhost:4840";
@@ -328,7 +331,8 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         {
             ServerUri = ServerUri,
             ServerProgId = string.IsNullOrWhiteSpace(ServerProgId) ? null : ServerProgId.Trim(),
-            ServerClsid = string.IsNullOrWhiteSpace(ServerClsid) ? null : ServerClsid.Trim()
+            ServerClsid = string.IsNullOrWhiteSpace(ServerClsid) ? null : ServerClsid.Trim(),
+            UseSecurity = UseSecurity   // UA:与任务一致(无安全任务浏览也走无安全),否则浏览会报安全错
         };
     }
 
