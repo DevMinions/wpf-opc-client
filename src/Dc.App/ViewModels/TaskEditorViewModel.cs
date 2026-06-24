@@ -27,8 +27,8 @@ public partial class TaskEditorViewModel : ObservableValidator
 
     [ObservableProperty]
     [NotifyDataErrorInfo]
-    [Required(AllowEmptyStrings = false, ErrorMessage = "节点不能为空")]
-    private string _node = "localhost";          // OPC DA Host；UA 时即服务器地址(opc.tcp URL)，由 OnNodeChanged 镜像进 Server
+    [CustomValidation(typeof(TaskEditorViewModel), nameof(ValidateNodeForProtocol))]
+    private string _node = "localhost";          // OPC DA Host；UA 隐藏此字段且运行时不读它，故仅 classic OPC 必填(见 ValidateNodeForProtocol)
 
     [ObservableProperty] private string _clsid = string.Empty;        // DA 兜底，可空
     [ObservableProperty] private OpcProtocol _protocol = OpcProtocol.Ua;
@@ -40,8 +40,8 @@ public partial class TaskEditorViewModel : ObservableValidator
 
     [ObservableProperty]
     [NotifyDataErrorInfo]
-    [Range(0, 100, ErrorMessage = "死区必须在 0-100 范围内")]
-    private int _deviation = 0;
+    [CustomValidation(typeof(TaskEditorViewModel), nameof(ValidateDeviationForProtocol))]
+    private int _deviation = 0;                   // 死区仅 classic OPC 用且可见；UA 隐藏，故 UA 时不做范围校验(见 ValidateDeviationForProtocol)
 
     [ObservableProperty]
     [NotifyDataErrorInfo]
@@ -195,6 +195,26 @@ public partial class TaskEditorViewModel : ObservableValidator
         }
     }
 
+    // Node / 死区仅 classic OPC(DA/AE)可见且需要;UA 隐藏这两个字段、运行时也不读它们(见上字段注释),
+    // 故 UA 协议下不校验它们 —— 否则 UA 任务若这两字段恰为非法值(如旧数据/导入 Node 为空),
+    // 保存按钮会因 HasErrors 永久禁用,而字段又隐藏、用户无处可改。消息文本不展示给用户(无 ErrorTemplate),
+    // 仅驱动 HasErrors/红框,故与既有 DataAnnotation 常量一样保留中文。
+    public static ValidationResult? ValidateNodeForProtocol(string? node, ValidationContext ctx)
+    {
+        var vm = (TaskEditorViewModel)ctx.ObjectInstance;
+        return vm.IsClassicOpcProtocol && string.IsNullOrWhiteSpace(node)
+            ? new ValidationResult("节点不能为空")
+            : ValidationResult.Success;
+    }
+
+    public static ValidationResult? ValidateDeviationForProtocol(int deviation, ValidationContext ctx)
+    {
+        var vm = (TaskEditorViewModel)ctx.ObjectInstance;
+        return vm.IsClassicOpcProtocol && (deviation < 0 || deviation > 100)
+            ? new ValidationResult("死区必须在 0-100 范围内")
+            : ValidationResult.Success;
+    }
+
     // 保存时点的兜底校验：DataAnnotation 特性只驱动 HasErrors/红框(其消息文本不展示给用户),
     // 这里据相同字段条件产出本地化的用户可见错误消息(含属性特性无法表达的协议相关 opc.tcp 前缀检查)。
     public IReadOnlyList<string> Validate()
@@ -203,9 +223,13 @@ public partial class TaskEditorViewModel : ObservableValidator
         var errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(Server)) errors.Add(_loc["Validation_ServerRequired"]);
-        if (string.IsNullOrWhiteSpace(Node)) errors.Add(_loc["Validation_NodeRequired"]);
         if (Interval < 1) errors.Add(_loc["Validation_IntervalRange"]);
-        if (Deviation is < 0 or > 100) errors.Add(_loc["Validation_DeadbandRange"]);
+        // Node/死区仅 classic OPC 需要(UA 隐藏且不读),与 DataAnnotation 校验条件一致。
+        if (IsClassicOpcProtocol)
+        {
+            if (string.IsNullOrWhiteSpace(Node)) errors.Add(_loc["Validation_NodeRequired"]);
+            if (Deviation is < 0 or > 100) errors.Add(_loc["Validation_DeadbandRange"]);
+        }
         if (!System.Text.RegularExpressions.Regex.IsMatch(TcpAddress ?? string.Empty, @"^[^:]+:\d+$"))
             errors.Add(_loc["Validation_TcpAddressFormat"]);
 

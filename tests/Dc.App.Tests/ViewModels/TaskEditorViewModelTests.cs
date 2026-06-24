@@ -52,14 +52,70 @@ public class TaskEditorViewModelTests
     }
 
     [Fact]
-    public void Deviation_OutOfRange_Is_Invalid()
+    public void Deviation_OutOfRange_Is_Invalid_ForClassicOpc()
     {
         var vm = New();
-        vm.Server = "opc.tcp://x";
+        vm.Protocol = OpcProtocol.Da;   // 死区仅 classic OPC 可见且校验(UA 隐藏不校验)
+        vm.Server = "Some.ProgID";
+        vm.Node = "localhost";
         vm.Deviation = 150;
         Assert.True(vm.HasErrors);
         vm.Deviation = 50;
         Assert.False(vm.HasErrors);
+    }
+
+    // ── 回归:UA 任务隐藏 Node/死区,这两个字段非法不应禁用保存(否则字段隐藏、用户无处可改) ──
+
+    [Fact]
+    public void Edit_UaTask_EmptyNode_CanSave()
+    {
+        var existing = new CollectorTask
+        {
+            Id = "t1", Type = (byte)OpcProtocol.Ua, Server = "opc.tcp://host:4840",
+            Node = "", Interval = 1000, Deviation = 0, TcpAddress = "127.0.0.1:5000", UseSecurity = true
+        };
+        var vm = new TaskEditorViewModel(existing, Array.Empty<IOpcBrowserFactory>());
+        Assert.False(vm.HasErrors);   // UA 不校验隐藏的 Node
+        Assert.True(vm.CanSave);
+    }
+
+    [Fact]
+    public void Edit_UaTask_OutOfRangeDeviation_CanSave()
+    {
+        var existing = new CollectorTask
+        {
+            Id = "t2", Type = (byte)OpcProtocol.Ua, Server = "opc.tcp://host:4840",
+            Node = "localhost", Interval = 1000, Deviation = 200, TcpAddress = "127.0.0.1:5000"
+        };
+        var vm = new TaskEditorViewModel(existing, Array.Empty<IOpcBrowserFactory>());
+        Assert.False(vm.HasErrors);   // UA 不校验隐藏的死区
+        Assert.True(vm.CanSave);
+    }
+
+    [Fact]
+    public void Edit_DaTask_EmptyNode_CannotSave()
+    {
+        var existing = new CollectorTask
+        {
+            Id = "t3", Type = (byte)OpcProtocol.Da, Server = "Some.ProgID",
+            Node = "", Interval = 1000, Deviation = 0, TcpAddress = "127.0.0.1:5000"
+        };
+        var vm = new TaskEditorViewModel(existing, Array.Empty<IOpcBrowserFactory>());
+        Assert.True(vm.HasErrors);    // DA 的 Node 可见且必填,空仍禁用保存
+        Assert.False(vm.CanSave);
+    }
+
+    [Fact]
+    public void SwitchDaToUa_WithEmptyNode_ClearsError_AndCanSave()
+    {
+        var vm = New();                       // UA
+        vm.Protocol = OpcProtocol.Da;
+        vm.Server = "Some.ProgID";
+        vm.Node = string.Empty;               // DA 下 Node 必填 → 非法
+        Assert.True(vm.HasErrors);
+        vm.Protocol = OpcProtocol.Ua;         // 切 UA:Node 隐藏、不再校验
+        Assert.False(vm.HasErrors);
+        Assert.True(vm.CanSave);
     }
 
     [Fact]
