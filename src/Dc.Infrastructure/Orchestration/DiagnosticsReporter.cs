@@ -72,31 +72,31 @@ public sealed class DiagnosticsReporter : IHostedService, IAsyncDisposable
 
         // 进程存活恒为 1（与 /metrics 的 dc_collector_up 对齐，两条抓取路径指标集不漂移）。
         _meter.CreateObservableGauge("dc.collector.up",
-            () => 1L, unit: "{up}", description: "Collector 进程存活（1=存活）");
+            () => 1L, unit: "{up}", description: "Collector process alive (1=alive)");
 
         _meter.CreateObservableGauge("dc.collector.tasks.running",
-            () => _provider().Count, unit: "{tasks}", description: "运行中的采集任务数");
+            () => _provider().Count, unit: "{tasks}", description: "Number of running collection tasks");
 
         _meter.CreateObservableGauge("dc.collector.task.values",
-            () => Each(d => d.ValueCount), unit: "{values}", description: "每任务累计收到的值数");
+            () => Each(d => d.ValueCount), unit: "{values}", description: "Cumulative values received per task");
 
         _meter.CreateObservableGauge("dc.collector.task.publish_errors",
-            () => Each(d => d.PublishErrorCount), unit: "{errors}", description: "每任务累计发布错误数");
+            () => Each(d => d.PublishErrorCount), unit: "{errors}", description: "Cumulative publish errors per task");
 
         _meter.CreateObservableGauge("dc.collector.task.restarts",
-            () => Each(d => (long)d.RestartCount), unit: "{restarts}", description: "每任务被看门狗重启次数");
+            () => Each(d => (long)d.RestartCount), unit: "{restarts}", description: "Watchdog restarts per task");
 
         _meter.CreateObservableGauge("dc.collector.task.subscribed_tags",
-            () => Each(d => (long)d.SubscribedTagCount), unit: "{tags}", description: "每任务当前订阅的 Tag 数");
+            () => Each(d => (long)d.SubscribedTagCount), unit: "{tags}", description: "Currently subscribed tags per task");
 
         _meter.CreateObservableGauge("dc.collector.task.heartbeat_age_seconds",
-            ObserveHeartbeatAge, unit: "s", description: "每任务距上次心跳的秒数（-1=尚无心跳）");
+            ObserveHeartbeatAge, unit: "s", description: "Seconds since last heartbeat per task (-1=no heartbeat yet)");
 
         _meter.CreateObservableGauge("dc.collector.task.queue_pending_bytes",
-            () => Each(d => d.QueuePendingBytes), unit: "By", description: "每任务离线队列未发字节数");
+            () => Each(d => d.QueuePendingBytes), unit: "By", description: "Offline queue pending (unsent) bytes per task");
 
         _meter.CreateObservableGauge("dc.collector.task.dropped_frames",
-            () => Each(d => d.DroppedFrameCount), unit: "{frames}", description: "每任务累计因队列溢出丢弃的帧数");
+            () => Each(d => d.DroppedFrameCount), unit: "{frames}", description: "Cumulative frames dropped due to queue overflow per task");
 
         // 镜像 /metrics 的 dc_collector_task_state：每任务一条值恒 1 的样本，
         // 带 task.id + state 维度，state 为连接态枚举小写名（双路径口径一致）。
@@ -104,7 +104,7 @@ public sealed class DiagnosticsReporter : IHostedService, IAsyncDisposable
             () => _provider().Select(d => new Measurement<long>(1L,
                 new KeyValuePair<string, object?>("task.id", d.TaskId),
                 new KeyValuePair<string, object?>("state", d.State.ToString().ToLowerInvariant()))),
-            unit: "{state}", description: "每任务连接状态（state 维度，值恒 1=当前态）");
+            unit: "{state}", description: "Per-task connection state (state dimension, value always 1=current)");
     }
 
     // 每任务一个 Measurement，带 task.id 维度标签

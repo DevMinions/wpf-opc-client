@@ -199,31 +199,31 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
     {
         var sb = new StringBuilder(256 + snap.Count * 256);
 
-        Gauge(sb, "dc_collector_up", "Collector 进程存活（1=存活）。",
+        Gauge(sb, "dc_collector_up", "Collector process alive (1=alive)",
             g => g.Line(null, 1));
-        Gauge(sb, "dc_collector_tasks_running", "运行中的采集任务数。",
+        Gauge(sb, "dc_collector_tasks_running", "Number of running collection tasks",
             g => g.Line(null, snap.Count));
 
-        Gauge(sb, "dc_collector_task_values", "每任务累计收到的值数。",
+        Gauge(sb, "dc_collector_task_values", "Cumulative values received per task",
             g => { foreach (var d in snap) g.Line(d.TaskId, d.ValueCount); });
-        Gauge(sb, "dc_collector_task_publish_errors", "每任务累计发布错误数。",
+        Gauge(sb, "dc_collector_task_publish_errors", "Cumulative publish errors per task",
             g => { foreach (var d in snap) g.Line(d.TaskId, d.PublishErrorCount); });
-        Gauge(sb, "dc_collector_task_restarts", "每任务被看门狗重启次数。",
+        Gauge(sb, "dc_collector_task_restarts", "Watchdog restarts per task",
             g => { foreach (var d in snap) g.Line(d.TaskId, d.RestartCount); });
-        Gauge(sb, "dc_collector_task_subscribed_tags", "每任务当前订阅的 Tag 数。",
+        Gauge(sb, "dc_collector_task_subscribed_tags", "Currently subscribed tags per task",
             g => { foreach (var d in snap) g.Line(d.TaskId, d.SubscribedTagCount); });
-        Gauge(sb, "dc_collector_task_heartbeat_age_seconds", "每任务距上次心跳的秒数（-1=尚无心跳）。",
+        Gauge(sb, "dc_collector_task_heartbeat_age_seconds", "Seconds since last heartbeat per task (-1=no heartbeat yet)",
             g =>
             {
                 foreach (var d in snap)
                     g.Line(d.TaskId, d.LastHeartbeatAt is { } hb ? (now - hb).TotalSeconds : -1d);
             });
-        Gauge(sb, "dc_collector_task_queue_pending_bytes", "每任务离线队列未发字节数。",
+        Gauge(sb, "dc_collector_task_queue_pending_bytes", "Offline queue pending (unsent) bytes per task",
             g => { foreach (var d in snap) g.Line(d.TaskId, d.QueuePendingBytes); });
-        Gauge(sb, "dc_collector_task_dropped_frames", "每任务累计因队列溢出丢弃的帧数。",
+        Gauge(sb, "dc_collector_task_dropped_frames", "Cumulative frames dropped due to queue overflow per task",
             g => { foreach (var d in snap) g.Line(d.TaskId, d.DroppedFrameCount); });
         Gauge(sb, "dc_collector_task_state",
-            "每任务连接状态（state 标签：connecting/running/restarting/faulted，值恒 1=当前态）。",
+            "Per-task connection state (state label: connecting/running/restarting/faulted, value always 1=current)",
             g =>
             {
                 foreach (var d in snap)
@@ -234,11 +234,11 @@ public sealed class MetricsHttpServer : IHostedService, IDisposable
         // 是对项目「双路径」约定的有意例外；双路径只约束 collector 任务指标）。
         if (live is not null)
         {
-            Gauge(sb, "dc_livedata_flush_ms_p50", "LiveData flush 耗时 p50（毫秒）。", g => g.Line(null, live.P50Ms));
-            Gauge(sb, "dc_livedata_flush_ms_p95", "LiveData flush 耗时 p95（毫秒）。", g => g.Line(null, live.P95Ms));
-            Gauge(sb, "dc_livedata_coalesce_ratio", "LiveData 合并比（原始输入条数 / 输出 key 数，越大越密）。", g => g.Line(null, live.CoalesceRatio));
-            Gauge(sb, "dc_livedata_rows", "LiveData 当前行数。", g => g.Line(null, live.Rows));
-            Gauge(sb, "dc_livedata_updates_per_second", "LiveData 每秒原始更新数。", g => g.Line(null, live.UpdatesPerSecond));
+            Gauge(sb, "dc_livedata_flush_ms_p50", "LiveData flush time p50 (ms)", g => g.Line(null, live.P50Ms));
+            Gauge(sb, "dc_livedata_flush_ms_p95", "LiveData flush time p95 (ms)", g => g.Line(null, live.P95Ms));
+            Gauge(sb, "dc_livedata_coalesce_ratio", "LiveData coalesce ratio (raw inputs / output keys; higher=denser)", g => g.Line(null, live.CoalesceRatio));
+            Gauge(sb, "dc_livedata_rows", "LiveData current row count", g => g.Line(null, live.Rows));
+            Gauge(sb, "dc_livedata_updates_per_second", "LiveData raw updates per second", g => g.Line(null, live.UpdatesPerSecond));
         }
 
         return sb.ToString();
