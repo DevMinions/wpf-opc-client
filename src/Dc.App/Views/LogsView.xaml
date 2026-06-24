@@ -68,7 +68,11 @@
                           FontSize="12">
                 <ItemsControl.Template>
                     <ControlTemplate>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                        <!-- CanContentScroll=True 必须设在这个真正的 ScrollViewer 上,否则按像素滚动会
+                             realize 全部 ~500 行(VirtualizingStackPanel 虚拟化被废),日志多时卡 UI。
+                             设在 ItemsControl 上的同名附加属性不会传到模板内的 ScrollViewer。 -->
+                        <ScrollViewer CanContentScroll="True"
+                                      VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Auto"
                                       Padding="14,12">
                             <ItemsPresenter />
