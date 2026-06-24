@@ -145,11 +145,13 @@
         <!-- ═══ Row 4: Breadcrumb + 状态提示 ═══ -->
         <DockPanel Grid.Row="4" Margin="20,0,20,10" LastChildFill="True">
             <Button Content="{loc:Loc Browse_BtnBack}"
+                    AutomationProperties.AutomationId="BrowseBack"
                     DockPanel.Dock="Left"
                     Command="{Binding GoBackCommand}"
                     Style="{StaticResource DcBtnGhostSm}"
                     Margin="0,0,8,0" />
             <Button Content="{loc:Loc Browse_BtnEnter}"
+                    AutomationProperties.AutomationId="BrowseEnter"
                     DockPanel.Dock="Left"
                     Command="{Binding DrillDownCommand}"
                     Style="{StaticResource DcBtnGhostSm}"
@@ -259,6 +261,8 @@
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Text" Value="🔢" />
+                                                    <!-- 显式前景色:同 Name,否则选中行图标也会变白隐形 -->
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Node.Kind}" Value="Folder">
                                                             <Setter Property="Text" Value="📁" />
@@ -274,6 +278,8 @@
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center" />
+                                        <!-- 显式前景色:否则选中行跟随 DataGrid 默认选中态变白,在浅色 AccentSoft 选中底上隐形 -->
+                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>

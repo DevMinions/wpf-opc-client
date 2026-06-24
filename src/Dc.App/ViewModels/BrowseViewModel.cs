@@ -392,6 +392,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         finally
         {
             IsLoading = false;
+            GoBackCommand.NotifyCanExecuteChanged(); // _path 深度变了须重判,否则下钻后 Back 一直灰、回不去上层
         }
     }
 
@@ -438,6 +439,7 @@ public partial class BrowseViewModel : ObservableObject, IAsyncDisposable
         await DisposeBrowserAsync();
         IsConnectError = false;
         _path.Clear();
+        GoBackCommand.NotifyCanExecuteChanged(); // 断开后 Back 该置灰
         CurrentPath = _loc["Browse_PathDisconnected"];
         StatusMessage = _loc["Browse_StatusDisconnected"];
     }
